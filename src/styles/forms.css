@@ -1,0 +1,90 @@
+.auth-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 32px 16px;
+  background:
+    radial-gradient(circle at 20% 8%, rgba(34, 211, 238, 0.14), transparent 28%),
+    radial-gradient(circle at 85% 15%, rgba(139, 92, 246, 0.16), transparent 26%),
+    #08090d;
+}
+
+.auth-card {
+  width: min(100%, 440px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 28px;
+  background: rgba(18, 20, 29, 0.86);
+  box-shadow: var(--shadow);
+}
+
+.auth-card h1 {
+  margin: 18px 0 8px;
+  font-size: 2rem;
+  letter-spacing: 0;
+}
+
+.auth-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field label {
+  color: var(--soft);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 12px;
+  color: var(--text);
+  background: rgba(8, 9, 13, 0.7);
+  outline: none;
+}
+
+.field textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  border-color: rgba(34, 211, 238, 0.62);
+}
+
+.form-error {
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.1);
+  font-size: 0.88rem;
+}
+
+.form-note {
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.form-note a {
+  color: var(--cyan);
+}

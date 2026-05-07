@@ -1,0 +1,301 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+  EXPORTING
+}
+
+enum SceneStatus {
+  DRAFT
+  QUEUED
+  GENERATING
+  READY
+  FAILED
+  STALE
+  EXPORTING
+}
+
+enum AssetType {
+  IMAGE
+  VIDEO
+  FRAME
+  THUMBNAIL
+  EXPORT
+}
+
+enum AssetSource {
+  UPLOAD
+  FAL_GENERATION
+  FRAME_EXTRACT
+  EXPORT
+}
+
+enum JobStatus {
+  QUEUED
+  GENERATING
+  PROCESSING
+  READY
+  FAILED
+  CANCELED
+}
+
+enum JobType {
+  VIDEO_GENERATION
+  FRAME_EXTRACT
+  EXPORT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String?
+  avatarUrl    String?
+  role         UserRole @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  projects       Project[]
+  assets         Asset[]
+  jobs           GenerationJob[]
+  ledgerEntries  CreditLedger[]
+  subscriptions  Subscription[]
+  exportJobs     ExportJob[]
+}
+
+model Project {
+  id                    String        @id @default(cuid())
+  userId                String
+  title                 String
+  description           String?
+  aspectRatio           String
+  stylePreset           String
+  promptLanguage        String        @default("en")
+  quality               String        @default("balanced")
+  status                ProjectStatus @default(DRAFT)
+  initialFrameAssetId   String?
+  coverAssetId          String?
+  totalDurationSeconds  Int           @default(0)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  archivedAt            DateTime?
+
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scenes  Scene[]
+  assets  Asset[]
+  jobs    GenerationJob[]
+  exports ExportJob[]
+
+  @@index([userId, updatedAt])
+}
+
+model Scene {
+  id                 String      @id @default(cuid())
+  projectId          String
+  orderIndex         Int
+  durationSeconds    Int         @default(6)
+  status             SceneStatus @default(DRAFT)
+  startFrameAssetId  String?
+  videoAssetId       String?
+  endFrameAssetId    String?
+  userPrompt         String
+  aiPrompt           String?
+  modelId            String
+  generationJobId    String?
+  parentSceneId      String?
+  branchId           String?
+  isStale            Boolean     @default(false)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  jobs    GenerationJob[]
+
+  @@unique([projectId, orderIndex, branchId])
+  @@index([projectId, orderIndex])
+}
+
+model Asset {
+  id              String      @id @default(cuid())
+  userId          String
+  projectId       String?
+  type            AssetType
+  source          AssetSource
+  storageProvider String
+  storageBucket   String
+  storageKey      String
+  mimeType        String
+  sizeBytes       Int?
+  width           Int?
+  height          Int?
+  durationSeconds Int?
+  thumbnailAssetId String?
+  metadataJson    Json?
+  createdAt       DateTime    @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([userId, projectId, type])
+}
+
+model GenerationJob {
+  id                   String    @id @default(cuid())
+  userId               String
+  projectId            String?
+  sceneId              String?
+  provider             String
+  modelId              String
+  providerRequestId    String?
+  type                 JobType
+  status               JobStatus @default(QUEUED)
+  inputJson            Json
+  outputJson           Json?
+  errorJson            Json?
+  creditsReserved      Int       @default(0)
+  creditsSpent         Int       @default(0)
+  providerCostEstimate Float?
+  startedAt            DateTime?
+  completedAt          DateTime?
+  createdAt            DateTime  @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scene   Scene?   @relation(fields: [sceneId], references: [id], onDelete: SetNull)
+  ledger  CreditLedger[]
+
+  @@index([providerRequestId])
+  @@index([userId, status])
+}
+
+model CreditLedger {
+  id              String   @id @default(cuid())
+  userId          String
+  amount          Int
+  type            String
+  reason          String
+  generationJobId String?
+  stripeEventId   String?
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  GenerationJob? @relation(fields: [generationJobId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  stripePriceId        String?
+  planKey              String
+  status               String
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean  @default(false)
+  monthlyCreditLimit   Int      @default(0)
+  creditsBalance       Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
+
+model ExportJob {
+  id              String    @id @default(cuid())
+  projectId       String
+  userId          String
+  status          JobStatus @default(QUEUED)
+  format          String
+  resolution      String
+  storageKey      String?
+  durationSeconds Int?
+  errorJson       Json?
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  provider    String
+  eventId     String
+  payloadJson Json
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([provider, eventId])
+}
+
+model AiModel {
+  id                    String   @id @default(cuid())
+  key                   String   @unique
+  provider              String
+  providerModelId       String
+  type                  String
+  displayName           String
+  qualityTier           String
+  supportedAspectRatios String[]
+  supportedResolutions  String[]
+  supportsStartFrame    Boolean  @default(false)
+  supportsEndFrame      Boolean  @default(false)
+  supportsSeed          Boolean  @default(false)
+  pricePerSecondByResolution Json @default("{}")
+  minDurationSeconds    Int      @default(1)
+  maxDurationSeconds    Int      @default(6)
+  defaultDurationSeconds Int     @default(6)
+  usageRequestCount      Int      @default(0)
+  usageGeneratedImages   Int      @default(0)
+  lastUsedAt             DateTime?
+  active                Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([provider, type, active])
+}
+
+model ReasoningModel {
+  id                            String   @id @default(cuid())
+  key                           String   @unique
+  provider                      String
+  providerModelId               String
+  displayName                   String
+  contextWindowTokens           Int
+  inputTokenPriceUsdPerMillion  Float    @default(0)
+  outputTokenPriceUsdPerMillion Float    @default(0)
+  reasoningEffort               String   @default("medium")
+  excludeReasoning               Boolean  @default(true)
+  promptTokensUsed              Int      @default(0)
+  completionTokensUsed          Int      @default(0)
+  reasoningTokensUsed           Int      @default(0)
+  totalTokensUsed               Int      @default(0)
+  requestCount                  Int      @default(0)
+  estimatedCostUsd              Float    @default(0)
+  selected                      Boolean  @default(false)
+  active                        Boolean  @default(true)
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+
+  @@index([provider, active])
+  @@index([selected, active])
+}

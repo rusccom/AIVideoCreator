@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+.claude
+.next
+.playwright-cli
+node_modules
+output
+tsconfig.tsbuildinfo
+npm-debug.log*

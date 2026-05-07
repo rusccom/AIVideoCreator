@@ -1,0 +1,41 @@
+export type EditableAiModel = {
+  id?: string;
+  key: string;
+  provider: string;
+  providerModelId: string;
+  type: string;
+  displayName: string;
+  qualityTier: string;
+  supportedAspectRatios: string[];
+  supportedResolutions: string[];
+  defaultAspectRatio: string;
+  defaultResolution: string;
+  supportsStartFrame: boolean;
+  supportsEndFrame: boolean;
+  supportsSeed: boolean;
+  pricePerSecondByResolution: Record<string, number>;
+  minDurationSeconds: number;
+  maxDurationSeconds: number;
+  defaultDurationSeconds: number;
+  usageRequestCount: number;
+  usageGeneratedImages: number;
+  lastUsedAt?: Date | null;
+  imageDefaults?: EditableImageModelDefaults;
+  active: boolean;
+};
+
+export type EditableImageModelDefaults = {
+  defaultNumImages: number;
+  supportedImageSizes?: string[];
+  defaultImageSize?: string;
+  supportedQualities?: string[];
+  defaultQuality?: string;
+  supportedOutputFormats: string[];
+  defaultOutputFormat: string;
+  safetyToleranceLevels?: string[];
+  defaultSafetyTolerance?: string;
+  defaultLimitGenerations?: boolean;
+  defaultEnableWebSearch?: boolean;
+  supportedThinkingLevels?: string[];
+  defaultThinkingLevel?: string;
+};

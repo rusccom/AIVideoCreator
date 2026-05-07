@@ -1,0 +1,373 @@
+.studio-shell {
+  min-height: 100vh;
+  background: #090a0f;
+  color: var(--text);
+}
+
+.studio-layout {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.studio-layout.editor-mode {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.studio-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  border-right: 1px solid var(--line);
+  padding: 18px 14px;
+  background: #0e1017;
+}
+
+.studio-sidebar nav {
+  display: grid;
+  gap: 7px;
+  margin-top: 28px;
+}
+
+.studio-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--soft);
+}
+
+.studio-nav-item:hover {
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--text);
+}
+
+.studio-nav-item.active {
+  background: rgba(34, 211, 238, 0.1);
+  color: var(--text);
+}
+
+.studio-main {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+}
+
+.studio-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 68px;
+  border-bottom: 1px solid var(--line);
+  padding: 0 22px;
+  background: rgba(14, 16, 23, 0.88);
+  backdrop-filter: blur(16px);
+}
+
+.studio-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.editor-exit-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.editor-exit-button:hover {
+  border-color: rgba(34, 211, 238, 0.56);
+  background: rgba(34, 211, 238, 0.1);
+}
+
+.studio-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.studio-content {
+  padding: 24px;
+}
+
+.studio-content.editor-mode {
+  padding: 0;
+}
+
+.studio-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.studio-page-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  letter-spacing: 0;
+}
+
+.studio-page-header p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+}
+
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.project-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #12141d;
+}
+
+.project-cover {
+  height: 150px;
+  background:
+    linear-gradient(110deg, rgba(34, 211, 238, 0.12), rgba(139, 92, 246, 0.14)),
+    linear-gradient(145deg, #172033, #111827 48%, #2e2347);
+}
+
+.project-card-body {
+  padding: 15px;
+}
+
+.project-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.project-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.side-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.metric-panel,
+.activity-panel,
+.wizard-card,
+.settings-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: #12141d;
+}
+
+.metric-panel h2,
+.activity-panel h2,
+.wizard-card h2,
+.settings-panel h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.metric-row,
+.activity-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding: 12px 0;
+  color: var(--soft);
+}
+
+.metric-row:first-of-type,
+.activity-row:first-of-type {
+  margin-top: 12px;
+}
+
+.metric-value {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 280px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  padding: 28px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.empty-state h2 {
+  margin: 0 0 8px;
+}
+
+.empty-state p {
+  max-width: 520px;
+  margin: 0 auto 18px;
+  color: var(--muted);
+}
+
+.wizard {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.wizard-steps {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.wizard-step {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--soft);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.wizard-step.active {
+  border-color: rgba(34, 211, 238, 0.5);
+  color: var(--text);
+}
+
+.wizard-card {
+  display: grid;
+  gap: 16px;
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.option-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--soft);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.option-card.active {
+  border-color: rgba(139, 92, 246, 0.64);
+  color: var(--text);
+}
+
+.billing-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.model-list,
+.model-form {
+  display: grid;
+  gap: 14px;
+}
+
+.model-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.model-form-grid input,
+.model-form-grid select {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--text);
+  background: rgba(8, 9, 13, 0.68);
+}
+
+.model-input {
+  display: grid;
+  gap: 6px;
+  color: var(--soft);
+  font-size: 0.78rem;
+}
+
+.model-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--soft);
+  font-size: 0.82rem;
+}
+
+.model-row-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1080px) {
+  .dashboard-grid,
+  .studio-layout,
+  .wizard,
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .studio-sidebar {
+    position: static;
+    height: auto;
+  }
+
+  .project-grid,
+  .billing-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .studio-topbar,
+  .studio-page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .studio-content {
+    padding: 16px;
+  }
+
+  .project-grid,
+  .billing-grid,
+  .option-grid,
+  .model-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
