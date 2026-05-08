@@ -18,4 +18,4 @@ COPY . .
 
 RUN npm run build
 
-CMD ["npm", "run", "start"]
+CMD ["sh", "-c", "case \"$RAILWAY_SERVICE_NAME:$SERVICE_ROLE\" in *worker*) npm run worker ;; *) npm run start ;; esac"]
