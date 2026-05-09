@@ -1,5 +1,6 @@
 import { DEFAULT_IMAGES_PER_SCENE } from "./config";
 import { imageBatchSize } from "./ai-creator-state";
+import { generateProjectImageAssets } from "@/features/image-generation/client/project-image-client";
 import type { AiCreatorImageModel } from "./types";
 
 export type GeneratedCreatorAsset = {
@@ -32,19 +33,9 @@ function imageBatches(total: number, batchSize: number) {
 }
 
 async function requestImageBatch(input: GenerateCreatorImagesInput, count: number) {
-  const response = await fetch(`/api/projects/${input.projectId}/images/generate`, requestOptions(input, count));
-  if (!response.ok) throw new Error("Image generation failed.");
-  const data = await response.json() as { assets?: GeneratedCreatorAsset[] };
-  if (!data.assets?.length) throw new Error("Image generation returned no assets.");
-  return data.assets ?? [];
-}
-
-function requestOptions(input: GenerateCreatorImagesInput, count: number) {
-  return {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(requestBody(input, count))
-  };
+  const assets = await generateProjectImageAssets(input.projectId, requestBody(input, count));
+  if (!assets.length) throw new Error("Image generation returned no assets.");
+  return assets;
 }
 
 function requestBody(input: GenerateCreatorImagesInput, count: number) {

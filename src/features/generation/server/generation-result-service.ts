@@ -1,11 +1,13 @@
 import { Prisma } from "@prisma/client";
 import { createAssetFromRemoteUrl } from "@/features/assets/server/asset-storage-service";
+import { completeProjectImageGeneration } from "@/features/image-generation/server/project-image-service";
 import { prisma } from "@/shared/server/prisma";
 import { commitCredits, refundCredits } from "./credit-service";
 
 export async function completeGenerationJob(jobId: string, data: unknown) {
   const job = await prisma.generationJob.findUniqueOrThrow({ where: { id: jobId } });
   if (job.status === "READY") return job;
+  if (job.type === "IMAGE_GENERATION") return completeProjectImageGeneration(job, data);
   const asset = await createVideoAsset(job, data);
   if (asset) await queueLastFrameJob(job, asset.id);
   await commitCredits(jobId);

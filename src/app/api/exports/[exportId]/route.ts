@@ -22,6 +22,6 @@ export async function GET(_request: Request, context: RouteContext) {
 
 async function exportUrl(storageKey?: string | null) {
   if (!storageKey) return null;
-  if (storageKey.startsWith("http")) return storageKey;
+  if (storageKey.startsWith("http")) return null;
   return r2Storage.createGetUrl(storageKey);
 }

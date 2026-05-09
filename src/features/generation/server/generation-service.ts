@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { r2Storage } from "@/features/assets/server/r2-storage";
+import { getAssetReadUrl } from "@/features/assets/server/asset-service";
 import { buildFalInput } from "@/features/generation/models/build-fal-input";
 import { prisma } from "@/shared/server/prisma";
 import { reserveCredits } from "./credit-service";
@@ -28,8 +28,8 @@ export async function generateVideo(userId: string, sceneId: string, input: Gene
   const videoInput = resolveVideoInput(model, input);
   const credits = estimateVideoCredits(model, videoInput);
   const asset = await startFrameAsset(scene.startFrameAssetId);
-  const startUrl = await assetReadUrl(asset.storageKey);
-  const endUrl = await endFrameUrl(scene.endFrameAssetId, model.supportsEndFrame);
+  const startUrl = await getAssetReadUrl(userId, asset.id);
+  const endUrl = await endFrameUrl(userId, scene.endFrameAssetId, model.supportsEndFrame);
   const job = await createJob({ userId, projectId: scene.projectId, sceneId: scene.id, modelId: model.id, input: videoInput });
   await reserveCredits(userId, credits, job.id, "video generation");
   const submitted = await submitVideoJob(model, videoInput, startUrl, endUrl, job.id);
@@ -124,15 +124,9 @@ async function startFrameAsset(assetId?: string | null) {
   return prisma.asset.findUniqueOrThrow({ where: { id: assetId } });
 }
 
-async function endFrameUrl(assetId: string | null | undefined, supported: boolean) {
+async function endFrameUrl(userId: string, assetId: string | null | undefined, supported: boolean) {
   if (!assetId || !supported) return undefined;
-  const asset = await prisma.asset.findUniqueOrThrow({ where: { id: assetId } });
-  return assetReadUrl(asset.storageKey);
-}
-
-function assetReadUrl(storageKey: string) {
-  if (storageKey.startsWith("http")) return storageKey;
-  return r2Storage.createGetUrl(storageKey);
+  return getAssetReadUrl(userId, assetId);
 }
 
 function asJson(value: unknown) {

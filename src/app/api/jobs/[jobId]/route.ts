@@ -4,6 +4,7 @@ import { refreshGenerationJobForUser } from "@/features/generation/server/job-se
 import { serverError, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ jobId: string }> };
 

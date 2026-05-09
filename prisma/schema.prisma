@@ -55,6 +55,7 @@ enum JobStatus {
 
 enum JobType {
   VIDEO_GENERATION
+  IMAGE_GENERATION
   FRAME_EXTRACT
   EXPORT
 }

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { stat } from "node:fs/promises";
 import { Prisma, type AssetSource, type AssetType } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
@@ -43,35 +44,18 @@ export type RemoteStoredAsset = {
 };
 
 export async function createAssetFromLocalFile(input: LocalAssetInput) {
-  const asset = await createPendingAsset(input, await fileSize(input.localPath));
-  const storageKey = buildLocalStorageKey(input, asset.id);
+  const assetId = randomUUID();
+  const sizeBytes = await fileSize(input.localPath);
+  const storageKey = buildLocalStorageKey(input, assetId);
   await r2Storage.uploadLocalFile({ key: storageKey, mimeType: input.mimeType, path: input.localPath });
-  return markAssetStored(asset.id, storageKey, input.mimeType, asset.sizeBytes);
+  return createStoredAsset(input, assetId, storageKey, input.mimeType, sizeBytes);
 }
 
 export async function createAssetFromRemoteUrl(input: RemoteAssetInput) {
-  const asset = await createPendingAsset(input, input.sizeBytes);
-  const storageKey = buildLocalStorageKey(input, asset.id);
+  const assetId = randomUUID();
+  const storageKey = buildLocalStorageKey(input, assetId);
   const upload = await r2Storage.uploadRemoteUrl({ key: storageKey, mimeType: input.mimeType, url: input.remoteUrl });
-  return markAssetStored(asset.id, storageKey, upload.mimeType, input.sizeBytes ?? upload.sizeBytes);
-}
-
-export async function createAssetFromRemoteReference(input: RemoteAssetInput) {
-  return prisma.asset.create({
-    data: {
-      ...assetDimensions(input),
-      userId: input.userId,
-      projectId: input.projectId,
-      type: input.type,
-      source: input.source,
-      storageProvider: "r2",
-      storageBucket: r2Storage.bucketName(),
-      storageKey: input.remoteUrl,
-      mimeType: input.mimeType,
-      sizeBytes: input.sizeBytes,
-      metadataJson: input.metadata ?? Prisma.JsonNull
-    }
-  });
+  return createStoredAsset(input, assetId, storageKey, upload.mimeType, input.sizeBytes ?? upload.sizeBytes);
 }
 
 export async function moveRemoteAssetToR2(asset: RemoteStoredAsset) {
@@ -81,18 +65,25 @@ export async function moveRemoteAssetToR2(asset: RemoteStoredAsset) {
   return markAssetStored(asset.id, storageKey, upload.mimeType, asset.sizeBytes ?? upload.sizeBytes);
 }
 
-async function createPendingAsset(input: AssetFileInput, sizeBytes?: number | null) {
+async function createStoredAsset(
+  input: AssetFileInput,
+  assetId: string,
+  storageKey: string,
+  mimeType: string,
+  sizeBytes?: number | null
+) {
   return prisma.asset.create({
     data: {
       ...assetDimensions(input),
+      id: assetId,
       userId: input.userId,
       projectId: input.projectId,
       type: input.type,
       source: input.source,
       storageProvider: "r2",
       storageBucket: r2Storage.bucketName(),
-      storageKey: "pending",
-      mimeType: input.mimeType,
+      storageKey,
+      mimeType,
       sizeBytes,
       metadataJson: input.metadata ?? Prisma.JsonNull
     }

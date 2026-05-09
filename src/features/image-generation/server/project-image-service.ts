@@ -1,25 +1,40 @@
 import { Prisma, type Asset } from "@prisma/client";
-import { createAssetFromRemoteReference } from "@/features/assets/server/asset-storage-service";
+import { createAssetFromRemoteUrl } from "@/features/assets/server/asset-storage-service";
 import { buildFalInput } from "@/features/generation/models/build-fal-input";
 import { getSupportedModel } from "@/features/generation/models/catalog";
-import { subscribeFalJob } from "@/features/generation/server/fal-client";
+import { submitFalJob } from "@/features/generation/server/fal-client";
 import { prisma } from "@/shared/server/prisma";
 import { recordImageModelUsage } from "./image-model-service";
 import type { GenerateProjectImageInput } from "./image-generation-schema";
 
-export async function generateProjectImage(
+export async function startProjectImageGeneration(
   userId: string,
   projectId: string,
   input: GenerateProjectImageInput
 ) {
   await assertProjectOwner(userId, projectId);
   const model = await imageModel(input.modelId);
-  const result = await subscribeFalJob(falInput(model, input));
-  const images = imagePayloads(result.data);
-  if (images.length === 0) throw new Error("Image generation returned no images");
-  const assets = await createImageAssets(userId, projectId, images);
-  await recordImageModelUsage(model.id, images.length);
-  return { assets: assets.map(toGeneratedAsset), transferAssets: assets };
+  const job = await createImageJob(userId, projectId, model.id, input);
+  try {
+    const submitted = await submitFalJob({ ...falInput(model, input), webhookUrl: webhookUrl() });
+    return setProviderRequest(job.id, submitted.request_id);
+  } catch (error) {
+    return markJobFailed(job.id, error);
+  }
+}
+
+export async function completeProjectImageGeneration(job: ImageGenerationJob, data: unknown) {
+  if (job.status === "READY") return job;
+  try {
+    const images = imagePayloads(data);
+    if (images.length === 0) throw new Error("Image generation returned no images");
+    const assets = await createImageAssets(job.userId, job.projectId!, images);
+    await recordImageModelUsage(job.modelId, images.length);
+    return markJobReady(job.id, assets);
+  } catch (error) {
+    await markJobFailed(job.id, error);
+    throw error;
+  }
 }
 
 async function imageModel(modelId: string) {
@@ -38,6 +53,46 @@ function falInput(model: NonNullable<ReturnType<typeof getSupportedModel>>, inpu
   };
 }
 
+async function createImageJob(
+  userId: string,
+  projectId: string,
+  modelId: string,
+  input: GenerateProjectImageInput
+) {
+  return prisma.generationJob.create({
+    data: {
+      userId,
+      projectId,
+      provider: "fal",
+      modelId,
+      type: "IMAGE_GENERATION",
+      inputJson: asJson(input)
+    }
+  });
+}
+
+async function setProviderRequest(jobId: string, requestId: string) {
+  return prisma.generationJob.update({
+    where: { id: jobId },
+    data: { providerRequestId: requestId, status: "GENERATING", startedAt: new Date() },
+    select: { id: true, status: true }
+  });
+}
+
+async function markJobReady(jobId: string, assets: Asset[]) {
+  return prisma.generationJob.update({
+    where: { id: jobId },
+    data: { status: "READY", outputJson: asJson({ assets: assets.map(toGeneratedAsset) }), completedAt: new Date() }
+  });
+}
+
+async function markJobFailed(jobId: string, error: unknown) {
+  return prisma.generationJob.update({
+    where: { id: jobId },
+    data: { status: "FAILED", errorJson: asJson(errorPayload(error)), completedAt: new Date() }
+  });
+}
+
 function imageInput(input: GenerateProjectImageInput) {
   return {
     aspectRatio: input.aspectRatio,
@@ -50,7 +105,7 @@ function imageInput(input: GenerateProjectImageInput) {
 async function createImageAssets(userId: string, projectId: string, images: ImagePayload[]) {
   const assets: Asset[] = [];
   for (const image of images) {
-    assets.push(await createAssetFromRemoteReference(assetData(userId, projectId, image)));
+    assets.push(await createAssetFromRemoteUrl(assetData(userId, projectId, image)));
   }
   return assets;
 }
@@ -73,8 +128,13 @@ function assetData(userId: string, projectId: string, image: ImagePayload) {
 function toGeneratedAsset(asset: Asset) {
   return {
     id: asset.id,
-    url: asset.storageKey.startsWith("http") ? asset.storageKey : `/api/assets/${asset.id}/signed-url`
+    url: `/api/assets/${asset.id}/signed-url`
   };
+}
+
+function webhookUrl() {
+  const appUrl = process.env.APP_URL;
+  return appUrl ? `${appUrl}/api/fal/webhook` : undefined;
 }
 
 async function assertProjectOwner(userId: string, projectId: string) {
@@ -108,6 +168,10 @@ function asJson(value: unknown) {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
+function errorPayload(error: unknown) {
+  return error instanceof Error ? { name: error.name, message: error.message } : { error };
+}
+
 function isImagePayload(value: ImagePayload | null): value is ImagePayload {
   return Boolean(value);
 }
@@ -119,3 +183,5 @@ type ImagePayload = {
   url: string;
   width?: number;
 };
+
+type ImageGenerationJob = Awaited<ReturnType<typeof prisma.generationJob.findUniqueOrThrow>>;

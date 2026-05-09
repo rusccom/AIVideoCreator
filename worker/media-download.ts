@@ -1,15 +1,23 @@
 import { createWriteStream } from "node:fs";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import type { AssetType } from "@prisma/client";
 import type { ReadableStream as NodeReadableStream } from "node:stream/web";
+import { moveRemoteAssetToR2 } from "../src/features/assets/server/asset-storage-service";
 import { r2Storage } from "../src/features/assets/server/r2-storage";
 
 type DownloadableAsset = {
+  id: string;
+  mimeType: string;
+  projectId?: string | null;
+  sizeBytes?: number | null;
   storageKey: string;
+  type: AssetType;
+  userId: string;
 };
 
 export async function downloadAsset(asset: DownloadableAsset, path: string) {
-  const url = await assetUrl(asset.storageKey);
+  const url = await assetUrl(asset);
   await downloadUrl(url, path);
 }
 
@@ -22,7 +30,7 @@ export async function downloadUrl(url: string, path: string) {
   await pipeline(body, createWriteStream(path));
 }
 
-function assetUrl(storageKey: string) {
-  if (storageKey.startsWith("http")) return storageKey;
-  return r2Storage.createGetUrl(storageKey);
+async function assetUrl(asset: DownloadableAsset) {
+  const stored = asset.storageKey.startsWith("http") ? await moveRemoteAssetToR2(asset) : asset;
+  return r2Storage.createGetUrl(stored.storageKey);
 }

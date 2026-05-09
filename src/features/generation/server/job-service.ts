@@ -23,15 +23,16 @@ async function completeFromFal(jobId: string, modelId: string, requestId: string
 
 async function ownedJob(userId: string, jobId: string) {
   return prisma.generationJob.findFirstOrThrow({
-    where: { id: jobId, userId, type: "VIDEO_GENERATION" }
+    where: { id: jobId, userId, type: { in: ["VIDEO_GENERATION", "IMAGE_GENERATION"] } }
   });
 }
 
 async function jobSummary(jobId: string) {
-  return prisma.generationJob.findUniqueOrThrow({
+  const job = await prisma.generationJob.findUniqueOrThrow({
     where: { id: jobId },
-    select: { id: true, status: true, sceneId: true }
+    select: { id: true, outputJson: true, sceneId: true, status: true, type: true }
   });
+  return { ...job, assets: generatedAssets(job.outputJson), outputJson: undefined };
 }
 
 function shouldRefresh(job: Awaited<ReturnType<typeof ownedJob>>) {
@@ -46,4 +47,19 @@ function providerModelId(modelId: string) {
 
 function isFailedStatus(status: string) {
   return status === "FAILED" || status === "CANCELED";
+}
+
+function generatedAssets(value: unknown) {
+  const assets = record(value).assets;
+  return Array.isArray(assets) ? assets.filter(isGeneratedAsset) : [];
+}
+
+function isGeneratedAsset(value: unknown): value is { id: string; url: string } {
+  const asset = record(value);
+  return typeof asset.id === "string" && typeof asset.url === "string";
+}
+
+function record(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
 }

@@ -16,8 +16,8 @@ export function AiCreatorMediaPanel(props: AiCreatorMediaPanelProps) {
     <section className="ai-creator-panel ai-creator-media-panel">
       <div className="ai-creator-panel-header">
         <div>
-          <h3>Media</h3>
-          <span>{props.generating ? "Generating images..." : `${props.slots.length} slots`}</span>
+          <h3>First frame</h3>
+          <span>{props.generating ? "Generating first-frame images..." : `${props.slots.length} options`}</span>
         </div>
         <button className="button button-secondary" disabled={props.addDisabled} onClick={props.onAdd} type="button">
           <Plus size={15} /> Add

@@ -33,17 +33,13 @@ export async function getAssetReadUrl(userId: string, assetId: string) {
     throw new Error("Asset not found");
   }
   const stored = await storedAsset(asset);
-  if (stored.storageKey.startsWith("http")) return stored.storageKey;
+  if (stored.storageKey.startsWith("http")) throw new Error("Asset is not stored in R2");
   return r2Storage.createGetUrl(stored.storageKey);
 }
 
 async function storedAsset(asset: AssetReadRecord) {
   if (!asset.storageKey.startsWith("http")) return asset;
-  try {
-    return await moveRemoteAssetToR2(asset);
-  } catch {
-    return asset;
-  }
+  return moveRemoteAssetToR2(asset);
 }
 
 function assetReadFields() {

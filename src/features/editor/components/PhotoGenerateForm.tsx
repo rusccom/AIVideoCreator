@@ -2,6 +2,7 @@
 
 import { Sparkles } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { generateProjectImageAssets } from "@/features/image-generation/client/project-image-client";
 import type { EditorImageModel } from "../types";
 
 type PhotoGenerateFormProps = {
@@ -43,16 +44,12 @@ export function PhotoGenerateForm(props: PhotoGenerateFormProps) {
 
 async function generateImage(projectId: string, model: EditorImageModel | undefined, prompt: string) {
   if (!model) return { ok: false, error: "No image model is active." };
-  const response = await fetch(`/api/projects/${projectId}/images/generate`, requestOptions(model, prompt));
-  return response.ok ? { ok: true } : { ok: false, error: "Photo generation failed." };
-}
-
-function requestOptions(model: EditorImageModel, prompt: string) {
-  return {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(requestBody(model, prompt))
-  };
+  try {
+    await generateProjectImageAssets(projectId, requestBody(model, prompt));
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Photo generation failed." };
+  }
 }
 
 function requestBody(model: EditorImageModel, prompt: string) {

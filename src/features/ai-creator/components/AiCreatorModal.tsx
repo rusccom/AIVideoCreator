@@ -37,11 +37,10 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
   const [loading, setLoading] = useState(false);
   const [scenes, setScenes] = useState<AiCreatorSceneDraft[]>([]);
   const [selectedSceneId, setSelectedSceneId] = useState<string>();
-  const [mediaByScene, setMediaByScene] = useState<Record<string, AiCreatorMediaSlot[]>>({});
-  const [selectedAssetByScene, setSelectedAssetByScene] = useState<Record<string, string>>({});
+  const [mediaSlots, setMediaSlots] = useState<AiCreatorMediaSlot[]>([]);
+  const [selectedAssetId, setSelectedAssetId] = useState<string>();
   const projectReady = Boolean(props.projectId && imageModels.length > 0 && videoModels.length > 0);
   const selectedScene = scenes.find((scene) => scene.id === selectedSceneId);
-  const selectedSlots = selectedSceneId ? mediaByScene[selectedSceneId] ?? [] : [];
   const aspectRatios = useMemo(() => aspectRatioOptions(), []);
 
   async function submitIdea() {
@@ -51,7 +50,7 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
     setShowIdea(false);
     setSelectedSceneId(nextScenes[0]?.id);
     setLoading(false);
-    await loadImagesForScene(nextScenes[0], form);
+    await loadFirstFrameImages(nextScenes[0], form);
   }
 
   async function loadSceneDrafts(nextForm: AiCreatorIdeaFormState) {
@@ -63,11 +62,12 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
     }
   }
 
-  async function loadImagesForScene(scene: AiCreatorSceneDraft | undefined, nextForm = form) {
+  async function loadFirstFrameImages(scene: AiCreatorSceneDraft | undefined, nextForm = form) {
     const imageModel = selectedImageModel(imageModels, nextForm.imageModelId);
     if (!scene || !props.projectId || !imageModel) return;
     setLoading(true);
-    setSceneSlots(scene.id, createLoadingSlots());
+    setMediaSlots(createLoadingSlots());
+    setSelectedAssetId(undefined);
     await generateSceneImages(scene, imageModel, nextForm);
     setLoading(false);
   }
@@ -78,15 +78,14 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
     nextForm: AiCreatorIdeaFormState
   ) {
     try {
-      await generateCreatorImages(imageRequest(props.projectId!, scene, imageModel, nextForm, updateSceneBatch));
+      await generateCreatorImages(imageRequest(props.projectId!, scene, imageModel, nextForm, updateBatch));
     } catch {
-      setMediaByScene((current) => ({ ...current, [scene.id]: failLoadingSlots(current[scene.id]) }));
+      setMediaSlots((current) => failLoadingSlots(current));
     }
   }
 
   function selectScene(sceneId: string) {
     setSelectedSceneId(sceneId);
-    if (!mediaByScene[sceneId]) void loadImagesForScene(scenes.find((scene) => scene.id === sceneId));
   }
 
   function updateSceneText(sceneId: string, text: string) {
@@ -94,16 +93,12 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
   }
 
   function selectMedia(slot: AiCreatorMediaSlot) {
-    if (!selectedSceneId || !slot.assetId) return;
-    setSelectedAssetByScene((current) => ({ ...current, [selectedSceneId]: slot.assetId! }));
+    if (!slot.assetId) return;
+    setSelectedAssetId(slot.assetId);
   }
 
-  function setSceneSlots(sceneId: string, slots: AiCreatorMediaSlot[]) {
-    setMediaByScene((current) => ({ ...current, [sceneId]: slots }));
-  }
-
-  function updateSceneBatch(sceneId: string, start: number, count: number, assets: GeneratedCreatorAsset[]) {
-    setMediaByScene((current) => ({ ...current, [sceneId]: mergeAssets(current[sceneId], start, count, assets) }));
+  function updateBatch(start: number, count: number, assets: GeneratedCreatorAsset[]) {
+    setMediaSlots((current) => mergeAssets(current, start, count, assets));
   }
 
   return (
@@ -129,8 +124,8 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
             generating={loading}
             onAdd={() => setShowIdea(true)}
             onSelect={selectMedia}
-            selectedAssetId={selectedSceneId ? selectedAssetByScene[selectedSceneId] : undefined}
-            slots={selectedSlots}
+            selectedAssetId={selectedAssetId}
+            slots={mediaSlots}
           />
           <AiCreatorScenePanel
             onSelect={selectScene}
@@ -167,12 +162,12 @@ function imageRequest(
   scene: AiCreatorSceneDraft,
   imageModel: AiCreatorImageModel,
   form: AiCreatorIdeaFormState,
-  onBatch: (sceneId: string, start: number, count: number, assets: GeneratedCreatorAsset[]) => void
+  onBatch: (start: number, count: number, assets: GeneratedCreatorAsset[]) => void
 ) {
   return {
     aspectRatio: form.aspectRatio,
     imageModel,
-    onBatch: (start: number, count: number, assets: GeneratedCreatorAsset[]) => onBatch(scene.id, start, count, assets),
+    onBatch,
     projectId,
     prompt: scene.imagePrompt
   };
