@@ -1,9 +1,22 @@
 import Link from "next/link";
 import { Download, UserCircle } from "lucide-react";
+import { AiCreatorButton } from "@/features/ai-creator/components/AiCreatorButton";
+import type { EditorImageModel, EditorVideoModel } from "../types";
 
-export function EditorAccountActions() {
+type EditorAccountActionsProps = {
+  imageModels: EditorImageModel[];
+  projectId: string;
+  videoModels: EditorVideoModel[];
+};
+
+export function EditorAccountActions(props: EditorAccountActionsProps) {
   return (
     <div className="editor-account-actions">
+      <AiCreatorButton
+        imageModels={props.imageModels}
+        projectId={props.projectId}
+        videoModels={props.videoModels}
+      />
       <Link className="button button-secondary" href="/app/billing">
         Upgrade
       </Link>

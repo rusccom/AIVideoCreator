@@ -22,6 +22,7 @@ export const gemini31FlashImageDefinition = {
   inputAdapter: "gemini-3-1-flash-image",
   imageDefaults: {
     defaultNumImages: 1,
+    maxImagesPerRequest: 4,
     supportedOutputFormats: ["jpeg", "png", "webp"],
     defaultOutputFormat: "png",
     safetyToleranceLevels: ["1", "2", "3", "4", "5", "6"],

@@ -95,6 +95,7 @@ function toImageModel(model: Awaited<ReturnType<typeof prisma.aiModel.findMany>>
     displayName: supported.displayName,
     defaultAspectRatio: supported.defaultAspectRatio,
     defaultResolution: supported.defaultResolution,
+    maxImagesPerRequest: supported.imageDefaults?.maxImagesPerRequest ?? 4,
     supportedAspectRatios: supported.supportedAspectRatios,
     supportedResolutions: supported.supportedResolutions
   } satisfies EditorImageModel;

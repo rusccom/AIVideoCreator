@@ -55,10 +55,12 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
     <div className="editor-shell">
       <EditorHeader
         credits={credits}
+        imageModels={project.imageModels}
         projectId={project.id}
         sceneCount={project.scenes.length}
         title={project.title}
         totalDuration={project.totalDuration}
+        videoModels={project.videoModels}
       />
       {message ? <div className="editor-message">{message}</div> : null}
       <div className="editor-workspace">

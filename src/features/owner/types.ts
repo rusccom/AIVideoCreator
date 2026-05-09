@@ -26,6 +26,7 @@ export type EditableAiModel = {
 
 export type EditableImageModelDefaults = {
   defaultNumImages: number;
+  maxImagesPerRequest?: number;
   supportedImageSizes?: string[];
   defaultImageSize?: string;
   supportedQualities?: string[];

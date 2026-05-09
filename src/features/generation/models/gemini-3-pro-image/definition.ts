@@ -22,6 +22,7 @@ export const gemini3ProImageDefinition = {
   inputAdapter: "gemini-3-pro-image",
   imageDefaults: {
     defaultNumImages: 1,
+    maxImagesPerRequest: 4,
     supportedOutputFormats: ["jpeg", "png", "webp"],
     defaultOutputFormat: "png",
     safetyToleranceLevels: ["1", "2", "3", "4", "5", "6"],

@@ -22,6 +22,7 @@ export const gptImage2Definition = {
   inputAdapter: "gpt-image-2",
   imageDefaults: {
     defaultNumImages: 1,
+    maxImagesPerRequest: 4,
     supportedImageSizes: ["square_hd", "square", "portrait_4_3", "portrait_16_9", "landscape_4_3", "landscape_16_9"],
     defaultImageSize: "landscape_4_3",
     supportedQualities: ["low", "medium", "high"],

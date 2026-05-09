@@ -5,6 +5,7 @@ import "@/styles/editor.css";
 import "@/styles/editor-photo.css";
 import "@/styles/forms.css";
 import "@/styles/project-modal.css";
+import "@/styles/ai-creator.css";
 import { getCurrentUser } from "@/features/auth/server/current-user";
 import { StudioShell } from "@/features/studio/components/StudioShell";
 import { getTopbarData } from "@/features/studio/server/dashboard-service";

@@ -9,6 +9,7 @@ export type SupportedModelDefinition = Omit<ModelDefinition, "pricePerSecondByRe
 
 export type ImageModelDefaults = {
   defaultNumImages: number;
+  maxImagesPerRequest?: number;
   supportedImageSizes?: string[];
   defaultImageSize?: string;
   supportedQualities?: string[];

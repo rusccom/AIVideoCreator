@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, Download, UserCircle } from "lucide-react";
+import { AiCreatorButton } from "@/features/ai-creator/components/AiCreatorButton";
 
 type StudioTopbarProps = {
   credits: number;
@@ -17,6 +18,7 @@ export function StudioTopbar({ credits, editorMode = false }: StudioTopbarProps)
         </div>
       </div>
       <div className="studio-topbar-actions">
+        <AiCreatorButton />
         <Link className="button button-secondary" href="/app/billing">
           Upgrade
         </Link>
