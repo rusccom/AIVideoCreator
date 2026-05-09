@@ -56,7 +56,26 @@ export async function createAssetFromRemoteUrl(input: RemoteAssetInput) {
   return markAssetStored(asset.id, storageKey, upload.mimeType, input.sizeBytes ?? upload.sizeBytes);
 }
 
+export async function createAssetFromRemoteReference(input: RemoteAssetInput) {
+  return prisma.asset.create({
+    data: {
+      ...assetDimensions(input),
+      userId: input.userId,
+      projectId: input.projectId,
+      type: input.type,
+      source: input.source,
+      storageProvider: "r2",
+      storageBucket: r2Storage.bucketName(),
+      storageKey: input.remoteUrl,
+      mimeType: input.mimeType,
+      sizeBytes: input.sizeBytes,
+      metadataJson: input.metadata ?? Prisma.JsonNull
+    }
+  });
+}
+
 export async function moveRemoteAssetToR2(asset: RemoteStoredAsset) {
+  if (!asset.storageKey.startsWith("http")) return asset;
   const storageKey = buildLocalStorageKey(asset, asset.id);
   const upload = await r2Storage.uploadRemoteUrl({ key: storageKey, mimeType: asset.mimeType, url: asset.storageKey });
   return markAssetStored(asset.id, storageKey, upload.mimeType, asset.sizeBytes ?? upload.sizeBytes);

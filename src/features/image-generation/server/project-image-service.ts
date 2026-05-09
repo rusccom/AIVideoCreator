@@ -1,5 +1,5 @@
 import { Prisma, type Asset } from "@prisma/client";
-import { createAssetFromRemoteUrl } from "@/features/assets/server/asset-storage-service";
+import { createAssetFromRemoteReference } from "@/features/assets/server/asset-storage-service";
 import { buildFalInput } from "@/features/generation/models/build-fal-input";
 import { getSupportedModel } from "@/features/generation/models/catalog";
 import { subscribeFalJob } from "@/features/generation/server/fal-client";
@@ -19,7 +19,7 @@ export async function generateProjectImage(
   if (images.length === 0) throw new Error("Image generation returned no images");
   const assets = await createImageAssets(userId, projectId, images);
   await recordImageModelUsage(model.id, images.length);
-  return { assets: assets.map(toGeneratedAsset) };
+  return { assets: assets.map(toGeneratedAsset), transferAssets: assets };
 }
 
 async function imageModel(modelId: string) {
@@ -50,7 +50,7 @@ function imageInput(input: GenerateProjectImageInput) {
 async function createImageAssets(userId: string, projectId: string, images: ImagePayload[]) {
   const assets: Asset[] = [];
   for (const image of images) {
-    assets.push(await createAssetFromRemoteUrl(assetData(userId, projectId, image)));
+    assets.push(await createAssetFromRemoteReference(assetData(userId, projectId, image)));
   }
   return assets;
 }
@@ -73,7 +73,7 @@ function assetData(userId: string, projectId: string, image: ImagePayload) {
 function toGeneratedAsset(asset: Asset) {
   return {
     id: asset.id,
-    url: `/api/assets/${asset.id}/signed-url`
+    url: asset.storageKey.startsWith("http") ? asset.storageKey : `/api/assets/${asset.id}/signed-url`
   };
 }
 

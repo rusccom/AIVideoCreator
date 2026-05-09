@@ -16,19 +16,17 @@ type GenerateCreatorImagesInput = {
 };
 
 export async function generateCreatorImages(input: GenerateCreatorImagesInput) {
-  const batches = imageBatches(DEFAULT_IMAGES_PER_SCENE, imageBatchSize(input.imageModel));
-  let startIndex = 0;
-  for (const count of batches) {
-    const assets = await requestImageBatch(input, count);
-    input.onBatch(startIndex, count, assets);
-    startIndex += count;
-  }
+  await Promise.all(imageBatches(DEFAULT_IMAGES_PER_SCENE, imageBatchSize(input.imageModel)).map((batch) => {
+    return requestImageBatch(input, batch.count)
+      .then((assets) => input.onBatch(batch.startIndex, batch.count, assets))
+      .catch(() => input.onBatch(batch.startIndex, batch.count, []));
+  }));
 }
 
 function imageBatches(total: number, batchSize: number) {
   const batches = [];
-  for (let remaining = total; remaining > 0; remaining -= batchSize) {
-    batches.push(Math.min(batchSize, remaining));
+  for (let startIndex = 0; startIndex < total; startIndex += batchSize) {
+    batches.push({ startIndex, count: Math.min(batchSize, total - startIndex) });
   }
   return batches;
 }

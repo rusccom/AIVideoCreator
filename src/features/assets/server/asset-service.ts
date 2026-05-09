@@ -1,3 +1,4 @@
+import type { AssetType } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
 import type { UploadUrlInput } from "./asset-schema";
 import { moveRemoteAssetToR2 } from "./asset-storage-service";
@@ -31,8 +32,18 @@ export async function getAssetReadUrl(userId: string, assetId: string) {
   if (!asset) {
     throw new Error("Asset not found");
   }
-  const stored = asset.storageKey.startsWith("http") ? await moveRemoteAssetToR2(asset) : asset;
+  const stored = await storedAsset(asset);
+  if (stored.storageKey.startsWith("http")) return stored.storageKey;
   return r2Storage.createGetUrl(stored.storageKey);
+}
+
+async function storedAsset(asset: AssetReadRecord) {
+  if (!asset.storageKey.startsWith("http")) return asset;
+  try {
+    return await moveRemoteAssetToR2(asset);
+  } catch {
+    return asset;
+  }
 }
 
 function assetReadFields() {
@@ -46,3 +57,13 @@ function assetReadFields() {
     userId: true
   } as const;
 }
+
+type AssetReadRecord = {
+  id: string;
+  mimeType: string;
+  projectId: string | null;
+  sizeBytes: number | null;
+  storageKey: string;
+  type: AssetType;
+  userId: string;
+};

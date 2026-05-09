@@ -80,7 +80,7 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
     try {
       await generateCreatorImages(imageRequest(props.projectId!, scene, imageModel, nextForm, updateSceneBatch));
     } catch {
-      setSceneSlots(scene.id, failedSlots());
+      setMediaByScene((current) => ({ ...current, [scene.id]: failLoadingSlots(current[scene.id]) }));
     }
   }
 
@@ -208,6 +208,6 @@ function emptySlot() {
   };
 }
 
-function failedSlots() {
-  return createLoadingSlots().map((slot) => ({ ...slot, status: "failed" as const }));
+function failLoadingSlots(slots = createLoadingSlots()) {
+  return slots.map((slot) => slot.status === "loading" ? { ...slot, status: "failed" as const } : slot);
 }
