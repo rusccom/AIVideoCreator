@@ -6,6 +6,8 @@ import { buildKlingV34kImageToVideoInput } from "./kling-v3-4k-image-to-video/bu
 import { buildKlingV3ProImageToVideoInput } from "./kling-v3-pro-image-to-video/build-input";
 import { buildKlingV3StandardImageToVideoInput } from "./kling-v3-standard-image-to-video/build-input";
 import { buildSeedance2ImageToVideoInput } from "./seedance-2-image-to-video/build-input";
+import { getSupportedModel } from "./catalog";
+import { normalizeImageAspectRatio } from "./image-aspect-ratio";
 import type { FalInputBuilder, FalInputContext } from "./types";
 
 const falInputBuilders: Record<string, FalInputBuilder> = {
@@ -22,5 +24,11 @@ const falInputBuilders: Record<string, FalInputBuilder> = {
 export function buildFalInput(modelId: string, context: FalInputContext) {
   const builder = falInputBuilders[modelId];
   if (!builder) throw new Error("FAL input adapter is not implemented");
-  return builder(context);
+  return builder(normalizedContext(modelId, context));
+}
+
+function normalizedContext(modelId: string, context: FalInputContext) {
+  const model = getSupportedModel(modelId);
+  if (!context.image || model?.type !== "text-to-image") return context;
+  return { ...context, image: normalizeImageAspectRatio(context.image, model) };
 }

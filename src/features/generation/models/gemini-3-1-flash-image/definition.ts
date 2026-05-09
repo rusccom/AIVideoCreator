@@ -21,6 +21,7 @@ export const gemini31FlashImageDefinition = {
   active: true,
   inputAdapter: "gemini-3-1-flash-image",
   imageDefaults: {
+    aspectRatioMode: "aspect_ratio",
     defaultNumImages: 1,
     maxImagesPerRequest: 4,
     supportedOutputFormats: ["jpeg", "png", "webp"],

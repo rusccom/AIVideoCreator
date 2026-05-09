@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { createGetUrl } from "@/features/assets/server/r2-client";
+import { r2Storage } from "@/features/assets/server/r2-storage";
 import { buildFalInput } from "@/features/generation/models/build-fal-input";
 import { prisma } from "@/shared/server/prisma";
 import { reserveCredits } from "./credit-service";
@@ -132,7 +132,7 @@ async function endFrameUrl(assetId: string | null | undefined, supported: boolea
 
 function assetReadUrl(storageKey: string) {
   if (storageKey.startsWith("http")) return storageKey;
-  return createGetUrl(storageKey);
+  return r2Storage.createGetUrl(storageKey);
 }
 
 function asJson(value: unknown) {

@@ -103,8 +103,7 @@ function toImageModel(model: Awaited<ReturnType<typeof prisma.aiModel.findMany>>
 
 function assetUrl(asset?: Awaited<ReturnType<typeof getAssetType>>) {
   if (!asset) return null;
-  if (asset.storageKey.startsWith("http")) return asset.storageKey;
-  if (asset.storageProvider !== "r2") return null;
+  if (asset.storageProvider !== "r2" && !asset.storageKey.startsWith("http")) return null;
   return `/api/assets/${asset.id}/signed-url`;
 }
 

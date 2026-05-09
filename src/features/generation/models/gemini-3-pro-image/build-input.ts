@@ -1,4 +1,5 @@
 import type { FalImageInput, FalInputContext } from "../types";
+import { falImageAspectInput } from "../image-aspect-ratio";
 
 export function buildGemini3ProImageInput(context: FalInputContext) {
   if (!context.image) throw new Error("Image generation input is required");
@@ -9,7 +10,7 @@ function imageInput(input: FalImageInput) {
   return {
     prompt: input.prompt,
     num_images: input.numImages ?? 1,
-    aspect_ratio: input.aspectRatio ?? "1:1",
+    ...falImageAspectInput(input),
     output_format: input.outputFormat ?? "png",
     safety_tolerance: input.safetyTolerance ?? "4",
     resolution: input.resolution ?? "1K",

@@ -3,6 +3,7 @@
 import { RotateCcw, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { generateCreatorImages, type GeneratedCreatorAsset } from "../ai-creator-generation";
+import { generateCreatorScenes } from "../ai-creator-scenes";
 import {
   aspectRatioOptions,
   buildSceneDrafts,
@@ -41,14 +42,25 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
   const projectReady = Boolean(props.projectId && imageModels.length > 0 && videoModels.length > 0);
   const selectedScene = scenes.find((scene) => scene.id === selectedSceneId);
   const selectedSlots = selectedSceneId ? mediaByScene[selectedSceneId] ?? [] : [];
-  const aspectRatios = useMemo(() => aspectRatioOptions(form, imageModels, videoModels), [form, imageModels, videoModels]);
+  const aspectRatios = useMemo(() => aspectRatioOptions(), []);
 
   async function submitIdea() {
-    const nextScenes = buildSceneDrafts(form);
+    setLoading(true);
+    const nextScenes = await loadSceneDrafts(form);
     setScenes(nextScenes);
     setShowIdea(false);
     setSelectedSceneId(nextScenes[0]?.id);
+    setLoading(false);
     await loadImagesForScene(nextScenes[0], form);
+  }
+
+  async function loadSceneDrafts(nextForm: AiCreatorIdeaFormState) {
+    if (!props.projectId) return buildSceneDrafts(nextForm);
+    try {
+      return await generateCreatorScenes(props.projectId, nextForm);
+    } catch {
+      return buildSceneDrafts(nextForm);
+    }
   }
 
   async function loadImagesForScene(scene: AiCreatorSceneDraft | undefined, nextForm = form) {
@@ -90,8 +102,8 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
     setMediaByScene((current) => ({ ...current, [sceneId]: slots }));
   }
 
-  function updateSceneBatch(sceneId: string, start: number, assets: GeneratedCreatorAsset[]) {
-    setMediaByScene((current) => ({ ...current, [sceneId]: mergeAssets(current[sceneId], start, assets) }));
+  function updateSceneBatch(sceneId: string, start: number, count: number, assets: GeneratedCreatorAsset[]) {
+    setMediaByScene((current) => ({ ...current, [sceneId]: mergeAssets(current[sceneId], start, count, assets) }));
   }
 
   return (
@@ -155,23 +167,28 @@ function imageRequest(
   scene: AiCreatorSceneDraft,
   imageModel: AiCreatorImageModel,
   form: AiCreatorIdeaFormState,
-  onBatch: (sceneId: string, start: number, assets: GeneratedCreatorAsset[]) => void
+  onBatch: (sceneId: string, start: number, count: number, assets: GeneratedCreatorAsset[]) => void
 ) {
   return {
     aspectRatio: form.aspectRatio,
     imageModel,
-    onBatch: (start: number, assets: GeneratedCreatorAsset[]) => onBatch(scene.id, start, assets),
+    onBatch: (start: number, count: number, assets: GeneratedCreatorAsset[]) => onBatch(scene.id, start, count, assets),
     projectId,
     prompt: scene.imagePrompt
   };
 }
 
-function mergeAssets(slots = createLoadingSlots(), start: number, assets: GeneratedCreatorAsset[]) {
+function mergeAssets(slots = createLoadingSlots(), start: number, count: number, assets: GeneratedCreatorAsset[]) {
   const next = [...slots];
-  assets.forEach((asset, index) => {
-    next[start + index] = readySlot(next[start + index], asset);
-  });
+  for (let index = 0; index < count; index += 1) {
+    next[start + index] = batchSlot(next[start + index], assets[index]);
+  }
   return next;
+}
+
+function batchSlot(slot: AiCreatorMediaSlot | undefined, asset?: GeneratedCreatorAsset) {
+  if (!asset) return { ...(slot ?? emptySlot()), status: "failed" as const };
+  return readySlot(slot, asset);
 }
 
 function readySlot(slot: AiCreatorMediaSlot | undefined, asset: GeneratedCreatorAsset) {
@@ -180,7 +197,14 @@ function readySlot(slot: AiCreatorMediaSlot | undefined, asset: GeneratedCreator
     label: slot?.label ?? "Generated image",
     status: "ready" as const,
     assetId: asset.id,
-    url: asset.storageKey
+    url: asset.url
+  };
+}
+
+function emptySlot() {
+  return {
+    id: "slot-missing",
+    label: "Image"
   };
 }
 

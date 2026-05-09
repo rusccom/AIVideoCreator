@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { createAssetFromRemoteUrl } from "@/features/assets/server/asset-storage-service";
 import { prisma } from "@/shared/server/prisma";
 import { commitCredits, refundCredits } from "./credit-service";
 
@@ -27,7 +28,7 @@ export async function failGenerationJob(jobId: string, payload: unknown, reason:
 async function createVideoAsset(job: JobRecord, data: unknown) {
   const video = videoPayload(data);
   if (!video || !job.projectId || !job.sceneId) return null;
-  const asset = await prisma.asset.create({ data: videoAssetData(job, video) });
+  const asset = await createAssetFromRemoteUrl(videoAssetData(job, video));
   await prisma.scene.update({ where: { id: job.sceneId }, data: sceneData(job.id, asset.id, video) });
   return asset;
 }
@@ -52,9 +53,7 @@ function videoAssetData(job: JobRecord, video: ReadyVideoPayload) {
     projectId: job.projectId,
     type: "VIDEO" as const,
     source: "FAL_GENERATION" as const,
-    storageProvider: "fal",
-    storageBucket: "fal",
-    storageKey: video.url,
+    remoteUrl: video.url,
     mimeType: video.content_type ?? "video/mp4",
     sizeBytes: video.file_size,
     width: video.width,

@@ -28,7 +28,7 @@ export function AiCreatorMediaPanel(props: AiCreatorMediaPanelProps) {
           <AiCreatorMediaTile
             key={slot.id}
             onSelect={props.onSelect}
-            selected={slot.assetId === props.selectedAssetId}
+            selected={Boolean(slot.assetId && slot.assetId === props.selectedAssetId)}
             slot={slot}
           />
         ))}

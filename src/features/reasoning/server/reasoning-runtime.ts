@@ -7,9 +7,10 @@ type ReasoningMessage = {
 };
 
 export type ReasoningRequest = {
-  messages: ReasoningMessage[];
-  temperature?: number;
   maxTokens?: number;
+  messages: ReasoningMessage[];
+  responseFormat?: ReasoningResponseFormat;
+  temperature?: number;
 };
 
 export async function runReasoning(request: ReasoningRequest) {
@@ -36,6 +37,7 @@ function requestBody(model: ReasoningRuntimeModel, request: ReasoningRequest) {
     messages: request.messages,
     temperature: request.temperature,
     max_tokens: request.maxTokens,
+    response_format: request.responseFormat,
     reasoning: reasoningConfig(model)
   };
 }
@@ -91,6 +93,17 @@ function recordAt(source: Record<string, unknown>, key: string) {
 type OpenRouterResponse = {
   choices?: Array<{ message?: { content?: string } }>;
   usage?: Record<string, unknown>;
+};
+
+type ReasoningResponseFormat = {
+  json_schema: {
+    name: string;
+    schema: Record<string, unknown>;
+    strict?: boolean;
+  };
+  type: "json_schema";
+} | {
+  type: "json_object";
 };
 
 type ReasoningRuntimeModel = {

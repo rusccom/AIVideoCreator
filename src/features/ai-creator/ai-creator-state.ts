@@ -1,10 +1,13 @@
 import {
-  AI_CREATOR_ASPECT_RATIOS,
   DEFAULT_IMAGE_BATCH_SIZE,
   DEFAULT_IMAGES_PER_SCENE,
   DEFAULT_SCENE_DURATION_SECONDS,
   IMAGE_API_MAX_IMAGES_PER_REQUEST
 } from "./config";
+import {
+  COMMON_ASPECT_RATIO_PRESETS,
+  defaultAspectRatioPreset
+} from "@/features/generation/models/aspect-ratio-presets";
 import type {
   AiCreatorIdeaFormState,
   AiCreatorImageModel,
@@ -20,7 +23,7 @@ export function initialIdeaForm(
   const imageModel = imageModels[0];
   const videoModel = videoModels[0];
   return {
-    aspectRatio: videoModel?.defaultAspectRatio ?? imageModel?.defaultAspectRatio ?? AI_CREATOR_ASPECT_RATIOS[0],
+    aspectRatio: defaultAspectRatioPreset().value,
     durationSeconds: DEFAULT_SCENE_DURATION_SECONDS * 6,
     idea: "",
     imageModelId: imageModel?.id ?? "",
@@ -28,14 +31,8 @@ export function initialIdeaForm(
   };
 }
 
-export function aspectRatioOptions(
-  form: AiCreatorIdeaFormState,
-  imageModels: AiCreatorImageModel[],
-  videoModels: AiCreatorVideoModel[]
-) {
-  const imageModel = selectedImageModel(imageModels, form.imageModelId);
-  const videoModel = selectedVideoModel(videoModels, form.videoModelId);
-  return uniqueOptions(videoModel?.supportedAspectRatios, imageModel?.supportedAspectRatios);
+export function aspectRatioOptions() {
+  return COMMON_ASPECT_RATIO_PRESETS;
 }
 
 export function buildSceneDrafts(form: AiCreatorIdeaFormState) {
@@ -68,10 +65,10 @@ function sceneDraft(form: AiCreatorIdeaFormState, index: number): AiCreatorScene
   const end = Math.min(start + DEFAULT_SCENE_DURATION_SECONDS, form.durationSeconds);
   return {
     id: `scene-${index + 1}`,
-    imagePrompt: imagePrompt(form.idea, index),
+    imagePrompt: imagePrompt(form, index),
     name: `Scene ${index + 1}`,
     range: `${start}-${end}s`,
-    text: narrationText(form.idea, index)
+    text: narrationText(form, index)
   };
 }
 
@@ -79,15 +76,16 @@ function sceneCount(durationSeconds: number) {
   return Math.max(1, Math.ceil(durationSeconds / DEFAULT_SCENE_DURATION_SECONDS));
 }
 
-function imagePrompt(idea: string, index: number) {
-  return `Cinematic first frame for scene ${index + 1}. Video idea: ${idea}`;
+function imagePrompt(form: AiCreatorIdeaFormState, index: number) {
+  return `Cinematic first frame for scene ${index + 1}, ${form.aspectRatio} aspect ratio. Video idea: ${form.idea}`;
 }
 
-function narrationText(idea: string, index: number) {
-  return `Narration draft for scene ${index + 1}. Adapt this part of the video idea: ${idea}`;
+function narrationText(form: AiCreatorIdeaFormState, index: number) {
+  return ideaChunk(form.idea, sceneCount(form.durationSeconds), index);
 }
 
-function uniqueOptions(first: string[] = [], second: string[] = []) {
-  const options = [...first, ...second, ...AI_CREATOR_ASPECT_RATIOS].filter(Boolean);
-  return Array.from(new Set(options));
+function ideaChunk(idea: string, count: number, index: number) {
+  const words = idea.trim().split(/\s+/);
+  const size = Math.max(1, Math.ceil(words.length / count));
+  return words.slice(index * size, (index + 1) * size).join(" ") || idea;
 }

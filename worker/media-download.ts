@@ -2,7 +2,7 @@ import { createWriteStream } from "node:fs";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { ReadableStream as NodeReadableStream } from "node:stream/web";
-import { createGetUrl } from "../src/features/assets/server/r2-client";
+import { r2Storage } from "../src/features/assets/server/r2-storage";
 
 type DownloadableAsset = {
   storageKey: string;
@@ -24,5 +24,5 @@ export async function downloadUrl(url: string, path: string) {
 
 function assetUrl(storageKey: string) {
   if (storageKey.startsWith("http")) return storageKey;
-  return createGetUrl(storageKey);
+  return r2Storage.createGetUrl(storageKey);
 }

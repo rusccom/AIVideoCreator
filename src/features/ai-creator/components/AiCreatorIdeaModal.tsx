@@ -1,10 +1,15 @@
 "use client";
 
 import type { FormEvent } from "react";
-import type { AiCreatorIdeaFormState, AiCreatorImageModel, AiCreatorVideoModel } from "../types";
+import type {
+  AiCreatorAspectRatioOption,
+  AiCreatorIdeaFormState,
+  AiCreatorImageModel,
+  AiCreatorVideoModel
+} from "../types";
 
 type AiCreatorIdeaModalProps = {
-  aspectRatios: string[];
+  aspectRatios: AiCreatorAspectRatioOption[];
   form: AiCreatorIdeaFormState;
   imageModels: AiCreatorImageModel[];
   loading: boolean;
@@ -56,7 +61,11 @@ export function AiCreatorIdeaModal(props: AiCreatorIdeaModalProps) {
           <label>
             Aspect ratio
             <select onChange={(event) => update("aspectRatio", event.target.value)} value={props.form.aspectRatio}>
-              {props.aspectRatios.map((ratio) => <option key={ratio} value={ratio}>{ratio}</option>)}
+              {props.aspectRatios.map((option) => (
+                <option key={option.id} value={option.value}>
+                  {option.label} ({option.value})
+                </option>
+              ))}
             </select>
           </label>
         </div>

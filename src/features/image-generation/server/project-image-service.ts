@@ -1,4 +1,5 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type Asset } from "@prisma/client";
+import { createAssetFromRemoteUrl } from "@/features/assets/server/asset-storage-service";
 import { buildFalInput } from "@/features/generation/models/build-fal-input";
 import { getSupportedModel } from "@/features/generation/models/catalog";
 import { subscribeFalJob } from "@/features/generation/server/fal-client";
@@ -15,9 +16,10 @@ export async function generateProjectImage(
   const model = await imageModel(input.modelId);
   const result = await subscribeFalJob(falInput(model, input));
   const images = imagePayloads(result.data);
+  if (images.length === 0) throw new Error("Image generation returned no images");
   const assets = await createImageAssets(userId, projectId, images);
   await recordImageModelUsage(model.id, images.length);
-  return { assets };
+  return { assets: assets.map(toGeneratedAsset) };
 }
 
 async function imageModel(modelId: string) {
@@ -46,9 +48,9 @@ function imageInput(input: GenerateProjectImageInput) {
 }
 
 async function createImageAssets(userId: string, projectId: string, images: ImagePayload[]) {
-  const assets = [];
+  const assets: Asset[] = [];
   for (const image of images) {
-    assets.push(await prisma.asset.create({ data: assetData(userId, projectId, image) }));
+    assets.push(await createAssetFromRemoteUrl(assetData(userId, projectId, image)));
   }
   return assets;
 }
@@ -59,14 +61,19 @@ function assetData(userId: string, projectId: string, image: ImagePayload) {
     projectId,
     type: "IMAGE" as const,
     source: "FAL_GENERATION" as const,
-    storageProvider: "fal",
-    storageBucket: "fal",
-    storageKey: image.url,
+    remoteUrl: image.url,
     mimeType: image.content_type ?? "image/png",
     sizeBytes: image.file_size,
     width: image.width,
     height: image.height,
     metadataJson: asJson(image)
+  };
+}
+
+function toGeneratedAsset(asset: Asset) {
+  return {
+    id: asset.id,
+    url: `/api/assets/${asset.id}/signed-url`
   };
 }
 
@@ -76,7 +83,13 @@ async function assertProjectOwner(userId: string, projectId: string) {
 }
 
 function imagePayloads(data: unknown) {
-  const images = record(data).images;
+  const images = imagePayloadArray(data);
+  const directImage = toImagePayload(record(data).image);
+  return [...images, directImage].filter(isImagePayload);
+}
+
+function imagePayloadArray(data: unknown) {
+  const images = Array.isArray(data) ? data : record(data).images;
   if (!Array.isArray(images)) return [];
   return images.map(toImagePayload).filter(isImagePayload);
 }

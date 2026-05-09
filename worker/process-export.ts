@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Prisma } from "@prisma/client";
-import { createAssetFromLocalFile } from "../src/features/assets/server/local-asset-service";
+import { createAssetFromLocalFile } from "../src/features/assets/server/asset-storage-service";
 import { prisma } from "../src/shared/server/prisma";
 import { runFfmpeg } from "./ffmpeg";
 import { createJobWorkspace, removeJobWorkspace } from "./job-workspace";

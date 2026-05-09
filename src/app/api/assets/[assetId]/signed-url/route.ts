@@ -4,6 +4,7 @@ import { getAssetReadUrl } from "@/features/assets/server/asset-service";
 import { unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ assetId: string }> };
 

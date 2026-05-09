@@ -8,6 +8,7 @@ export type SupportedModelDefinition = Omit<ModelDefinition, "pricePerSecondByRe
 };
 
 export type ImageModelDefaults = {
+  aspectRatioMode?: ImageAspectRatioMode;
   defaultNumImages: number;
   maxImagesPerRequest?: number;
   supportedImageSizes?: string[];
@@ -23,6 +24,8 @@ export type ImageModelDefaults = {
   supportedThinkingLevels?: string[];
   defaultThinkingLevel?: string;
 };
+
+export type ImageAspectRatioMode = "aspect_ratio" | "image_size";
 
 export type FalInputContext = {
   endImageUrl?: string;

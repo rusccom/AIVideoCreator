@@ -4,13 +4,13 @@ import type { AiCreatorImageModel } from "./types";
 
 export type GeneratedCreatorAsset = {
   id: string;
-  storageKey: string;
+  url: string;
 };
 
 type GenerateCreatorImagesInput = {
   aspectRatio: string;
   imageModel: AiCreatorImageModel;
-  onBatch: (startIndex: number, assets: GeneratedCreatorAsset[]) => void;
+  onBatch: (startIndex: number, count: number, assets: GeneratedCreatorAsset[]) => void;
   projectId: string;
   prompt: string;
 };
@@ -20,7 +20,7 @@ export async function generateCreatorImages(input: GenerateCreatorImagesInput) {
   let startIndex = 0;
   for (const count of batches) {
     const assets = await requestImageBatch(input, count);
-    input.onBatch(startIndex, assets);
+    input.onBatch(startIndex, count, assets);
     startIndex += count;
   }
 }
@@ -37,6 +37,7 @@ async function requestImageBatch(input: GenerateCreatorImagesInput, count: numbe
   const response = await fetch(`/api/projects/${input.projectId}/images/generate`, requestOptions(input, count));
   if (!response.ok) throw new Error("Image generation failed.");
   const data = await response.json() as { assets?: GeneratedCreatorAsset[] };
+  if (!data.assets?.length) throw new Error("Image generation returned no assets.");
   return data.assets ?? [];
 }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { createGetUrl } from "@/features/assets/server/r2-client";
+import { r2Storage } from "@/features/assets/server/r2-storage";
 import { getExportJob } from "@/features/exports/server/export-service";
 import { notFound, unauthorized } from "@/shared/server/api";
 
@@ -23,5 +23,5 @@ export async function GET(_request: Request, context: RouteContext) {
 async function exportUrl(storageKey?: string | null) {
   if (!storageKey) return null;
   if (storageKey.startsWith("http")) return storageKey;
-  return createGetUrl(storageKey);
+  return r2Storage.createGetUrl(storageKey);
 }

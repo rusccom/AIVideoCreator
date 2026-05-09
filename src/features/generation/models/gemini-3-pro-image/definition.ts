@@ -21,6 +21,7 @@ export const gemini3ProImageDefinition = {
   active: true,
   inputAdapter: "gemini-3-pro-image",
   imageDefaults: {
+    aspectRatioMode: "aspect_ratio",
     defaultNumImages: 1,
     maxImagesPerRequest: 4,
     supportedOutputFormats: ["jpeg", "png", "webp"],

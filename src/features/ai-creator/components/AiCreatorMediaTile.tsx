@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import { useResolvedAssetUrl } from "@/features/assets/hooks/use-resolved-asset-url";
 import type { AiCreatorMediaSlot } from "../types";
 import { AiCreatorSpinner } from "./AiCreatorSpinner";
 
@@ -9,6 +10,8 @@ type AiCreatorMediaTileProps = {
 };
 
 export function AiCreatorMediaTile(props: AiCreatorMediaTileProps) {
+  const url = useResolvedAssetUrl(props.slot.url);
+
   return (
     <button
       aria-pressed={props.selected}
@@ -17,7 +20,7 @@ export function AiCreatorMediaTile(props: AiCreatorMediaTileProps) {
       onClick={() => props.onSelect(props.slot)}
       type="button"
     >
-      {props.slot.url ? <img alt={props.slot.label} src={props.slot.url} /> : <AiCreatorSpinner />}
+      {url ? <img alt={props.slot.label} src={url} /> : tileFallback(props.slot)}
       {props.selected ? <span className="ai-creator-media-check"><Check size={15} /></span> : null}
       {props.slot.status === "failed" ? <span className="ai-creator-media-error">Failed</span> : null}
     </button>
@@ -28,4 +31,8 @@ function tileClass(slot: AiCreatorMediaSlot, selected: boolean) {
   const classes = ["ai-creator-media-tile", slot.status];
   if (selected) classes.push("selected");
   return classes.join(" ");
+}
+
+function tileFallback(slot: AiCreatorMediaSlot) {
+  return slot.status === "failed" ? null : <AiCreatorSpinner />;
 }

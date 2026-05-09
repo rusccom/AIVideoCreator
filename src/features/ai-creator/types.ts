@@ -1,3 +1,7 @@
+import type { AspectRatioPreset } from "@/features/generation/models/aspect-ratio-presets";
+
+export type AiCreatorAspectRatioOption = AspectRatioPreset;
+
 export type AiCreatorImageModel = {
   id: string;
   displayName: string;
