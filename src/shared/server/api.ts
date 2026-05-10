@@ -32,6 +32,10 @@ export function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
 
+export function paymentRequired(message: string) {
+  return NextResponse.json({ error: message }, { status: 402 });
+}
+
 export function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 });
 }

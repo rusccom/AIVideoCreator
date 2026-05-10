@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireCurrentUser } from "@/features/auth/server/current-user";
+import { generationErrorResponse } from "@/features/generation/server/generation-api-error";
 import { generateVideoSchema } from "@/features/generation/server/generation-schema";
 import { generateVideo } from "@/features/generation/server/generation-service";
-import { parseJson, serverError, unauthorized } from "@/shared/server/api";
+import { parseJson } from "@/shared/server/api";
 
 export const runtime = "nodejs";
 
@@ -17,10 +18,6 @@ export async function POST(request: Request, context: RouteContext) {
     const job = await generateVideo(user.id, sceneId, parsed.data);
     return NextResponse.json({ job });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") return unauthorized();
-    if (error instanceof Error && error.message === "Insufficient credits") {
-      return NextResponse.json({ error: error.message }, { status: 402 });
-    }
-    return serverError("Scene regeneration failed");
+    return generationErrorResponse(error, "Scene regeneration failed");
   }
 }
