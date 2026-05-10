@@ -16,6 +16,11 @@
   animation: generation-progress 1.15s ease-in-out infinite;
 }
 
+.generation-progress[data-mode="determinate"] span {
+  width: var(--progress-value, 0%);
+  animation: none;
+}
+
 .ai-creator-progress-modal {
   max-width: 520px;
 }

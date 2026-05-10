@@ -34,23 +34,28 @@ function useAiCreatorLauncher(projectAspectRatio?: string) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
-  const [progressJobId, setProgressJobId] = useState<string>();
+  const [progressTarget, setProgressTarget] = useState<ProgressTarget>();
   const aspectRatio = projectAspectRatio ?? defaultAspectRatioPreset().value;
   const finishProgress = useCallback(() => {
-    setProgressJobId(undefined);
+    setProgressTarget(undefined);
     router.refresh();
   }, [router]);
   const startProgress = useCallback((video: StartedCreatorVideo) => {
     setOpen(false);
-    setProgressJobId(video.job.id);
+    setProgressTarget(progressTargetFromVideo(video));
   }, []);
   useEffect(() => {
     setMounted(true);
   }, []);
-  return { aspectRatio, finishProgress, mounted, open, progressJobId, setOpen, startProgress };
+  return { aspectRatio, finishProgress, mounted, open, progressTarget, setOpen, startProgress };
 }
 
 type AiCreatorLauncher = ReturnType<typeof useAiCreatorLauncher>;
+type ProgressTarget = {
+  jobId: string;
+  sequenceId?: string;
+  total: number;
+};
 
 function modalPortal(props: AiCreatorButtonProps, launcher: AiCreatorLauncher) {
   if (!launcher.open || !launcher.mounted) return null;
@@ -66,9 +71,17 @@ function modalPortal(props: AiCreatorButtonProps, launcher: AiCreatorLauncher) {
 }
 
 function progressPortal(launcher: AiCreatorLauncher) {
-  if (!launcher.progressJobId || !launcher.mounted) return null;
+  if (!launcher.progressTarget || !launcher.mounted) return null;
   return createPortal(
-    <AiCreatorProgressModal jobId={launcher.progressJobId} onDone={launcher.finishProgress} />,
+    <AiCreatorProgressModal {...launcher.progressTarget} onDone={launcher.finishProgress} />,
     document.body
   );
+}
+
+function progressTargetFromVideo(video: StartedCreatorVideo) {
+  return {
+    jobId: video.job.id,
+    sequenceId: video.sequence?.id,
+    total: video.sequence?.total ?? 1
+  };
 }

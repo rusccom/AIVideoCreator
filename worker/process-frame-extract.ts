@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { Prisma } from "@prisma/client";
 import { createAssetFromLocalFile } from "../src/features/assets/server/asset-storage-service";
+import { startNextAiCreatorScene } from "../src/features/ai-creator/server/ai-creator-sequence-service";
 import { prisma } from "../src/shared/server/prisma";
 import { runFfmpeg } from "./ffmpeg";
 import { createJobWorkspace, removeJobWorkspace } from "./job-workspace";
@@ -31,6 +32,7 @@ async function processFrameJob(job: FrameJob) {
   try {
     const frame = await extractFrame(job, video, workspace, scene.projectId);
     await setFrameReady(job.id, scene.id, frame.id);
+    await startNextAiCreatorScene(job.userId, scene.id, frame.id);
     return { jobId: job.id, frameAssetId: frame.id };
   } finally {
     await removeJobWorkspace(workspace);

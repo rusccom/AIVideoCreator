@@ -4,7 +4,7 @@ type GenerateCreatorVideoInput = {
   assetId: string;
   form: AiCreatorIdeaFormState;
   projectId: string;
-  scene: AiCreatorSceneDraft;
+  scenes: AiCreatorSceneDraft[];
   videoModel: AiCreatorVideoModel;
 };
 
@@ -16,6 +16,11 @@ export type StartedCreatorVideo = {
   scene: {
     id: string;
   };
+  sequence?: {
+    id: string;
+    sceneIds: string[];
+    total: number;
+  };
 };
 
 export async function generateCreatorVideo(input: GenerateCreatorVideoInput) {
@@ -24,21 +29,35 @@ export async function generateCreatorVideo(input: GenerateCreatorVideoInput) {
   return response.json() as Promise<StartedCreatorVideo>;
 }
 
-export function estimateCreatorVideoCredits(input: Pick<GenerateCreatorVideoInput, "scene" | "videoModel">) {
-  const resolution = input.videoModel.defaultResolution;
-  const price = input.videoModel.pricePerSecondByResolution[resolution] ?? 0;
-  return Math.ceil(sceneDuration(input.scene) * price);
+export function estimateCreatorVideoCredits(input: Pick<GenerateCreatorVideoInput, "scenes" | "videoModel">) {
+  return input.scenes.reduce((total, scene) => total + sceneCredits(input.videoModel, scene), 0);
 }
 
 function videoBody(input: GenerateCreatorVideoInput) {
+  const scenes = videoScenes(input);
+  const first = scenes[0];
   return {
     assetId: input.assetId,
     aspectRatio: videoAspectRatio(input.videoModel, input.form.aspectRatio),
-    duration: sceneDuration(input.scene),
+    duration: first.duration,
     modelId: input.form.videoModelId,
-    prompt: videoPrompt(input.scene),
-    resolution: input.videoModel.defaultResolution
+    prompt: first.prompt,
+    resolution: input.videoModel.defaultResolution,
+    scenes
   };
+}
+
+function videoScenes(input: GenerateCreatorVideoInput) {
+  return input.scenes.map((scene) => ({
+    duration: sceneDuration(scene),
+    prompt: videoPrompt(scene)
+  }));
+}
+
+function sceneCredits(model: AiCreatorVideoModel, scene: AiCreatorSceneDraft) {
+  const resolution = model.defaultResolution;
+  const price = model.pricePerSecondByResolution[resolution] ?? 0;
+  return Math.ceil(sceneDuration(scene) * price);
 }
 
 function videoAspectRatio(model: AiCreatorVideoModel, aspectRatio: string) {

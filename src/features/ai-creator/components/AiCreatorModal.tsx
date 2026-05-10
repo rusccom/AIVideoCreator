@@ -121,11 +121,10 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
   }
 
   function videoRequest() {
-    const scene = scenes[0];
     const assetId = selectedAssetId ?? firstReadyAssetId(mediaSlots);
     const videoModel = selectedVideoModel(videoModels, form.videoModelId);
-    if (!props.projectId || !scene || !assetId || !videoModel) return null;
-    return { assetId, form, projectId: props.projectId, scene, videoModel };
+    if (!props.projectId || !scenes.length || !assetId || !videoModel) return null;
+    return { assetId, form, projectId: props.projectId, scenes, videoModel };
   }
 
   const currentVideoRequest = videoRequest();
@@ -167,7 +166,7 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
         {videoError ? <div className="form-error">{videoError}</div> : null}
         <div className="ai-creator-modal-footer">
           <button className="button button-primary" disabled={videoDisabled(currentVideoRequest, loading, videoSubmitting)} onClick={submitVideo} type="button">
-            {videoButtonText(videoSubmitting, currentVideoCost)}
+            {videoButtonText(videoSubmitting, currentVideoCost, scenes.length)}
           </button>
         </div>
         {showIdea ? (
@@ -249,7 +248,8 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Video generation could not start.";
 }
 
-function videoButtonText(submitting: boolean, credits: number | null) {
+function videoButtonText(submitting: boolean, credits: number | null, sceneCount: number) {
   if (submitting) return "Submitting...";
-  return credits === null ? "Generate video" : `Generate video (${credits} credits)`;
+  const label = sceneCount > 1 ? `Generate ${sceneCount} videos` : "Generate video";
+  return credits === null ? label : `${label} (${credits} credits)`;
 }
