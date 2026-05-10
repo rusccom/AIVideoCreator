@@ -5,16 +5,10 @@ import { prisma } from "@/shared/server/prisma";
 import { commitCredits, refundCredits } from "./credit-service";
 
 export async function completeGenerationJob(jobId: string, data: unknown) {
-  const job = await prisma.generationJob.findUniqueOrThrow({ where: { id: jobId } });
-  if (job.status === "READY") return job;
+  const job = await claimGenerationCompletion(jobId);
+  if (job.status !== "PROCESSING") return job;
   if (job.type === "IMAGE_GENERATION") return completeProjectImageGeneration(job, data);
-  const asset = await createVideoAsset(job, data);
-  if (asset) await queueLastFrameJob(job, asset.id);
-  await commitCredits(jobId);
-  return prisma.generationJob.update({
-    where: { id: jobId },
-    data: { status: "READY", outputJson: asJson(data), completedAt: new Date() }
-  });
+  return completeVideoGenerationJob(job, data);
 }
 
 export async function failGenerationJob(jobId: string, payload: unknown, reason: string) {
@@ -33,6 +27,32 @@ async function createVideoAsset(job: JobRecord, data: unknown) {
   const asset = await createAssetFromRemoteUrl(videoAssetData(job, video));
   await prisma.scene.update({ where: { id: job.sceneId }, data: sceneData(job.id, asset.id, video) });
   return asset;
+}
+
+async function completeVideoGenerationJob(job: JobRecord, data: unknown) {
+  try {
+    const asset = await createVideoAsset(job, data);
+    if (asset) await queueLastFrameJob(job, asset.id);
+    await commitCredits(job.id);
+    return markJobReady(job.id, data);
+  } catch (error) {
+    return failGenerationJob(job.id, errorPayload(error), "generation completion failed");
+  }
+}
+
+async function claimGenerationCompletion(jobId: string) {
+  await prisma.generationJob.updateMany({
+    where: { id: jobId, status: "GENERATING" },
+    data: { status: "PROCESSING" }
+  });
+  return prisma.generationJob.findUniqueOrThrow({ where: { id: jobId } });
+}
+
+function markJobReady(jobId: string, data: unknown) {
+  return prisma.generationJob.update({
+    where: { id: jobId },
+    data: { status: "READY", outputJson: asJson(data), completedAt: new Date() }
+  });
 }
 
 async function queueLastFrameJob(job: JobRecord, videoAssetId: string) {
@@ -96,6 +116,11 @@ function record(value: unknown) {
 
 function asJson(value: unknown) {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function errorPayload(error: unknown) {
+  if (error instanceof Error) return { name: error.name, message: error.message };
+  return { error };
 }
 
 type JobRecord = Awaited<ReturnType<typeof prisma.generationJob.findUniqueOrThrow>>;
