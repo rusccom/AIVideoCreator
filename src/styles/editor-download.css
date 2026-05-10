@@ -1,0 +1,30 @@
+.download-clip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.download-clip-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(148, 163, 184, 0.28);
+  border-top-color: var(--cyan);
+  border-radius: 999px;
+  animation: download-clip-spin 860ms linear infinite;
+}
+
+.download-clip-error {
+  color: #fecaca;
+  font-size: 0.78rem;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes download-clip-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

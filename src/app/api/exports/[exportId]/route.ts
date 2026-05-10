@@ -14,14 +14,20 @@ export async function GET(_request: Request, context: RouteContext) {
     const { exportId } = await context.params;
     const job = await getExportJob(user.id, exportId);
     if (!job) return notFound();
-    return NextResponse.json({ job: { ...job, url: await exportUrl(job.storageKey) } });
+    const url = await exportUrl(job.storageKey, job.project?.title);
+    return NextResponse.json({ job: { ...job, url } });
   } catch {
     return unauthorized();
   }
 }
 
-async function exportUrl(storageKey?: string | null) {
+async function exportUrl(storageKey: string | null | undefined, projectTitle?: string) {
   if (!storageKey) return null;
   if (storageKey.startsWith("http")) return null;
-  return r2Storage.createGetUrl(storageKey);
+  return r2Storage.createGetUrl(storageKey, { downloadFileName: downloadName(projectTitle) });
+}
+
+function downloadName(projectTitle?: string) {
+  const base = projectTitle?.trim() || "export";
+  return `${base}.mp4`;
 }

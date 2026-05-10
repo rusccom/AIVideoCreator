@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { EditorProject } from "../types";
+import type { EditorProject, EditorScene, EditorVideoModel } from "../types";
+import { usePlayback } from "../hooks/use-playback";
 import { EditorHeader } from "./EditorHeader";
 import { PhotoPanel } from "./PhotoPanel";
 import { PreviewPlayer } from "./PreviewPlayer";
@@ -17,27 +18,17 @@ type ProjectEditorProps = {
 
 export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   const router = useRouter();
-  const [selectedSceneId, setSelectedSceneId] = useState(project.scenes[0]?.id);
+  const playback = usePlayback(project.scenes);
+  const selectedScene = playback.currentPosition?.scene;
   const [showCreate, setShowCreate] = useState(false);
   const [sceneAssetId, setSceneAssetId] = useState<string>();
   const [generating, setGenerating] = useState(false);
   const [pendingGenerationSceneId, setPendingGenerationSceneId] = useState<string>();
   const [message, setMessage] = useState("");
-  const selectedScene = useMemo(() => selectedSceneById(project, selectedSceneId), [project, selectedSceneId]);
   const selectedCost = videoCost(project.videoModels, selectedScene);
   const generationActive = generating || sceneGenerationActive(selectedScene, pendingGenerationSceneId);
-
-  useEffect(() => {
-    const jobId = selectedScene?.generationJobId;
-    if (!jobId || selectedScene?.statusValue !== "GENERATING") return;
-    const timer = window.setInterval(() => pollJob(jobId, router), 5000);
-    return () => window.clearInterval(timer);
-  }, [router, selectedScene]);
-
-  useEffect(() => {
-    if (!selectedScene || selectedScene.id !== pendingGenerationSceneId) return;
-    if (selectedScene.statusValue === "READY" || selectedScene.statusValue === "FAILED") setPendingGenerationSceneId(undefined);
-  }, [pendingGenerationSceneId, selectedScene]);
+  useGenerationPolling(selectedScene, router);
+  useGenerationCleanup(selectedScene, pendingGenerationSceneId, setPendingGenerationSceneId);
 
   async function generateClip() {
     if (!selectedScene) return;
@@ -68,6 +59,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
         imageModels={project.imageModels}
         projectId={project.id}
         sceneCount={project.scenes.length}
+        scenes={project.scenes}
         title={project.title}
         totalDuration={project.totalDuration}
         videoModels={project.videoModels}
@@ -76,7 +68,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
       <div className="editor-workspace">
         <SceneRail
           onCreate={openSceneCreate}
-          onSelect={setSelectedSceneId}
+          onSelect={playback.seekToScene}
           scenes={project.scenes}
           selectedSceneId={selectedScene?.id}
         />
@@ -84,7 +76,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
           creditCost={selectedCost}
           generating={generationActive}
           onGenerate={generateClip}
-          scene={selectedScene}
+          playback={playback}
           submitting={generating}
         />
         <PhotoPanel
@@ -96,10 +88,9 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
         />
       </div>
       <StoryboardTimeline
-        onSelect={setSelectedSceneId}
-        scenes={project.scenes}
+        onSelectScene={playback.seekToScene}
+        playback={playback}
         selectedSceneId={selectedScene?.id}
-        totalDuration={project.totalDuration}
       />
       {showCreate ? (
         <SceneCreateModal
@@ -116,10 +107,27 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   );
 }
 
-async function submitGeneration(
-  scene: NonNullable<ReturnType<typeof selectedSceneById>>,
-  project: EditorProject
+function useGenerationPolling(scene: EditorScene | undefined, router: ReturnType<typeof useRouter>) {
+  useEffect(() => {
+    const jobId = scene?.generationJobId;
+    if (!jobId || scene?.statusValue !== "GENERATING") return;
+    const timer = window.setInterval(() => pollJob(jobId, router), 5000);
+    return () => window.clearInterval(timer);
+  }, [router, scene]);
+}
+
+function useGenerationCleanup(
+  scene: EditorScene | undefined,
+  pendingId: string | undefined,
+  reset: (value: string | undefined) => void
 ) {
+  useEffect(() => {
+    if (!scene || scene.id !== pendingId) return;
+    if (scene.statusValue === "READY" || scene.statusValue === "FAILED") reset(undefined);
+  }, [scene, pendingId, reset]);
+}
+
+async function submitGeneration(scene: EditorScene, project: EditorProject) {
   return fetch(`/api/scenes/${scene.id}/generate-video`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -127,7 +135,7 @@ async function submitGeneration(
   });
 }
 
-function generationBody(scene: NonNullable<ReturnType<typeof selectedSceneById>>, project: EditorProject) {
+function generationBody(scene: EditorScene, project: EditorProject) {
   return {
     aspectRatio: videoAspectRatio(project, scene.modelId),
     prompt: scene.prompt,
@@ -136,11 +144,7 @@ function generationBody(scene: NonNullable<ReturnType<typeof selectedSceneById>>
   };
 }
 
-function selectedSceneById(project: EditorProject, sceneId?: string) {
-  return project.scenes.find((scene) => scene.id === sceneId) ?? project.scenes[0];
-}
-
-function videoCost(models: EditorProject["videoModels"], scene?: NonNullable<EditorProject["scenes"][number]>) {
+function videoCost(models: readonly EditorVideoModel[], scene?: EditorScene) {
   const model = models.find((item) => item.id === scene?.modelId);
   const price = model?.pricePerSecondByResolution[model.defaultResolution] ?? 0;
   return scene && price > 0 ? Math.ceil(scene.durationSeconds * price) : null;
@@ -152,10 +156,7 @@ function videoAspectRatio(project: EditorProject, modelId: string) {
   return model?.supportedAspectRatios.includes("auto") ? "auto" : model?.defaultAspectRatio;
 }
 
-function sceneGenerationActive(
-  scene: NonNullable<ReturnType<typeof selectedSceneById>> | undefined,
-  pendingSceneId?: string
-) {
+function sceneGenerationActive(scene: EditorScene | undefined, pendingSceneId?: string) {
   return scene?.statusValue === "GENERATING" || Boolean(scene?.id && scene.id === pendingSceneId);
 }
 
@@ -178,7 +179,7 @@ async function pollJob(jobId: string, router: ReturnType<typeof useRouter>) {
 
 async function responseError(response: Response) {
   try {
-    const data = await response.json() as { error?: string };
+    const data = (await response.json()) as { error?: string };
     return data.error ?? "Generation could not start.";
   } catch {
     return "Generation could not start.";

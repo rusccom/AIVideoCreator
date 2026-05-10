@@ -20,10 +20,11 @@ export const r2Storage = {
     return getSignedUrl(getR2Client(), command, { expiresIn: 900 });
   },
 
-  async createGetUrl(key: string) {
+  async createGetUrl(key: string, options?: R2GetUrlOptions) {
     const command = new GetObjectCommand({
       Bucket: r2Env().R2_BUCKET,
-      Key: key
+      Key: key,
+      ResponseContentDisposition: contentDisposition(options?.downloadFileName)
     });
     return getSignedUrl(getR2Client(), command, { expiresIn: 900 });
   },
@@ -101,7 +102,17 @@ function responseSize(response: Response) {
   return Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
+function contentDisposition(fileName?: string) {
+  if (!fileName) return undefined;
+  const safe = fileName.replace(/[\\/"\r\n]+/g, "_");
+  return `attachment; filename="${safe}"`;
+}
+
 type PutObjectBody = PutObjectCommandInput["Body"];
+
+type R2GetUrlOptions = {
+  downloadFileName?: string;
+};
 
 type R2LocalUploadInput = {
   key: string;

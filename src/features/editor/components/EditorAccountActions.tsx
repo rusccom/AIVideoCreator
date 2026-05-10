@@ -1,12 +1,15 @@
 import Link from "next/link";
-import { Download, UserCircle } from "lucide-react";
+import { UserCircle } from "lucide-react";
 import { AiCreatorButton } from "@/features/ai-creator/components/AiCreatorButton";
-import type { EditorImageModel, EditorVideoModel } from "../types";
+import type { EditorImageModel, EditorScene, EditorVideoModel } from "../types";
+import { DownloadClipButton } from "./DownloadClipButton";
 
 type EditorAccountActionsProps = {
   imageModels: EditorImageModel[];
   projectAspectRatio: string;
   projectId: string;
+  projectTitle: string;
+  scenes: EditorScene[];
   videoModels: EditorVideoModel[];
 };
 
@@ -22,10 +25,16 @@ export function EditorAccountActions(props: EditorAccountActionsProps) {
       <Link className="button button-secondary" href="/app/billing">
         Upgrade
       </Link>
-      <button className="button button-quiet" type="button">
-        <Download size={16} /> Export
-      </button>
+      <DownloadClipButton
+        hasReadyScenes={hasReadyScenes(props.scenes)}
+        projectId={props.projectId}
+        projectTitle={props.projectTitle}
+      />
       <UserCircle aria-label="Profile" size={28} />
     </div>
   );
+}
+
+function hasReadyScenes(scenes: EditorScene[]) {
+  return scenes.some((scene) => scene.statusValue === "READY" && Boolean(scene.videoUrl));
 }

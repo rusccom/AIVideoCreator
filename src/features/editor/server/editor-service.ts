@@ -1,6 +1,7 @@
 import { prisma } from "@/shared/server/prisma";
 import { supportedModels } from "@/features/generation/models/catalog";
 import type { EditorAsset, EditorImageModel, EditorProject, EditorScene, EditorVideoModel } from "../types";
+import { loadEditorAssets } from "./asset-loader";
 
 export async function getEditorProject(
   userId: string,
@@ -8,22 +9,19 @@ export async function getEditorProject(
 ): Promise<EditorProject | null> {
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId },
-    include: {
-      assets: { orderBy: { createdAt: "desc" }, take: 12 },
-      scenes: { orderBy: { orderIndex: "asc" } }
-    }
+    include: { scenes: { orderBy: { orderIndex: "asc" } } }
   });
   if (!project) return null;
+  const assets = await loadEditorAssets(project.id, project.scenes);
   const videoModels = await listModels("image-to-video", toVideoModel);
   const imageModels = await listModels("text-to-image", toImageModel);
-  const assetsById = new Map(project.assets.map((asset) => [asset.id, asset]));
   return {
     id: project.id,
     title: project.title,
     aspectRatio: project.aspectRatio,
     totalDuration: `${totalSceneSeconds(project.scenes)}s`,
-    scenes: project.scenes.map((scene) => toEditorScene(scene, assetsById)),
-    assets: project.assets.map(toEditorAsset),
+    scenes: project.scenes.map((scene) => toEditorScene(scene, assets.byId)),
+    assets: assets.recent.map(toEditorAsset),
     imageModels,
     videoModels
   };

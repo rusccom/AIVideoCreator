@@ -1,76 +1,83 @@
 "use client";
 
-import { useState } from "react";
-import type { EditorScene } from "../types";
+import { useState, type MouseEvent } from "react";
+import type { PlaybackState } from "../hooks/use-playback";
+import { useTimelineLayout } from "../hooks/use-timeline-layout";
+import type { TimelineLayout } from "../playback/timeline-layout";
+import { clampScaleIndex, timelineScales } from "../playback/timeline-scales";
+import { TimelinePlayhead } from "./TimelinePlayhead";
 import { TimelineScale } from "./TimelineScale";
-import { TimelineClipCard } from "./TimelineClipCard";
+import { TimelineTrack } from "./TimelineTrack";
+import { TimelineTransport } from "./TimelineTransport";
 import { TimelineZoomControls } from "./TimelineZoomControls";
 
 type StoryboardTimelineProps = {
-  onSelect: (sceneId: string) => void;
+  onSelectScene: (sceneId: string) => void;
+  playback: PlaybackState;
   selectedSceneId?: string;
-  scenes: EditorScene[];
-  totalDuration: string;
 };
+
+const VIEWPORT_WIDTH = 720;
 
 export function StoryboardTimeline(props: StoryboardTimelineProps) {
   const [scaleIndex, setScaleIndex] = useState(0);
   const scale = timelineScales[scaleIndex];
-  const seconds = Math.max(scale.visibleSeconds, timelineSeconds(props.scenes));
-  const pxPerSecond = viewportWidth / scale.visibleSeconds;
-  const width = Math.max(viewportWidth, seconds * pxPerSecond);
+  const layout = useTimelineLayout({
+    scenes: props.playback.timeline.scenes,
+    scale,
+    viewportWidth: VIEWPORT_WIDTH,
+    contentSeconds: props.playback.timeline.totalDuration
+  });
   return (
     <section className="timeline-panel">
       <div className="editor-panel-header">
         <h2>Storyboard Timeline</h2>
-        <TimelineZoomControls
-          onZoomIn={() => setScaleIndex(zoomIn(scaleIndex))}
-          onZoomOut={() => setScaleIndex(zoomOut(scaleIndex))}
-          rangeLabel={scale.label}
-        />
+        <div className="timeline-header-actions">
+          <TimelineTransport
+            currentTime={props.playback.currentTime}
+            isPlaying={props.playback.isPlaying}
+            onToggle={props.playback.toggle}
+            totalDuration={props.playback.timeline.totalDuration}
+          />
+          <TimelineZoomControls
+            onZoomIn={() => setScaleIndex(clampScaleIndex(scaleIndex - 1))}
+            onZoomOut={() => setScaleIndex(clampScaleIndex(scaleIndex + 1))}
+            rangeLabel={scale.label}
+          />
+        </div>
       </div>
       <div className="timeline-scroll">
-        <TimelineScale seconds={seconds} step={scale.tickSeconds} width={width} />
-        <div className="timeline-clips" style={{ width }}>
-          {props.scenes.length === 0 ? <p className="form-note">No clips in this timeline yet.</p> : null}
-          {props.scenes.map((scene) => (
-            <TimelineClipCard
-              key={scene.id}
-              onSelect={props.onSelect}
-              scene={scene}
-              selected={scene.id === props.selectedSceneId}
-              width={clipWidth(scene, pxPerSecond)}
-            />
-          ))}
+        <div
+          className="timeline-board"
+          onClick={(event) => seekFromClick(event, layout, props.playback.seek)}
+          style={{ width: layout.width }}
+        >
+          <TimelineScale seconds={layout.seconds} step={scale.tickSeconds} width={layout.width} />
+          <TimelineTrack
+            clipBoxes={layout.clipBoxes}
+            onSelect={props.onSelectScene}
+            selectedSceneId={props.selectedSceneId}
+            width={layout.width}
+          />
+          <TimelinePlayhead position={layout.timeToPx(props.playback.currentTime)} />
         </div>
       </div>
     </section>
   );
 }
 
-const viewportWidth = 720;
-
-const timelineScales = [
-  { label: "30s", tickSeconds: 5, visibleSeconds: 30 },
-  { label: "1m", tickSeconds: 10, visibleSeconds: 60 },
-  { label: "5m", tickSeconds: 60, visibleSeconds: 300 },
-  { label: "10m", tickSeconds: 120, visibleSeconds: 600 },
-  { label: "1h", tickSeconds: 600, visibleSeconds: 3600 }
-];
-
-function timelineSeconds(scenes: EditorScene[]) {
-  const total = scenes.reduce((sum, scene) => sum + scene.durationSeconds, 0);
-  return Math.max(60, total);
+function seekFromClick(
+  event: MouseEvent<HTMLDivElement>,
+  layout: TimelineLayout,
+  seek: (time: number) => void
+) {
+  if (isInteractive(event.target as HTMLElement)) return;
+  const board = event.currentTarget.getBoundingClientRect();
+  const offsetPx = event.clientX - board.left;
+  seek(layout.pxToTime(offsetPx));
 }
 
-function clipWidth(scene: EditorScene, pxPerSecond: number) {
-  return Math.max(96, scene.durationSeconds * pxPerSecond);
-}
-
-function zoomIn(index: number) {
-  return Math.max(0, index - 1);
-}
-
-function zoomOut(index: number) {
-  return Math.min(timelineScales.length - 1, index + 1);
+function isInteractive(target: HTMLElement | null) {
+  if (!target) return false;
+  return Boolean(target.closest("button"));
 }

@@ -6,7 +6,6 @@ type TimelineClipCardProps = {
   onSelect: (sceneId: string) => void;
   scene: EditorScene;
   selected: boolean;
-  width: number;
 };
 
 export function TimelineClipCard(props: TimelineClipCardProps) {
@@ -14,7 +13,7 @@ export function TimelineClipCard(props: TimelineClipCardProps) {
   const Icon = scene.linkState === "Linked" ? Link2 : TriangleAlert;
 
   return (
-    <button className={clipClass(scene, props.selected)} onClick={() => props.onSelect(scene.id)} style={{ width: props.width }} type="button">
+    <button className={clipClass(scene, props.selected)} onClick={() => props.onSelect(scene.id)} type="button">
       <div className="timeline-preview" />
       <div className="timeline-copy">
         <strong>{scene.name} - {scene.status}</strong>

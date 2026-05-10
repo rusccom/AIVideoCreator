@@ -1,51 +1,48 @@
 import { Play } from "lucide-react";
 import type { EditorScene } from "../types";
-import { useResolvedAssetUrl } from "../hooks/use-resolved-asset-url";
+import type { PlaybackState } from "../hooks/use-playback";
 import { GenerationProgressBar } from "./GenerationProgressBar";
-import { ResolvedAssetImage } from "./ResolvedAssetImage";
+import { PreviewVideo } from "./PreviewVideo";
 
 type PreviewPlayerProps = {
   creditCost?: number | null;
   generating: boolean;
   onGenerate: () => void;
-  scene?: EditorScene;
+  playback: PlaybackState;
   submitting: boolean;
 };
 
 export function PreviewPlayer(props: PreviewPlayerProps) {
-  const videoUrl = useResolvedAssetUrl(props.scene?.videoUrl);
+  const scene = props.playback.currentPosition?.scene;
   return (
     <section className="editor-panel preview-panel">
       <div>
         <div className="preview-screen">
-          {videoUrl ? <video controls src={videoUrl} /> : previewFallback(props.scene)}
+          <PreviewVideo playback={props.playback} />
         </div>
-        {isGenerationActive(props) ? <GenerationProgressBar /> : null}
+        {props.generating ? <GenerationProgressBar /> : null}
       </div>
       <div className="preview-controls">
-        <span>{props.scene ? props.scene.name : "No scene selected"}</span>
-        <button className="button button-primary" disabled={!canGenerate(props)} onClick={props.onGenerate} type="button">
-          <Play size={16} /> {buttonText(props)}
+        <span>{scene ? scene.name : "No scene selected"}</span>
+        <button
+          className="button button-primary"
+          disabled={!canGenerate(scene, props.generating)}
+          onClick={props.onGenerate}
+          type="button"
+        >
+          <Play size={16} /> {buttonText(props.creditCost, props.generating, props.submitting)}
         </button>
       </div>
     </section>
   );
 }
 
-function previewFallback(scene?: EditorScene) {
-  return <ResolvedAssetImage alt="Start frame" className="preview-image" fallback={scene ? "Ready to generate" : "Create a clip first"} source={scene?.startFrameUrl} />;
+function canGenerate(scene: EditorScene | undefined, generating: boolean) {
+  return Boolean(scene) && !generating;
 }
 
-function canGenerate(props: PreviewPlayerProps) {
-  return Boolean(props.scene) && !isGenerationActive(props);
-}
-
-function buttonText(props: PreviewPlayerProps) {
-  if (props.submitting) return "Submitting...";
-  if (isGenerationActive(props)) return "Generating...";
-  return props.creditCost ? `Generate clip (${props.creditCost} credits)` : "Generate clip";
-}
-
-function isGenerationActive(props: PreviewPlayerProps) {
-  return props.generating;
+function buttonText(creditCost: number | null | undefined, generating: boolean, submitting: boolean) {
+  if (submitting) return "Submitting...";
+  if (generating) return "Generating...";
+  return creditCost ? `Generate clip (${creditCost} credits)` : "Generate clip";
 }

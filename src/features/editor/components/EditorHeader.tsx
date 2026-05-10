@@ -1,13 +1,14 @@
 import { EditorAccountActions } from "./EditorAccountActions";
 import { EditorBackLink } from "./EditorBackLink";
 import { EditorProjectSummary } from "./EditorProjectSummary";
-import type { EditorImageModel, EditorVideoModel } from "../types";
+import type { EditorImageModel, EditorScene, EditorVideoModel } from "../types";
 
 type EditorHeaderProps = {
   aspectRatio: string;
   credits: number;
   imageModels: EditorImageModel[];
   projectId: string;
+  scenes: EditorScene[];
   title: string;
   sceneCount: number;
   totalDuration: string;
@@ -35,6 +36,8 @@ export function EditorHeader(props: EditorHeaderProps) {
           imageModels={props.imageModels}
           projectAspectRatio={props.aspectRatio}
           projectId={props.projectId}
+          projectTitle={props.title}
+          scenes={props.scenes}
           videoModels={props.videoModels}
         />
       </div>

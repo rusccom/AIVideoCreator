@@ -4,6 +4,7 @@ import "@/styles/studio.css";
 import "@/styles/editor.css";
 import "@/styles/editor-photo.css";
 import "@/styles/editor-progress.css";
+import "@/styles/editor-download.css";
 import "@/styles/forms.css";
 import "@/styles/project-modal.css";
 import "@/styles/ai-creator.css";

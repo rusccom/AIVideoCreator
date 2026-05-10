@@ -16,7 +16,8 @@ export async function createExportJob(userId: string, input: CreateExportInput) 
 
 export async function getExportJob(userId: string, exportId: string) {
   return prisma.exportJob.findFirst({
-    where: { id: exportId, userId }
+    where: { id: exportId, userId },
+    include: { project: { select: { title: true } } }
   });
 }
 
