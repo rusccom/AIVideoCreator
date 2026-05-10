@@ -32,8 +32,7 @@ export async function completeProjectImageGeneration(job: ImageGenerationJob, da
     await recordImageModelUsage(job.modelId, images.length);
     return markJobReady(job.id, assets);
   } catch (error) {
-    await markJobFailed(job.id, error);
-    throw error;
+    return markJobFailed(job.id, error);
   }
 }
 

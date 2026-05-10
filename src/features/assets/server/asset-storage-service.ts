@@ -47,7 +47,7 @@ export async function createAssetFromLocalFile(input: LocalAssetInput) {
   const assetId = randomUUID();
   const sizeBytes = await fileSize(input.localPath);
   const storageKey = buildLocalStorageKey(input, assetId);
-  await r2Storage.uploadLocalFile({ key: storageKey, mimeType: input.mimeType, path: input.localPath });
+  await r2Storage.uploadLocalFile({ key: storageKey, mimeType: input.mimeType, path: input.localPath, sizeBytes });
   return createStoredAsset(input, assetId, storageKey, input.mimeType, sizeBytes);
 }
 

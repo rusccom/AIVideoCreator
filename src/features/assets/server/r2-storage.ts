@@ -29,25 +29,43 @@ export const r2Storage = {
   },
 
   async uploadLocalFile(input: R2LocalUploadInput) {
-    await putObject(input.key, input.mimeType, createReadStream(input.path));
+    await putObject({
+      body: createReadStream(input.path),
+      key: input.key,
+      mimeType: input.mimeType,
+      sizeBytes: input.sizeBytes
+    });
   },
 
   async uploadRemoteUrl(input: R2RemoteUploadInput) {
     const response = await fetch(input.url);
     if (!response.ok || !response.body) throw new Error(`R2 remote upload failed: ${response.status}`);
     const mimeType = input.mimeType || response.headers.get("content-type") || "application/octet-stream";
-    const body = Readable.fromWeb(response.body as unknown as NodeReadableStream);
-    await putObject(input.key, mimeType, body);
-    return { mimeType, sizeBytes: responseSize(response) };
+    return uploadRemoteResponse(input.key, mimeType, response);
   }
 };
 
-async function putObject(key: string, mimeType: string, body: PutObjectBody) {
+async function uploadRemoteResponse(key: string, mimeType: string, response: Response) {
+  const sizeBytes = responseSize(response);
+  if (!sizeBytes) return uploadBufferedResponse(key, mimeType, response);
+  const body = Readable.fromWeb(response.body as unknown as NodeReadableStream);
+  await putObject({ body, key, mimeType, sizeBytes });
+  return { mimeType, sizeBytes };
+}
+
+async function uploadBufferedResponse(key: string, mimeType: string, response: Response) {
+  const body = Buffer.from(await response.arrayBuffer());
+  await putObject({ body, key, mimeType, sizeBytes: body.byteLength });
+  return { mimeType, sizeBytes: body.byteLength };
+}
+
+async function putObject(input: R2PutObjectInput) {
   const command = new PutObjectCommand({
     Bucket: r2Env().R2_BUCKET,
-    Key: key,
-    Body: body,
-    ContentType: mimeType
+    Key: input.key,
+    Body: input.body,
+    ContentLength: input.sizeBytes,
+    ContentType: input.mimeType
   });
   await getR2Client().send(command);
 }
@@ -89,10 +107,18 @@ type R2LocalUploadInput = {
   key: string;
   mimeType: string;
   path: string;
+  sizeBytes: number;
 };
 
 type R2RemoteUploadInput = {
   key: string;
   mimeType?: string;
   url: string;
+};
+
+type R2PutObjectInput = {
+  body: PutObjectBody;
+  key: string;
+  mimeType: string;
+  sizeBytes: number;
 };

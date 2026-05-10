@@ -1,5 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
+import { getSupportedModel } from "../models/catalog";
+import { getFalResult } from "./fal-client";
 import { completeGenerationJob, failGenerationJob } from "./generation-result-service";
 
 type FalWebhookPayload = {
@@ -23,7 +25,7 @@ export async function handleFalWebhook(payload: FalWebhookPayload) {
   if (!job) {
     return { ignored: true };
   }
-  return isFailure(payload) ? failJob(job.id, payload) : processJob(job.id, payload);
+  return isFailure(payload) ? failJob(job.id, payload) : processJob(job);
 }
 
 async function createWebhookEvent(eventId: string, payload: FalWebhookPayload) {
@@ -54,8 +56,16 @@ async function failJob(jobId: string, payload: FalWebhookPayload) {
   return failGenerationJob(jobId, payload.error ?? payload, "fal generation failed");
 }
 
-async function processJob(jobId: string, payload: FalWebhookPayload) {
-  return completeGenerationJob(jobId, payload.data ?? payload);
+async function processJob(job: Awaited<ReturnType<typeof findJob>>) {
+  if (!job?.providerRequestId) throw new Error("Missing fal request id");
+  const result = await getFalResult(providerModelId(job.modelId), job.providerRequestId);
+  return completeGenerationJob(job.id, result.data);
+}
+
+function providerModelId(modelId: string) {
+  const model = getSupportedModel(modelId);
+  if (!model) throw new Error("Generation model is not supported");
+  return model.providerModelId;
 }
 
 function asJson(value: unknown) {
