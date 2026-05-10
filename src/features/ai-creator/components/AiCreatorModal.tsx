@@ -1,15 +1,18 @@
 "use client";
 
 import { RotateCcw, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { generateCreatorImages, type GeneratedCreatorAsset } from "../ai-creator-generation";
 import { generateCreatorScenes } from "../ai-creator-scenes";
+import { generateCreatorVideo } from "../ai-creator-video-generation";
 import {
   aspectRatioOptions,
   buildSceneDrafts,
   createLoadingSlots,
   initialIdeaForm,
-  selectedImageModel
+  selectedImageModel,
+  selectedVideoModel
 } from "../ai-creator-state";
 import type {
   AiCreatorIdeaFormState,
@@ -30,11 +33,14 @@ type AiCreatorModalProps = {
 };
 
 export function AiCreatorModal(props: AiCreatorModalProps) {
+  const router = useRouter();
   const imageModels = props.imageModels ?? [];
   const videoModels = props.videoModels ?? [];
   const [form, setForm] = useState(() => initialIdeaForm(imageModels, videoModels));
   const [showIdea, setShowIdea] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [videoError, setVideoError] = useState("");
+  const [videoSubmitting, setVideoSubmitting] = useState(false);
   const [scenes, setScenes] = useState<AiCreatorSceneDraft[]>([]);
   const [selectedSceneId, setSelectedSceneId] = useState<string>();
   const [mediaSlots, setMediaSlots] = useState<AiCreatorMediaSlot[]>([]);
@@ -51,6 +57,22 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
     setSelectedSceneId(nextScenes[0]?.id);
     setLoading(false);
     await loadFirstFrameImages(nextScenes[0], form);
+  }
+
+  async function submitVideo() {
+    const input = videoRequest();
+    if (!input) return setVideoError("Select a first frame before generating video.");
+    setVideoSubmitting(true);
+    setVideoError("");
+    try {
+      await generateCreatorVideo(input);
+      router.refresh();
+      props.onClose();
+    } catch {
+      setVideoError("Video generation could not start.");
+    } finally {
+      setVideoSubmitting(false);
+    }
   }
 
   async function loadSceneDrafts(nextForm: AiCreatorIdeaFormState) {
@@ -98,7 +120,16 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
   }
 
   function updateBatch(start: number, count: number, assets: GeneratedCreatorAsset[]) {
+    setSelectedAssetId((current) => current ?? assets[0]?.id);
     setMediaSlots((current) => mergeAssets(current, start, count, assets));
+  }
+
+  function videoRequest() {
+    const scene = scenes[0];
+    const assetId = selectedAssetId ?? firstReadyAssetId(mediaSlots);
+    const videoModel = selectedVideoModel(videoModels, form.videoModelId);
+    if (!props.projectId || !scene || !assetId || !videoModel) return null;
+    return { assetId, form, projectId: props.projectId, scene, videoModel };
   }
 
   return (
@@ -134,9 +165,10 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
             selectedSceneId={selectedSceneId}
           />
         </div>
+        {videoError ? <div className="form-error">{videoError}</div> : null}
         <div className="ai-creator-modal-footer">
-          <button className="button button-primary" disabled type="button">
-            Generate video
+          <button className="button button-primary" disabled={videoDisabled(videoRequest(), loading, videoSubmitting)} onClick={submitVideo} type="button">
+            {videoSubmitting ? "Submitting..." : "Generate video"}
           </button>
         </div>
         {showIdea ? (
@@ -205,4 +237,12 @@ function emptySlot() {
 
 function failLoadingSlots(slots = createLoadingSlots()) {
   return slots.map((slot) => slot.status === "loading" ? { ...slot, status: "failed" as const } : slot);
+}
+
+function firstReadyAssetId(slots: AiCreatorMediaSlot[]) {
+  return slots.find((slot) => slot.status === "ready" && slot.assetId)?.assetId;
+}
+
+function videoDisabled(input: unknown, loading: boolean, submitting: boolean) {
+  return loading || submitting || !input;
 }
