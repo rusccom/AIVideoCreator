@@ -21,9 +21,11 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   const [showCreate, setShowCreate] = useState(false);
   const [sceneAssetId, setSceneAssetId] = useState<string>();
   const [generating, setGenerating] = useState(false);
+  const [pendingGenerationSceneId, setPendingGenerationSceneId] = useState<string>();
   const [message, setMessage] = useState("");
   const selectedScene = useMemo(() => selectedSceneById(project, selectedSceneId), [project, selectedSceneId]);
   const selectedCost = videoCost(project.videoModels, selectedScene);
+  const generationActive = generating || sceneGenerationActive(selectedScene, pendingGenerationSceneId);
 
   useEffect(() => {
     const jobId = selectedScene?.generationJobId;
@@ -32,12 +34,18 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
     return () => window.clearInterval(timer);
   }, [router, selectedScene]);
 
+  useEffect(() => {
+    if (selectedScene?.id !== pendingGenerationSceneId) return;
+    if (selectedScene.statusValue === "READY" || selectedScene.statusValue === "FAILED") setPendingGenerationSceneId(undefined);
+  }, [pendingGenerationSceneId, selectedScene]);
+
   async function generateClip() {
     if (!selectedScene) return;
     setGenerating(true);
     setMessage("");
     const response = await submitGeneration(selectedScene, project);
     setGenerating(false);
+    if (response.ok) setPendingGenerationSceneId(selectedScene.id);
     setMessage(response.ok ? "Generation queued." : await responseError(response));
     router.refresh();
   }
@@ -72,7 +80,13 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
           scenes={project.scenes}
           selectedSceneId={selectedScene?.id}
         />
-        <PreviewPlayer creditCost={selectedCost} generating={generating} onGenerate={generateClip} scene={selectedScene} />
+        <PreviewPlayer
+          creditCost={selectedCost}
+          generating={generationActive}
+          onGenerate={generateClip}
+          scene={selectedScene}
+          submitting={generating}
+        />
         <PhotoPanel
           assets={project.assets}
           imageModels={project.imageModels}
@@ -136,6 +150,13 @@ function videoAspectRatio(project: EditorProject, modelId: string) {
   const model = project.videoModels.find((item) => item.id === modelId);
   if (model?.supportedAspectRatios.includes(project.aspectRatio)) return project.aspectRatio;
   return model?.supportedAspectRatios.includes("auto") ? "auto" : model?.defaultAspectRatio;
+}
+
+function sceneGenerationActive(
+  scene: NonNullable<ReturnType<typeof selectedSceneById>> | undefined,
+  pendingSceneId?: string
+) {
+  return scene?.statusValue === "GENERATING" || Boolean(scene?.id && scene.id === pendingSceneId);
 }
 
 function finishCreate(

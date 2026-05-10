@@ -1,11 +1,10 @@
 "use client";
 
 import { RotateCcw, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { generateCreatorImages, type GeneratedCreatorAsset } from "../ai-creator-generation";
 import { generateCreatorScenes } from "../ai-creator-scenes";
-import { estimateCreatorVideoCredits, generateCreatorVideo } from "../ai-creator-video-generation";
+import { estimateCreatorVideoCredits, generateCreatorVideo, type StartedCreatorVideo } from "../ai-creator-video-generation";
 import {
   buildSceneDrafts,
   createLoadingSlots,
@@ -27,13 +26,13 @@ import { AiCreatorScenePanel } from "./AiCreatorScenePanel";
 type AiCreatorModalProps = {
   imageModels?: AiCreatorImageModel[];
   onClose: () => void;
+  onVideoStarted: (video: StartedCreatorVideo) => void;
   projectAspectRatio: string;
   projectId?: string;
   videoModels?: AiCreatorVideoModel[];
 };
 
 export function AiCreatorModal(props: AiCreatorModalProps) {
-  const router = useRouter();
   const imageModels = props.imageModels ?? [];
   const videoModels = props.videoModels ?? [];
   const [form, setForm] = useState(() => initialIdeaForm(imageModels, videoModels, props.projectAspectRatio));
@@ -64,9 +63,7 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
     setVideoSubmitting(true);
     setVideoError("");
     try {
-      await generateCreatorVideo(input);
-      router.refresh();
-      props.onClose();
+      props.onVideoStarted(await generateCreatorVideo(input));
     } catch (error) {
       setVideoError(errorMessage(error));
     } finally {

@@ -1,6 +1,7 @@
 import { Play } from "lucide-react";
 import type { EditorScene } from "../types";
 import { useResolvedAssetUrl } from "../hooks/use-resolved-asset-url";
+import { GenerationProgressBar } from "./GenerationProgressBar";
 import { ResolvedAssetImage } from "./ResolvedAssetImage";
 
 type PreviewPlayerProps = {
@@ -8,6 +9,7 @@ type PreviewPlayerProps = {
   generating: boolean;
   onGenerate: () => void;
   scene?: EditorScene;
+  submitting: boolean;
 };
 
 export function PreviewPlayer(props: PreviewPlayerProps) {
@@ -18,11 +20,12 @@ export function PreviewPlayer(props: PreviewPlayerProps) {
         <div className="preview-screen">
           {videoUrl ? <video controls src={videoUrl} /> : previewFallback(props.scene)}
         </div>
+        {isGenerationActive(props) ? <GenerationProgressBar /> : null}
       </div>
       <div className="preview-controls">
         <span>{props.scene ? props.scene.name : "No scene selected"}</span>
         <button className="button button-primary" disabled={!canGenerate(props)} onClick={props.onGenerate} type="button">
-          <Play size={16} /> {buttonText(props.generating, props.creditCost)}
+          <Play size={16} /> {buttonText(props)}
         </button>
       </div>
     </section>
@@ -34,10 +37,15 @@ function previewFallback(scene?: EditorScene) {
 }
 
 function canGenerate(props: PreviewPlayerProps) {
-  return Boolean(props.scene) && !props.generating && props.scene?.statusValue !== "GENERATING";
+  return Boolean(props.scene) && !isGenerationActive(props);
 }
 
-function buttonText(generating: boolean, credits?: number | null) {
-  if (generating) return "Submitting...";
-  return credits ? `Generate clip (${credits} credits)` : "Generate clip";
+function buttonText(props: PreviewPlayerProps) {
+  if (props.submitting) return "Submitting...";
+  if (isGenerationActive(props)) return "Generating...";
+  return props.creditCost ? `Generate clip (${props.creditCost} credits)` : "Generate clip";
+}
+
+function isGenerationActive(props: PreviewPlayerProps) {
+  return props.generating;
 }

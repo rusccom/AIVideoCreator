@@ -8,10 +8,20 @@ type GenerateCreatorVideoInput = {
   videoModel: AiCreatorVideoModel;
 };
 
+export type StartedCreatorVideo = {
+  job: {
+    id: string;
+    status: string;
+  };
+  scene: {
+    id: string;
+  };
+};
+
 export async function generateCreatorVideo(input: GenerateCreatorVideoInput) {
   const response = await fetch(`/api/projects/${input.projectId}/ai-creator/video`, postJson(videoBody(input)));
   if (!response.ok) throw new Error(await responseError(response, "Video generation could not start."));
-  return response.json() as Promise<{ scene: { id: string } }>;
+  return response.json() as Promise<StartedCreatorVideo>;
 }
 
 export function estimateCreatorVideoCredits(input: Pick<GenerateCreatorVideoInput, "scene" | "videoModel">) {
