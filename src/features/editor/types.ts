@@ -50,7 +50,7 @@ export type EditorVideoModel = {
 export type EditorProject = {
   id: string;
   title: string;
-  description: string;
+  aspectRatio: string;
   totalDuration: string;
   scenes: EditorScene[];
   assets: EditorAsset[];

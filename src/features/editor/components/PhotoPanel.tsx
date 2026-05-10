@@ -12,6 +12,7 @@ type PhotoPanelProps = {
   assets: EditorAsset[];
   imageModels: EditorImageModel[];
   onCreateVideoFromPhoto: (assetId: string) => void;
+  projectAspectRatio: string;
   projectId: string;
 };
 
@@ -74,6 +75,7 @@ export function PhotoPanel(props: PhotoPanelProps) {
           imageModels={props.imageModels}
           onClose={() => setShowCreate(false)}
           onReady={() => finishCreate(setShowCreate, router.refresh)}
+          projectAspectRatio={props.projectAspectRatio}
           projectId={props.projectId}
         />
       ) : null}

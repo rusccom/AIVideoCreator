@@ -14,10 +14,7 @@ export async function createProject(userId: string, input: CreateProjectInput) {
     data: {
       userId,
       title: input.title,
-      description: input.idea,
       aspectRatio: input.aspectRatio,
-      stylePreset: input.stylePreset,
-      quality: input.quality,
       status: "DRAFT"
     }
   });

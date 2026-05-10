@@ -5,6 +5,7 @@ import type { EditorImageModel, EditorVideoModel } from "../types";
 
 type EditorAccountActionsProps = {
   imageModels: EditorImageModel[];
+  projectAspectRatio: string;
   projectId: string;
   videoModels: EditorVideoModel[];
 };
@@ -14,6 +15,7 @@ export function EditorAccountActions(props: EditorAccountActionsProps) {
     <div className="editor-account-actions">
       <AiCreatorButton
         imageModels={props.imageModels}
+        projectAspectRatio={props.projectAspectRatio}
         projectId={props.projectId}
         videoModels={props.videoModels}
       />

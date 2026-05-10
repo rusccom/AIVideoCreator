@@ -8,6 +8,7 @@ import type { EditorImageModel } from "../types";
 type PhotoGenerateFormProps = {
   models: EditorImageModel[];
   onGenerated: () => void;
+  projectAspectRatio: string;
   projectId: string;
 };
 
@@ -22,7 +23,7 @@ export function PhotoGenerateForm(props: PhotoGenerateFormProps) {
     event.preventDefault();
     setGenerating(true);
     setError("");
-    const result = await generateImage(props.projectId, model, prompt);
+    const result = await generateImage(props.projectId, model, prompt, props.projectAspectRatio);
     setGenerating(false);
     if (!result.ok) return setError(result.error ?? "Photo generation failed.");
     props.onGenerated();
@@ -42,24 +43,34 @@ export function PhotoGenerateForm(props: PhotoGenerateFormProps) {
   );
 }
 
-async function generateImage(projectId: string, model: EditorImageModel | undefined, prompt: string) {
+async function generateImage(
+  projectId: string,
+  model: EditorImageModel | undefined,
+  prompt: string,
+  aspectRatio: string
+) {
   if (!model) return { ok: false, error: "No image model is active." };
   try {
-    await generateProjectImageAssets(projectId, requestBody(model, prompt));
+    await generateProjectImageAssets(projectId, requestBody(model, prompt, aspectRatio));
     return { ok: true };
   } catch {
     return { ok: false, error: "Photo generation failed." };
   }
 }
 
-function requestBody(model: EditorImageModel, prompt: string) {
+function requestBody(model: EditorImageModel, prompt: string, aspectRatio: string) {
   return {
-    aspectRatio: model.defaultAspectRatio,
+    aspectRatio: imageAspectRatio(model, aspectRatio),
     modelId: model.id,
     numImages: 1,
     prompt,
     resolution: model.defaultResolution
   };
+}
+
+function imageAspectRatio(model: EditorImageModel, aspectRatio: string) {
+  if (model.supportedAspectRatios.includes(aspectRatio)) return aspectRatio;
+  return model.supportedAspectRatios.includes("auto") ? "auto" : model.defaultAspectRatio;
 }
 
 function selectedModel(models: EditorImageModel[], modelId: string) {

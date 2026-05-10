@@ -1,17 +1,18 @@
 import { z } from "zod";
+import {
+  COMMON_ASPECT_RATIO_PRESETS,
+  defaultAspectRatioPreset
+} from "@/features/generation/models/aspect-ratio-presets";
+
+const aspectRatioValues = COMMON_ASPECT_RATIO_PRESETS.map((item) => item.value) as [string, ...string[]];
 
 export const createProjectSchema = z.object({
   title: z.string().min(1).max(120),
-  aspectRatio: z.string().min(3).max(40),
-  stylePreset: z.string().min(2).max(40),
-  quality: z.string().min(2).max(40),
-  idea: z.string().min(1).max(2000),
-  frameSource: z.string().min(2).max(80)
+  aspectRatio: z.enum(aspectRatioValues).default(defaultAspectRatioPreset().value)
 });
 
 export const updateProjectSchema = z.object({
   title: z.string().min(1).max(120).optional(),
-  description: z.string().max(2000).optional(),
   status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED", "EXPORTING"]).optional()
 });
 

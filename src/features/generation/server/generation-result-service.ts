@@ -5,8 +5,9 @@ import { prisma } from "@/shared/server/prisma";
 import { commitCredits, refundCredits } from "./credit-service";
 
 export async function completeGenerationJob(jobId: string, data: unknown) {
-  const job = await claimGenerationCompletion(jobId);
-  if (job.status !== "PROCESSING") return job;
+  const claim = await claimGenerationCompletion(jobId);
+  const job = claim.job;
+  if (!claim.ready) return job;
   if (job.type === "IMAGE_GENERATION") return completeProjectImageGeneration(job, data);
   return completeVideoGenerationJob(job, data);
 }
@@ -41,11 +42,12 @@ async function completeVideoGenerationJob(job: JobRecord, data: unknown) {
 }
 
 async function claimGenerationCompletion(jobId: string) {
-  await prisma.generationJob.updateMany({
+  const claim = await prisma.generationJob.updateMany({
     where: { id: jobId, status: "GENERATING" },
     data: { status: "PROCESSING" }
   });
-  return prisma.generationJob.findUniqueOrThrow({ where: { id: jobId } });
+  const job = await prisma.generationJob.findUniqueOrThrow({ where: { id: jobId } });
+  return { job, ready: claim.count === 1 };
 }
 
 function markJobReady(jobId: string, data: unknown) {

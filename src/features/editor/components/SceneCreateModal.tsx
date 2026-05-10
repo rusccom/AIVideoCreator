@@ -14,7 +14,6 @@ type SceneCreateModalProps = {
 };
 
 type SceneFormState = {
-  aspectRatio: string;
   durationSeconds: number;
   modelId: string;
   prompt: string;
@@ -81,12 +80,6 @@ export function SceneCreateModal(props: SceneCreateModalProps) {
               {model?.supportedResolutions.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </label>
-          <label>
-            Aspect ratio
-            <select value={form.aspectRatio} onChange={(event) => update(setForm, "aspectRatio", event.target.value)}>
-              {model?.supportedAspectRatios.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-          </label>
         </div>
         <label>
           Start frame upload
@@ -151,7 +144,6 @@ function initialState(
 ) {
   const model = models[0];
   return {
-    aspectRatio: model?.defaultAspectRatio ?? "auto",
     durationSeconds: model?.defaultDurationSeconds ?? 6,
     modelId: model?.id ?? "",
     prompt: prompt || "Describe the clip motion.",
@@ -168,7 +160,6 @@ function startAssetId(assets: EditorAsset[], initialAssetId?: string) {
 function modelState(current: SceneFormState, model?: EditorVideoModel) {
   return {
     ...current,
-    aspectRatio: model?.defaultAspectRatio ?? current.aspectRatio,
     durationSeconds: model?.defaultDurationSeconds ?? current.durationSeconds,
     modelId: model?.id ?? current.modelId,
     resolution: model?.defaultResolution ?? current.resolution

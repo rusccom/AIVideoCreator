@@ -4,10 +4,6 @@ import {
   DEFAULT_SCENE_DURATION_SECONDS,
   IMAGE_API_MAX_IMAGES_PER_REQUEST
 } from "./config";
-import {
-  COMMON_ASPECT_RATIO_PRESETS,
-  defaultAspectRatioPreset
-} from "@/features/generation/models/aspect-ratio-presets";
 import type {
   AiCreatorIdeaFormState,
   AiCreatorImageModel,
@@ -18,21 +14,18 @@ import type {
 
 export function initialIdeaForm(
   imageModels: AiCreatorImageModel[],
-  videoModels: AiCreatorVideoModel[]
+  videoModels: AiCreatorVideoModel[],
+  aspectRatio: string
 ): AiCreatorIdeaFormState {
   const imageModel = imageModels[0];
   const videoModel = videoModels[0];
   return {
-    aspectRatio: defaultAspectRatioPreset().value,
+    aspectRatio,
     durationSeconds: DEFAULT_SCENE_DURATION_SECONDS * 6,
     idea: "",
     imageModelId: imageModel?.id ?? "",
     videoModelId: videoModel?.id ?? ""
   };
-}
-
-export function aspectRatioOptions() {
-  return COMMON_ASPECT_RATIO_PRESETS;
 }
 
 export function buildSceneDrafts(form: AiCreatorIdeaFormState) {

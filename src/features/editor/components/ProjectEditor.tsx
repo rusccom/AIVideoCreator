@@ -36,7 +36,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
     if (!selectedScene) return;
     setGenerating(true);
     setMessage("");
-    const response = await submitGeneration(selectedScene);
+    const response = await submitGeneration(selectedScene, project);
     setGenerating(false);
     setMessage(response.ok ? "Generation queued." : await responseError(response));
     router.refresh();
@@ -55,6 +55,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   return (
     <div className="editor-shell">
       <EditorHeader
+        aspectRatio={project.aspectRatio}
         credits={credits}
         imageModels={project.imageModels}
         projectId={project.id}
@@ -76,6 +77,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
           assets={project.assets}
           imageModels={project.imageModels}
           onCreateVideoFromPhoto={openSceneFromPhoto}
+          projectAspectRatio={project.aspectRatio}
           projectId={project.id}
         />
       </div>
@@ -88,7 +90,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
       {showCreate ? (
         <SceneCreateModal
           assets={project.assets}
-          defaultPrompt={project.description}
+          defaultPrompt={project.title}
           initialAssetId={sceneAssetId}
           models={project.videoModels}
           onClose={() => setShowCreate(false)}
@@ -100,16 +102,24 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   );
 }
 
-async function submitGeneration(scene: NonNullable<ReturnType<typeof selectedSceneById>>) {
+async function submitGeneration(
+  scene: NonNullable<ReturnType<typeof selectedSceneById>>,
+  project: EditorProject
+) {
   return fetch(`/api/scenes/${scene.id}/generate-video`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(generationBody(scene))
+    body: JSON.stringify(generationBody(scene, project))
   });
 }
 
-function generationBody(scene: NonNullable<ReturnType<typeof selectedSceneById>>) {
-  return { prompt: scene.prompt, modelId: scene.modelId, duration: scene.durationSeconds };
+function generationBody(scene: NonNullable<ReturnType<typeof selectedSceneById>>, project: EditorProject) {
+  return {
+    aspectRatio: videoAspectRatio(project, scene.modelId),
+    prompt: scene.prompt,
+    modelId: scene.modelId,
+    duration: scene.durationSeconds
+  };
 }
 
 function selectedSceneById(project: EditorProject, sceneId?: string) {
@@ -120,6 +130,12 @@ function videoCost(models: EditorProject["videoModels"], scene?: NonNullable<Edi
   const model = models.find((item) => item.id === scene?.modelId);
   const price = model?.pricePerSecondByResolution[model.defaultResolution] ?? 0;
   return scene && price > 0 ? Math.ceil(scene.durationSeconds * price) : null;
+}
+
+function videoAspectRatio(project: EditorProject, modelId: string) {
+  const model = project.videoModels.find((item) => item.id === modelId);
+  if (model?.supportedAspectRatios.includes(project.aspectRatio)) return project.aspectRatio;
+  return model?.supportedAspectRatios.includes("auto") ? "auto" : model?.defaultAspectRatio;
 }
 
 function finishCreate(

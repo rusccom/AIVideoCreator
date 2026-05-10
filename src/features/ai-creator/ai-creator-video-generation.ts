@@ -23,12 +23,17 @@ export function estimateCreatorVideoCredits(input: Pick<GenerateCreatorVideoInpu
 function videoBody(input: GenerateCreatorVideoInput) {
   return {
     assetId: input.assetId,
-    aspectRatio: input.form.aspectRatio,
+    aspectRatio: videoAspectRatio(input.videoModel, input.form.aspectRatio),
     duration: sceneDuration(input.scene),
     modelId: input.form.videoModelId,
     prompt: videoPrompt(input.scene),
     resolution: input.videoModel.defaultResolution
   };
+}
+
+function videoAspectRatio(model: AiCreatorVideoModel, aspectRatio: string) {
+  if (model.supportedAspectRatios.includes(aspectRatio)) return aspectRatio;
+  return model.supportedAspectRatios.includes("auto") ? "auto" : model.defaultAspectRatio;
 }
 
 function videoPrompt(scene: AiCreatorSceneDraft) {

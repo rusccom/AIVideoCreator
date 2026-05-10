@@ -2,12 +2,11 @@
 
 import { RotateCcw, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { generateCreatorImages, type GeneratedCreatorAsset } from "../ai-creator-generation";
 import { generateCreatorScenes } from "../ai-creator-scenes";
 import { estimateCreatorVideoCredits, generateCreatorVideo } from "../ai-creator-video-generation";
 import {
-  aspectRatioOptions,
   buildSceneDrafts,
   createLoadingSlots,
   initialIdeaForm,
@@ -28,6 +27,7 @@ import { AiCreatorScenePanel } from "./AiCreatorScenePanel";
 type AiCreatorModalProps = {
   imageModels?: AiCreatorImageModel[];
   onClose: () => void;
+  projectAspectRatio: string;
   projectId?: string;
   videoModels?: AiCreatorVideoModel[];
 };
@@ -36,7 +36,7 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
   const router = useRouter();
   const imageModels = props.imageModels ?? [];
   const videoModels = props.videoModels ?? [];
-  const [form, setForm] = useState(() => initialIdeaForm(imageModels, videoModels));
+  const [form, setForm] = useState(() => initialIdeaForm(imageModels, videoModels, props.projectAspectRatio));
   const [showIdea, setShowIdea] = useState(true);
   const [loading, setLoading] = useState(false);
   const [videoError, setVideoError] = useState("");
@@ -47,7 +47,6 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
   const [selectedAssetId, setSelectedAssetId] = useState<string>();
   const projectReady = Boolean(props.projectId && imageModels.length > 0 && videoModels.length > 0);
   const selectedScene = scenes.find((scene) => scene.id === selectedSceneId);
-  const aspectRatios = useMemo(() => aspectRatioOptions(), []);
 
   async function submitIdea() {
     setLoading(true);
@@ -176,7 +175,6 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
         </div>
         {showIdea ? (
           <AiCreatorIdeaModal
-            aspectRatios={aspectRatios}
             form={form}
             imageModels={imageModels}
             loading={loading}

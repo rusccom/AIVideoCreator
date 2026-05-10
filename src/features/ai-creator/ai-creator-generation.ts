@@ -40,10 +40,15 @@ async function requestImageBatch(input: GenerateCreatorImagesInput, count: numbe
 
 function requestBody(input: GenerateCreatorImagesInput, count: number) {
   return {
-    aspectRatio: input.aspectRatio,
+    aspectRatio: imageAspectRatio(input.imageModel, input.aspectRatio),
     modelId: input.imageModel.id,
     numImages: count,
     prompt: input.prompt,
     resolution: input.imageModel.defaultResolution
   };
+}
+
+function imageAspectRatio(model: AiCreatorImageModel, aspectRatio: string) {
+  if (model.supportedAspectRatios.includes(aspectRatio)) return aspectRatio;
+  return model.supportedAspectRatios.includes("auto") ? "auto" : model.defaultAspectRatio;
 }

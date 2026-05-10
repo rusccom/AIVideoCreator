@@ -20,7 +20,7 @@ export async function getEditorProject(
   return {
     id: project.id,
     title: project.title,
-    description: project.description ?? "",
+    aspectRatio: project.aspectRatio,
     totalDuration: `${totalSceneSeconds(project.scenes)}s`,
     scenes: project.scenes.map((scene) => toEditorScene(scene, assetsById)),
     assets: project.assets.map(toEditorAsset),

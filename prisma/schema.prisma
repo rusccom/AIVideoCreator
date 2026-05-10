@@ -70,32 +70,28 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  projects       Project[]
-  assets         Asset[]
-  jobs           GenerationJob[]
-  ledgerEntries  CreditLedger[]
-  subscriptions  Subscription[]
-  exportJobs     ExportJob[]
+  projects      Project[]
+  assets        Asset[]
+  jobs          GenerationJob[]
+  ledgerEntries CreditLedger[]
+  subscriptions Subscription[]
+  exportJobs    ExportJob[]
 }
 
 model Project {
-  id                    String        @id @default(cuid())
-  userId                String
-  title                 String
-  description           String?
-  aspectRatio           String
-  stylePreset           String
-  promptLanguage        String        @default("en")
-  quality               String        @default("balanced")
-  status                ProjectStatus @default(DRAFT)
-  initialFrameAssetId   String?
-  coverAssetId          String?
-  totalDurationSeconds  Int           @default(0)
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-  archivedAt            DateTime?
+  id                   String        @id @default(cuid())
+  userId               String
+  title                String
+  aspectRatio          String
+  status               ProjectStatus @default(DRAFT)
+  initialFrameAssetId  String?
+  coverAssetId         String?
+  totalDurationSeconds Int           @default(0)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  archivedAt           DateTime?
 
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   scenes  Scene[]
   assets  Asset[]
   jobs    GenerationJob[]
@@ -105,25 +101,25 @@ model Project {
 }
 
 model Scene {
-  id                 String      @id @default(cuid())
-  projectId          String
-  orderIndex         Int
-  durationSeconds    Int         @default(6)
-  status             SceneStatus @default(DRAFT)
-  startFrameAssetId  String?
-  videoAssetId       String?
-  endFrameAssetId    String?
-  userPrompt         String
-  aiPrompt           String?
-  modelId            String
-  generationJobId    String?
-  parentSceneId      String?
-  branchId           String?
-  isStale            Boolean     @default(false)
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  id                String      @id @default(cuid())
+  projectId         String
+  orderIndex        Int
+  durationSeconds   Int         @default(6)
+  status            SceneStatus @default(DRAFT)
+  startFrameAssetId String?
+  videoAssetId      String?
+  endFrameAssetId   String?
+  userPrompt        String
+  aiPrompt          String?
+  modelId           String
+  generationJobId   String?
+  parentSceneId     String?
+  branchId          String?
+  isStale           Boolean     @default(false)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   jobs    GenerationJob[]
 
   @@unique([projectId, orderIndex, branchId])
@@ -131,22 +127,22 @@ model Scene {
 }
 
 model Asset {
-  id              String      @id @default(cuid())
-  userId          String
-  projectId       String?
-  type            AssetType
-  source          AssetSource
-  storageProvider String
-  storageBucket   String
-  storageKey      String
-  mimeType        String
-  sizeBytes       Int?
-  width           Int?
-  height          Int?
-  durationSeconds Int?
+  id               String      @id @default(cuid())
+  userId           String
+  projectId        String?
+  type             AssetType
+  source           AssetSource
+  storageProvider  String
+  storageBucket    String
+  storageKey       String
+  mimeType         String
+  sizeBytes        Int?
+  width            Int?
+  height           Int?
+  durationSeconds  Int?
   thumbnailAssetId String?
-  metadataJson    Json?
-  createdAt       DateTime    @default(now())
+  metadataJson     Json?
+  createdAt        DateTime    @default(now())
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -174,9 +170,9 @@ model GenerationJob {
   completedAt          DateTime?
   createdAt            DateTime  @default(now())
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  scene   Scene?   @relation(fields: [sceneId], references: [id], onDelete: SetNull)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scene   Scene?         @relation(fields: [sceneId], references: [id], onDelete: SetNull)
   ledger  CreditLedger[]
 
   @@index([providerRequestId])
@@ -193,14 +189,14 @@ model CreditLedger {
   stripeEventId   String?
   createdAt       DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   job  GenerationJob? @relation(fields: [generationJobId], references: [id])
 
   @@index([userId, createdAt])
 }
 
 model Subscription {
-  id                   String   @id @default(cuid())
+  id                   String    @id @default(cuid())
   userId               String
   stripeCustomerId     String?
   stripeSubscriptionId String?
@@ -209,11 +205,11 @@ model Subscription {
   status               String
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean  @default(false)
-  monthlyCreditLimit   Int      @default(0)
-  creditsBalance       Int      @default(0)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  cancelAtPeriodEnd    Boolean   @default(false)
+  monthlyCreditLimit   Int       @default(0)
+  creditsBalance       Int       @default(0)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -249,28 +245,28 @@ model WebhookEvent {
 }
 
 model AiModel {
-  id                    String   @id @default(cuid())
-  key                   String   @unique
-  provider              String
-  providerModelId       String
-  type                  String
-  displayName           String
-  qualityTier           String
-  supportedAspectRatios String[]
-  supportedResolutions  String[]
-  supportsStartFrame    Boolean  @default(false)
-  supportsEndFrame      Boolean  @default(false)
-  supportsSeed          Boolean  @default(false)
-  pricePerSecondByResolution Json @default("{}")
-  minDurationSeconds    Int      @default(1)
-  maxDurationSeconds    Int      @default(6)
-  defaultDurationSeconds Int     @default(6)
-  usageRequestCount      Int      @default(0)
-  usageGeneratedImages   Int      @default(0)
-  lastUsedAt             DateTime?
-  active                Boolean  @default(true)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                         String    @id @default(cuid())
+  key                        String    @unique
+  provider                   String
+  providerModelId            String
+  type                       String
+  displayName                String
+  qualityTier                String
+  supportedAspectRatios      String[]
+  supportedResolutions       String[]
+  supportsStartFrame         Boolean   @default(false)
+  supportsEndFrame           Boolean   @default(false)
+  supportsSeed               Boolean   @default(false)
+  pricePerSecondByResolution Json      @default("{}")
+  minDurationSeconds         Int       @default(1)
+  maxDurationSeconds         Int       @default(6)
+  defaultDurationSeconds     Int       @default(6)
+  usageRequestCount          Int       @default(0)
+  usageGeneratedImages       Int       @default(0)
+  lastUsedAt                 DateTime?
+  active                     Boolean   @default(true)
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
 
   @@index([provider, type, active])
 }
@@ -285,7 +281,7 @@ model ReasoningModel {
   inputTokenPriceUsdPerMillion  Float    @default(0)
   outputTokenPriceUsdPerMillion Float    @default(0)
   reasoningEffort               String   @default("medium")
-  excludeReasoning               Boolean  @default(true)
+  excludeReasoning              Boolean  @default(true)
   promptTokensUsed              Int      @default(0)
   completionTokensUsed          Int      @default(0)
   reasoningTokensUsed           Int      @default(0)

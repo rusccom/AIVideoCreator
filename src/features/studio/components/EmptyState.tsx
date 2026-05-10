@@ -6,8 +6,8 @@ export function EmptyState() {
       <div>
         <h2>Create your first project</h2>
         <p>
-          Upload a start frame, build the first 6-second clip, then continue from
-          its final frame.
+          Start a new workspace for your idea, then shape the project as it
+          grows.
         </p>
         <CreateProjectButton label="Create project" />
       </div>

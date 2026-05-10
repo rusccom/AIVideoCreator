@@ -231,27 +231,8 @@
 
 .wizard {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
-}
-
-.wizard-steps {
-  display: grid;
-  gap: 8px;
-  align-content: start;
-}
-
-.wizard-step {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 12px;
-  color: var(--soft);
-  background: rgba(255, 255, 255, 0.035);
-}
-
-.wizard-step.active {
-  border-color: rgba(34, 211, 238, 0.5);
-  color: var(--text);
 }
 
 .wizard-card {
@@ -266,11 +247,18 @@
 }
 
 .option-card {
+  display: grid;
+  gap: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px;
   color: var(--soft);
   background: rgba(255, 255, 255, 0.035);
+}
+
+.option-card small {
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 .option-card.active {

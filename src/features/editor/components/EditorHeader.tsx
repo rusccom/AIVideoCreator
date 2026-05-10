@@ -4,6 +4,7 @@ import { EditorProjectSummary } from "./EditorProjectSummary";
 import type { EditorImageModel, EditorVideoModel } from "../types";
 
 type EditorHeaderProps = {
+  aspectRatio: string;
   credits: number;
   imageModels: EditorImageModel[];
   projectId: string;
@@ -32,6 +33,7 @@ export function EditorHeader(props: EditorHeaderProps) {
       <div className="editor-header-right">
         <EditorAccountActions
           imageModels={props.imageModels}
+          projectAspectRatio={props.aspectRatio}
           projectId={props.projectId}
           videoModels={props.videoModels}
         />

@@ -8,6 +8,7 @@ type PhotoCreateModalProps = {
   imageModels: EditorImageModel[];
   onClose: () => void;
   onReady: () => void;
+  projectAspectRatio: string;
   projectId: string;
 };
 
@@ -23,7 +24,12 @@ export function PhotoCreateModal(props: PhotoCreateModalProps) {
           <button className="project-modal-close" onClick={props.onClose} type="button">x</button>
         </div>
         <div className="photo-modal-grid">
-          <PhotoGenerateForm models={props.imageModels} onGenerated={props.onReady} projectId={props.projectId} />
+          <PhotoGenerateForm
+            models={props.imageModels}
+            onGenerated={props.onReady}
+            projectAspectRatio={props.projectAspectRatio}
+            projectId={props.projectId}
+          />
           <PhotoUploadForm onUploaded={props.onReady} projectId={props.projectId} />
         </div>
       </div>

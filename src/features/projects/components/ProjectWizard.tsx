@@ -1,33 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { ProjectFrameStep } from "./ProjectFrameStep";
-import { ProjectIdeaStep } from "./ProjectIdeaStep";
+import { useState, type FormEvent } from "react";
+import { defaultAspectRatioPreset } from "../data/project-options";
 import { ProjectSettingsStep } from "./ProjectSettingsStep";
-import { WizardProgress } from "./WizardProgress";
 
 export type ProjectWizardState = {
   title: string;
   aspectRatio: string;
-  stylePreset: string;
-  quality: string;
-  idea: string;
-  frameSource: string;
 };
 
 const initialState: ProjectWizardState = {
   title: "Untitled storyboard",
-  aspectRatio: "16:9 YouTube",
-  stylePreset: "cinematic",
-  quality: "balanced",
-  idea: "A woman walks through rainy neon Tokyo at night, cinematic camera.",
-  frameSource: "Upload image"
+  aspectRatio: defaultAspectRatioPreset().value
 };
 
 export function ProjectWizard() {
   const router = useRouter();
-  const [step, setStep] = useState(0);
   const [state, setState] = useState(initialState);
   const [error, setError] = useState("");
 
@@ -35,7 +24,8 @@ export function ProjectWizard() {
     setState((current) => ({ ...current, ...patch }));
   }
 
-  async function createProject() {
+  async function createProject(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setError("");
     const response = await fetch("/api/projects", {
       method: "POST",
@@ -55,28 +45,16 @@ export function ProjectWizard() {
   }
 
   return (
-    <div className="wizard">
-      <WizardProgress step={step} />
+    <form className="wizard" onSubmit={createProject}>
       <div>
         {error ? <div className="form-error">{error}</div> : null}
-        {step === 0 ? <ProjectSettingsStep state={state} update={update} /> : null}
-        {step === 1 ? <ProjectIdeaStep state={state} update={update} /> : null}
-        {step === 2 ? <ProjectFrameStep state={state} update={update} /> : null}
+        <ProjectSettingsStep state={state} update={update} />
         <div className="button-row hero-actions">
-          <button className="button button-secondary" disabled={step === 0} onClick={() => setStep(step - 1)} type="button">
-            Back
+          <button className="button button-primary" type="submit">
+            Create project
           </button>
-          {step < 2 ? (
-            <button className="button button-primary" onClick={() => setStep(step + 1)} type="button">
-              Continue
-            </button>
-          ) : (
-            <button className="button button-primary" onClick={createProject} type="button">
-              Create project
-            </button>
-          )}
         </div>
       </div>
-    </div>
+    </form>
   );
 }

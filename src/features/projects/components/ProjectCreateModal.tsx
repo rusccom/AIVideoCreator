@@ -14,7 +14,7 @@ export function ProjectCreateModal({ onClose }: ProjectCreateModalProps) {
         <div className="project-modal-header">
           <div>
             <h2>Create new project</h2>
-            <p>Set the format, prompt direction, quality, and first frame source.</p>
+            <p>Set up the core project details.</p>
           </div>
           <button aria-label="Close" className="project-modal-close" onClick={onClose} type="button">
             <X size={18} />
