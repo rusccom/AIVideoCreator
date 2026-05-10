@@ -38,6 +38,15 @@ export async function generateVideo(userId: string, sceneId: string, input: Gene
   return setProviderRequest(job.id, submitted.request_id);
 }
 
+export async function preflightVideoGeneration(userId: string, projectId: string, input: GenerateVideoInput) {
+  await assertProjectOwner(userId, projectId);
+  const model = await getModel(input.modelId);
+  const videoInput = resolveVideoInput(model, input);
+  const credits = estimateVideoCredits(model, videoInput);
+  await assertCredits(userId, credits);
+  return { credits };
+}
+
 type CreateJobInput = {
   userId: string;
   projectId: string;

@@ -9,6 +9,7 @@ type GenerateCreatorVideoInput = {
 };
 
 export async function generateCreatorVideo(input: GenerateCreatorVideoInput) {
+  await preflightVideoGeneration(input);
   await selectStartImage(input.projectId, input.assetId);
   const sceneId = await createCreatorScene(input);
   await startVideoGeneration(sceneId, input);
@@ -19,6 +20,11 @@ export function estimateCreatorVideoCredits(input: Pick<GenerateCreatorVideoInpu
   const resolution = input.videoModel.defaultResolution;
   const price = input.videoModel.pricePerSecondByResolution[resolution] ?? 0;
   return Math.ceil(sceneDuration(input.scene) * price);
+}
+
+async function preflightVideoGeneration(input: GenerateCreatorVideoInput) {
+  const response = await fetch(`/api/projects/${input.projectId}/video-generation/preflight`, postJson(videoBody(input)));
+  if (!response.ok) throw new Error(await responseError(response, "Video generation could not start."));
 }
 
 async function selectStartImage(projectId: string, assetId: string) {
