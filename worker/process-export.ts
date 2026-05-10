@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { Prisma } from "@prisma/client";
 import { createAssetFromLocalFile } from "../src/features/assets/server/asset-storage-service";
 import { prisma } from "../src/shared/server/prisma";
-import { runFfmpeg } from "./ffmpeg";
+import { probeHasAudioStream, runFfmpeg } from "./ffmpeg";
 import { createJobWorkspace, removeJobWorkspace } from "./job-workspace";
 import { downloadAsset } from "./media-download";
 
@@ -59,16 +59,29 @@ async function normalizeClip(context: ExportContext, scene: ReadyScene, index: n
   const input = join(workspace, `clip-${index}.mp4`);
   const output = join(workspace, `clip-${index}-normalized.mp4`);
   await downloadAsset(context.assets.get(scene.videoAssetId ?? "")!, input);
-  await runFfmpeg(normalizeCommand(input, output, context.dimensions));
+  const hasAudio = await probeHasAudioStream(input);
+  await runFfmpeg(normalizeCommand({ dimensions: context.dimensions, hasAudio, input, output }));
   return output;
 }
 
-function normalizeCommand(input: string, output: string, dimensions: Dimensions) {
+function normalizeCommand(args: NormalizeArgs) {
+  const inputs = audioInputs(args);
+  const mapping = audioMapping(args.hasAudio);
   return [
-    "-y", "-i", input, "-vf", videoFilter(dimensions),
-    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
-    "-pix_fmt", "yuv420p", "-an", output
+    "-y", ...inputs, "-vf", videoFilter(args.dimensions), ...mapping,
+    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+    "-c:a", "aac", "-ar", "48000", "-ac", "2", "-b:a", "128k", "-shortest", args.output
   ];
+}
+
+function audioInputs(args: NormalizeArgs) {
+  if (args.hasAudio) return ["-i", args.input];
+  return ["-i", args.input, "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000"];
+}
+
+function audioMapping(hasAudio: boolean) {
+  if (hasAudio) return ["-map", "0:v:0", "-map", "0:a:0"];
+  return ["-map", "0:v:0", "-map", "1:a:0"];
 }
 
 async function exportContext(job: ExportJob) {
@@ -170,3 +183,10 @@ type ExportJob = Awaited<ReturnType<typeof nextExportJob>> & {};
 type ReadyScene = Awaited<ReturnType<typeof readyScenes>>[number];
 type ExportContext = Awaited<ReturnType<typeof exportContext>>;
 type Dimensions = ReturnType<typeof dimensions>;
+
+type NormalizeArgs = {
+  dimensions: Dimensions;
+  hasAudio: boolean;
+  input: string;
+  output: string;
+};
