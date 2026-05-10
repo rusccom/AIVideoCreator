@@ -15,14 +15,20 @@ export async function generateCreatorVideo(input: GenerateCreatorVideoInput) {
   return { sceneId };
 }
 
+export function estimateCreatorVideoCredits(input: Pick<GenerateCreatorVideoInput, "scene" | "videoModel">) {
+  const resolution = input.videoModel.defaultResolution;
+  const price = input.videoModel.pricePerSecondByResolution[resolution] ?? 0;
+  return Math.ceil(sceneDuration(input.scene) * price);
+}
+
 async function selectStartImage(projectId: string, assetId: string) {
   const response = await fetch(`/api/projects/${projectId}/start-images/select`, postJson({ assetId }));
-  if (!response.ok) throw new Error("Start image selection failed.");
+  if (!response.ok) throw new Error(await responseError(response, "Start image selection failed."));
 }
 
 async function createCreatorScene(input: GenerateCreatorVideoInput) {
   const response = await fetch(`/api/projects/${input.projectId}/scenes`, postJson(sceneBody(input)));
-  if (!response.ok) throw new Error("Scene could not be created.");
+  if (!response.ok) throw new Error(await responseError(response, "Scene could not be created."));
   const data = await response.json() as { scene?: { id?: string } };
   if (!data.scene?.id) throw new Error("Scene was not created.");
   return data.scene.id;
@@ -30,7 +36,7 @@ async function createCreatorScene(input: GenerateCreatorVideoInput) {
 
 async function startVideoGeneration(sceneId: string, input: GenerateCreatorVideoInput) {
   const response = await fetch(`/api/scenes/${sceneId}/generate-video`, postJson(videoBody(input)));
-  if (!response.ok) throw new Error("Video generation could not start.");
+  if (!response.ok) throw new Error(await responseError(response, "Video generation could not start."));
 }
 
 function sceneBody(input: GenerateCreatorVideoInput) {
@@ -69,4 +75,13 @@ function postJson(body: unknown) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   };
+}
+
+async function responseError(response: Response, fallback: string) {
+  try {
+    const data = await response.json() as { error?: string };
+    return data.error ?? fallback;
+  } catch {
+    return fallback;
+  }
 }

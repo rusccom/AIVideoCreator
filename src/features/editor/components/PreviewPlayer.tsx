@@ -4,6 +4,7 @@ import { useResolvedAssetUrl } from "../hooks/use-resolved-asset-url";
 import { ResolvedAssetImage } from "./ResolvedAssetImage";
 
 type PreviewPlayerProps = {
+  creditCost?: number | null;
   generating: boolean;
   onGenerate: () => void;
   scene?: EditorScene;
@@ -21,7 +22,7 @@ export function PreviewPlayer(props: PreviewPlayerProps) {
       <div className="preview-controls">
         <span>{props.scene ? props.scene.name : "No scene selected"}</span>
         <button className="button button-primary" disabled={!canGenerate(props)} onClick={props.onGenerate} type="button">
-          <Play size={16} /> {props.generating ? "Submitting..." : "Generate clip"}
+          <Play size={16} /> {buttonText(props.generating, props.creditCost)}
         </button>
       </div>
     </section>
@@ -34,4 +35,9 @@ function previewFallback(scene?: EditorScene) {
 
 function canGenerate(props: PreviewPlayerProps) {
   return Boolean(props.scene) && !props.generating && props.scene?.statusValue !== "GENERATING";
+}
+
+function buttonText(generating: boolean, credits?: number | null) {
+  if (generating) return "Submitting...";
+  return credits ? `Generate clip (${credits} credits)` : "Generate clip";
 }

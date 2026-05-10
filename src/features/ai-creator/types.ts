@@ -20,6 +20,7 @@ export type AiCreatorVideoModel = {
   defaultResolution: string;
   maxDurationSeconds: number;
   minDurationSeconds: number;
+  pricePerSecondByResolution: Record<string, number>;
   supportedAspectRatios: string[];
   supportedResolutions: string[];
 };

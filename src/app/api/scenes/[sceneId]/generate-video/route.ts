@@ -17,6 +17,10 @@ export async function POST(request: Request, context: RouteContext) {
     const job = await generateVideo(user.id, sceneId, parsed.data);
     return NextResponse.json({ job });
   } catch (error) {
-    return error instanceof Error && error.message === "Unauthorized" ? unauthorized() : serverError("Video generation failed");
+    if (error instanceof Error && error.message === "Unauthorized") return unauthorized();
+    if (error instanceof Error && error.message === "Insufficient credits") {
+      return NextResponse.json({ error: error.message }, { status: 402 });
+    }
+    return serverError("Video generation failed");
   }
 }

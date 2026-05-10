@@ -23,6 +23,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState("");
   const selectedScene = useMemo(() => selectedSceneById(project, selectedSceneId), [project, selectedSceneId]);
+  const selectedCost = videoCost(project.videoModels, selectedScene);
 
   useEffect(() => {
     const jobId = selectedScene?.generationJobId;
@@ -37,7 +38,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
     setMessage("");
     const response = await submitGeneration(selectedScene);
     setGenerating(false);
-    setMessage(response.ok ? "Generation queued." : "Generation could not start.");
+    setMessage(response.ok ? "Generation queued." : await responseError(response));
     router.refresh();
   }
 
@@ -70,7 +71,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
           scenes={project.scenes}
           selectedSceneId={selectedScene?.id}
         />
-        <PreviewPlayer generating={generating} onGenerate={generateClip} scene={selectedScene} />
+        <PreviewPlayer creditCost={selectedCost} generating={generating} onGenerate={generateClip} scene={selectedScene} />
         <PhotoPanel
           assets={project.assets}
           imageModels={project.imageModels}
@@ -115,6 +116,12 @@ function selectedSceneById(project: EditorProject, sceneId?: string) {
   return project.scenes.find((scene) => scene.id === sceneId) ?? project.scenes[0];
 }
 
+function videoCost(models: EditorProject["videoModels"], scene?: NonNullable<EditorProject["scenes"][number]>) {
+  const model = models.find((item) => item.id === scene?.modelId);
+  const price = model?.pricePerSecondByResolution[model.defaultResolution] ?? 0;
+  return scene && price > 0 ? Math.ceil(scene.durationSeconds * price) : null;
+}
+
 function finishCreate(
   setShowCreate: (value: boolean) => void,
   setSceneAssetId: (value?: string) => void,
@@ -130,4 +137,13 @@ async function pollJob(jobId: string, router: ReturnType<typeof useRouter>) {
   if (!response.ok) return;
   const data = await response.json();
   if (data.status === "READY" || data.status === "FAILED") router.refresh();
+}
+
+async function responseError(response: Response) {
+  try {
+    const data = await response.json() as { error?: string };
+    return data.error ?? "Generation could not start.";
+  } catch {
+    return "Generation could not start.";
+  }
 }

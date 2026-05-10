@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { generateCreatorImages, type GeneratedCreatorAsset } from "../ai-creator-generation";
 import { generateCreatorScenes } from "../ai-creator-scenes";
-import { generateCreatorVideo } from "../ai-creator-video-generation";
+import { estimateCreatorVideoCredits, generateCreatorVideo } from "../ai-creator-video-generation";
 import {
   aspectRatioOptions,
   buildSceneDrafts,
@@ -68,8 +68,8 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
       await generateCreatorVideo(input);
       router.refresh();
       props.onClose();
-    } catch {
-      setVideoError("Video generation could not start.");
+    } catch (error) {
+      setVideoError(errorMessage(error));
     } finally {
       setVideoSubmitting(false);
     }
@@ -132,6 +132,9 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
     return { assetId, form, projectId: props.projectId, scene, videoModel };
   }
 
+  const currentVideoRequest = videoRequest();
+  const currentVideoCost = currentVideoRequest ? estimateCreatorVideoCredits(currentVideoRequest) : null;
+
   return (
     <div aria-labelledby="ai-creator-title" aria-modal="true" className="project-modal-backdrop" role="dialog">
       <div className="project-modal ai-creator-modal">
@@ -167,8 +170,8 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
         </div>
         {videoError ? <div className="form-error">{videoError}</div> : null}
         <div className="ai-creator-modal-footer">
-          <button className="button button-primary" disabled={videoDisabled(videoRequest(), loading, videoSubmitting)} onClick={submitVideo} type="button">
-            {videoSubmitting ? "Submitting..." : "Generate video"}
+          <button className="button button-primary" disabled={videoDisabled(currentVideoRequest, loading, videoSubmitting)} onClick={submitVideo} type="button">
+            {videoButtonText(videoSubmitting, currentVideoCost)}
           </button>
         </div>
         {showIdea ? (
@@ -245,4 +248,13 @@ function firstReadyAssetId(slots: AiCreatorMediaSlot[]) {
 
 function videoDisabled(input: unknown, loading: boolean, submitting: boolean) {
   return loading || submitting || !input;
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Video generation could not start.";
+}
+
+function videoButtonText(submitting: boolean, credits: number | null) {
+  if (submitting) return "Submitting...";
+  return credits === null ? "Generate video" : `Generate video (${credits} credits)`;
 }

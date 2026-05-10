@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { getAssetReadUrl } from "@/features/assets/server/asset-service";
 import { buildFalInput } from "@/features/generation/models/build-fal-input";
 import { prisma } from "@/shared/server/prisma";
-import { reserveCredits } from "./credit-service";
+import { getCreditBalance, reserveCredits } from "./credit-service";
 import { submitFalJob } from "./fal-client";
 import { failGenerationJob } from "./generation-result-service";
 import type { GenerateVideoInput, ResolvedGenerateVideoInput, SelectStartImageInput } from "./generation-schema";
@@ -27,11 +27,12 @@ export async function generateVideo(userId: string, sceneId: string, input: Gene
   const model = await getModel(input.modelId);
   const videoInput = resolveVideoInput(model, input);
   const credits = estimateVideoCredits(model, videoInput);
+  await assertCredits(userId, credits);
   const asset = await startFrameAsset(scene.startFrameAssetId);
   const startUrl = await getAssetReadUrl(userId, asset.id);
   const endUrl = await endFrameUrl(userId, scene.endFrameAssetId, model.supportsEndFrame);
   const job = await createJob({ userId, projectId: scene.projectId, sceneId: scene.id, modelId: model.id, input: videoInput });
-  await reserveCredits(userId, credits, job.id, "video generation");
+  await reserveJobCredits(userId, credits, job.id);
   const submitted = await submitVideoJob(model, videoInput, startUrl, endUrl, job.id);
   await prisma.scene.update({ where: { id: sceneId }, data: { generationJobId: job.id, status: "GENERATING" } });
   return setProviderRequest(job.id, submitted.request_id);
@@ -96,6 +97,20 @@ function submitInput(
 
 async function markSubmitFailed(jobId: string, error: unknown) {
   await failGenerationJob(jobId, errorPayload(error), "fal submit failed");
+}
+
+async function assertCredits(userId: string, credits: number) {
+  const balance = await getCreditBalance(userId);
+  if (balance < credits) throw new Error("Insufficient credits");
+}
+
+async function reserveJobCredits(userId: string, credits: number, jobId: string) {
+  try {
+    await reserveCredits(userId, credits, jobId, "video generation");
+  } catch (error) {
+    await failGenerationJob(jobId, errorPayload(error), "credit reserve failed");
+    throw error;
+  }
 }
 
 function webhookUrl() {

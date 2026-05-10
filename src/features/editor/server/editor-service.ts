@@ -82,6 +82,7 @@ function toVideoModel(model: Awaited<ReturnType<typeof prisma.aiModel.findMany>>
     defaultResolution: supported.defaultResolution,
     maxDurationSeconds: model.maxDurationSeconds,
     minDurationSeconds: model.minDurationSeconds,
+    pricePerSecondByResolution: priceMap(model.pricePerSecondByResolution, supported.supportedResolutions),
     supportedAspectRatios: supported.supportedAspectRatios,
     supportedResolutions: supported.supportedResolutions
   } satisfies EditorVideoModel;
@@ -113,6 +114,16 @@ function titleCase(value: string) {
 
 function totalSceneSeconds(scenes: Array<{ durationSeconds: number }>) {
   return scenes.reduce((total, scene) => total + scene.durationSeconds, 0);
+}
+
+function priceMap(value: unknown, resolutions: string[]) {
+  const source = jsonRecord(value);
+  return Object.fromEntries(resolutions.map((item) => [item, Number(source[item] ?? 0)]));
+}
+
+function jsonRecord(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
 }
 
 async function getSceneType() {
