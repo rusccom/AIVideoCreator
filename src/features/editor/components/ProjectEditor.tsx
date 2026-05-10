@@ -35,7 +35,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   }, [router, selectedScene]);
 
   useEffect(() => {
-    if (selectedScene?.id !== pendingGenerationSceneId) return;
+    if (!selectedScene || selectedScene.id !== pendingGenerationSceneId) return;
     if (selectedScene.statusValue === "READY" || selectedScene.statusValue === "FAILED") setPendingGenerationSceneId(undefined);
   }, [pendingGenerationSceneId, selectedScene]);
 
