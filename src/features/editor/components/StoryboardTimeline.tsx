@@ -7,11 +7,12 @@ import type { TimelineLayout } from "../playback/timeline-layout";
 import { clampScaleIndex, timelineScales } from "../playback/timeline-scales";
 import { TimelinePlayhead } from "./TimelinePlayhead";
 import { TimelineScale } from "./TimelineScale";
-import { TimelineTrack } from "./TimelineTrack";
+import { TIMELINE_INSERT_GAP_PX, TimelineTrack } from "./TimelineTrack";
 import { TimelineTransport } from "./TimelineTransport";
 import { TimelineZoomControls } from "./TimelineZoomControls";
 
 type StoryboardTimelineProps = {
+  insertionIndex: number | null;
   onSelectItem: (itemId: string) => void;
   playback: PlaybackState;
   selectedItemId?: string;
@@ -28,6 +29,7 @@ export function StoryboardTimeline(props: StoryboardTimelineProps) {
     viewportWidth: VIEWPORT_WIDTH,
     contentSeconds: props.playback.timeline.totalDuration
   });
+  const boardWidth = timelineWidth(layout.width, props.insertionIndex);
   return (
     <section className="timeline-panel">
       <div className="editor-panel-header">
@@ -50,20 +52,25 @@ export function StoryboardTimeline(props: StoryboardTimelineProps) {
         <div
           className="timeline-board"
           onClick={(event) => seekFromClick(event, layout, props.playback.seek)}
-          style={{ width: layout.width }}
+          style={{ width: boardWidth }}
         >
-          <TimelineScale seconds={layout.seconds} step={scale.tickSeconds} width={layout.width} />
+          <TimelineScale seconds={layout.seconds} step={scale.tickSeconds} width={boardWidth} />
           <TimelineTrack
             clipBoxes={layout.clipBoxes}
+            insertionIndex={props.insertionIndex}
             onSelect={props.onSelectItem}
             selectedItemId={props.selectedItemId}
-            width={layout.width}
+            width={boardWidth}
           />
           <TimelinePlayhead position={layout.timeToPx(props.playback.currentTime)} />
         </div>
       </div>
     </section>
   );
+}
+
+function timelineWidth(width: number, insertionIndex: number | null) {
+  return insertionIndex === null ? width : width + TIMELINE_INSERT_GAP_PX;
 }
 
 function seekFromClick(

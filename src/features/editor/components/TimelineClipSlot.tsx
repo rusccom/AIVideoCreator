@@ -7,6 +7,7 @@ import { TimelineClipCard } from "./TimelineClipCard";
 
 type TimelineClipSlotProps = {
   box: ClipBox;
+  insertOffset: number;
   onSelect: (itemId: string) => void;
   selected: boolean;
 };
@@ -20,7 +21,7 @@ export function TimelineClipSlot(props: TimelineClipSlotProps) {
       className="timeline-clip-slot"
       data-timeline-item-id={item.id}
       ref={mergeRefs(drop.setNodeRef, drag.setNodeRef)}
-      style={slotStyle(props.box, drag.transform)}
+      style={slotStyle(props.box, props.insertOffset, drag.transform)}
       {...drag.attributes}
       {...drag.listeners}
     >
@@ -29,9 +30,9 @@ export function TimelineClipSlot(props: TimelineClipSlotProps) {
   );
 }
 
-function slotStyle(box: ClipBox, transform: ReturnType<typeof useDraggable>["transform"]) {
+function slotStyle(box: ClipBox, insertOffset: number, transform: ReturnType<typeof useDraggable>["transform"]) {
   return {
-    left: box.left,
+    left: box.left + insertOffset,
     opacity: transform ? 0.62 : 1,
     transform: CSS.Transform.toString(transform),
     width: box.width

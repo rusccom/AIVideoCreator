@@ -56,7 +56,9 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
       />
       <DndContext
         collisionDetection={pointerWithin}
+        onDragCancel={drag.onDragCancel}
         onDragEnd={drag.onDragEnd}
+        onDragMove={drag.onDragMove}
         onDragStart={drag.onDragStart}
         sensors={drag.sensors}
       >
@@ -81,6 +83,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
           />
         </div>
         <StoryboardTimeline
+          insertionIndex={drag.insertionIndex}
           onSelectItem={playback.seekToItem}
           playback={playback}
           selectedItemId={selectedTimelineItem?.id}
