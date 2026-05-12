@@ -3,6 +3,7 @@ import { prisma } from "@/shared/server/prisma";
 import { getSupportedModel } from "../models/catalog";
 import { getFalResult } from "./fal-client";
 import { completeGenerationJob, failGenerationJob } from "./generation-result-service";
+import { logProviderEvent } from "./provider-log";
 
 type FalWebhookPayload = {
   request_id?: string;
@@ -15,16 +16,21 @@ type FalWebhookPayload = {
 export async function handleFalWebhook(payload: FalWebhookPayload) {
   const eventId = payload.request_id ?? payload.requestId;
   if (!eventId) {
+    logProviderEvent("error", "fal.webhook.missing_request_id", { payload });
     throw new Error("Missing fal request id");
   }
+  logProviderEvent("info", "fal.webhook.received", webhookLog(eventId, payload));
   const created = await createWebhookEvent(eventId, payload);
   if (!created) {
+    logProviderEvent("warn", "fal.webhook.duplicate", { eventId });
     return { duplicate: true };
   }
   const job = await findJob(eventId);
   if (!job) {
+    logProviderEvent("warn", "fal.webhook.ignored", { eventId, status: payload.status });
     return { ignored: true };
   }
+  logProviderEvent("info", "fal.webhook.matched_job", jobLog(job, payload));
   return isFailure(payload) ? failJob(job.id, payload) : processJob(job);
 }
 
@@ -53,11 +59,13 @@ function isFailure(payload: FalWebhookPayload) {
 }
 
 async function failJob(jobId: string, payload: FalWebhookPayload) {
+  logProviderEvent("error", "fal.webhook.failed_job", { jobId, payload });
   return failGenerationJob(jobId, payload.error ?? payload, "fal generation failed");
 }
 
 async function processJob(job: Awaited<ReturnType<typeof findJob>>) {
   if (!job?.providerRequestId) throw new Error("Missing fal request id");
+  logProviderEvent("info", "fal.webhook.processing_job", { jobId: job.id, requestId: job.providerRequestId });
   const result = await getFalResult(providerModelId(job.modelId), job.providerRequestId);
   return completeGenerationJob(job.id, result.data);
 }
@@ -70,4 +78,23 @@ function providerModelId(modelId: string) {
 
 function asJson(value: unknown) {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function webhookLog(eventId: string, payload: FalWebhookPayload) {
+  return {
+    eventId,
+    hasData: Boolean(payload.data),
+    hasError: Boolean(payload.error),
+    status: payload.status,
+    payload
+  };
+}
+
+function jobLog(job: NonNullable<Awaited<ReturnType<typeof findJob>>>, payload: FalWebhookPayload) {
+  return {
+    jobId: job.id,
+    modelId: job.modelId,
+    requestId: job.providerRequestId,
+    status: payload.status
+  };
 }

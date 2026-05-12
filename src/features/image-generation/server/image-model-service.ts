@@ -3,6 +3,7 @@ import { getSupportedModel } from "@/features/generation/models/catalog";
 
 type UpdateImageModelInput = {
   active: boolean;
+  aiCreatorImageCount: number;
   id: string;
   key: string;
 };
@@ -14,7 +15,7 @@ export async function updateImageModel(input: UpdateImageModelInput) {
   }
   return prisma.aiModel.update({
     where: { id: input.id },
-    data: { active: input.active }
+    data: { active: input.active, aiCreatorImageCount: imageCount(input.aiCreatorImageCount) }
   });
 }
 
@@ -27,4 +28,9 @@ export function recordImageModelUsage(modelKey: string, generatedImages: number)
       lastUsedAt: new Date()
     }
   });
+}
+
+function imageCount(value: number) {
+  if (!Number.isFinite(value)) return 4;
+  return Math.max(1, Math.min(Math.round(value), 12));
 }

@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
 import { createSceneForUser } from "@/features/generation/server/scene-service";
 import { generateVideo, preflightVideoGeneration, selectStartImage } from "@/features/generation/server/generation-service";
@@ -14,7 +15,7 @@ export async function startAiCreatorVideo(userId: string, projectId: string, inp
     const job = await generateVideo(userId, sequence.scenes[0].id, videoInput(input, drafts[0]));
     return startedSequence(job, sequence);
   } catch (error) {
-    await cleanupCreditFailure(userId, sequence.scenes.map((scene) => scene.id), error);
+    await cleanupStartFailure(userId, sequence.scenes.map((scene) => scene.id));
     throw error;
   }
 }
@@ -66,24 +67,20 @@ function startedSequence(job: Awaited<ReturnType<typeof generateVideo>>, sequenc
   };
 }
 
-async function cleanupCreditFailure(userId: string, sceneIds: string[], error: unknown) {
-  if (!(error instanceof Error) || error.message !== "Insufficient credits") return;
-  await deleteUnstartedScenes(userId, sceneIds);
-}
-
-async function deleteUnstartedScenes(userId: string, sceneIds: string[]) {
-  const scenes = await unstartedScenes(userId, sceneIds);
+async function cleanupStartFailure(userId: string, sceneIds: string[]) {
+  const scenes = await removableScenes(userId, sceneIds);
   const ids = scenes.map((scene) => scene.id);
   if (!ids.length) return;
-  await prisma.$transaction([
-    prisma.generationJob.deleteMany({ where: { sceneId: { in: ids }, providerRequestId: null } }),
-    prisma.scene.deleteMany({ where: { id: { in: ids } } })
-  ]);
+  await prisma.scene.deleteMany({ where: { id: { in: ids } } });
 }
 
-async function unstartedScenes(userId: string, sceneIds: string[]) {
+async function removableScenes(userId: string, sceneIds: string[]) {
   const scenes = await prisma.scene.findMany({ where: { id: { in: sceneIds }, project: { userId } }, include: { jobs: true } });
-  return scenes.filter((scene) => scene.status === "DRAFT" && !scene.videoAssetId && !scene.jobs.some((job) => job.providerRequestId));
+  return scenes.filter(isRemovableScene);
+}
+
+function isRemovableScene(scene: RemovableScene) {
+  return !scene.videoAssetId && !scene.jobs.some((job) => job.providerRequestId);
 }
 
 function videoScenes(input: AiCreatorVideoInput) {
@@ -102,6 +99,7 @@ function videoInput(input: AiCreatorVideoInput, draft: AiCreatorVideoSceneInput)
 
 type CreatedSequence = Awaited<ReturnType<typeof createAiCreatorSequence>>;
 type CreatedScene = Awaited<ReturnType<typeof createSceneForUser>>;
+type RemovableScene = Prisma.SceneGetPayload<{ include: { jobs: true } }>;
 
 type CreateAiCreatorSceneInput = {
   branchId: string;

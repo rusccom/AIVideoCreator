@@ -14,9 +14,10 @@ export function createAiCreatorSequenceId() {
 
 export async function getAiCreatorSequenceStatus(userId: string, sequenceId: string) {
   const scenes = await sequenceScenes(userId, sequenceId);
+  const total = scenes.length;
   await refreshSequenceJobs(userId, scenes);
   await advanceSequence(userId, sequenceId);
-  return sequenceStatus(sequenceId, await sequenceScenes(userId, sequenceId));
+  return sequenceStatus(sequenceId, await sequenceScenes(userId, sequenceId), total);
 }
 
 export async function startNextAiCreatorScene(userId: string, parentSceneId: string, frameAssetId: string) {
@@ -28,6 +29,7 @@ export async function startNextAiCreatorScene(userId: string, parentSceneId: str
     return await generateVideo(userId, scene.id, await linkedVideoInput(scene));
   } catch {
     await markSceneFailed(scene.id);
+    await deleteFollowingDraftScenes(userId, scene.id);
     return null;
   }
 }
@@ -69,14 +71,14 @@ async function sequenceFrameScenes(userId: string, sequenceId: string) {
   });
 }
 
-function sequenceStatus(sequenceId: string, scenes: SequenceScene[]) {
+function sequenceStatus(sequenceId: string, scenes: SequenceScene[], total = scenes.length) {
   const readyCount = scenes.filter((scene) => scene.status === "READY").length;
   return {
     id: sequenceId,
     readyCount,
     scenes,
     status: finalStatus(scenes, readyCount),
-    total: scenes.length
+    total
   };
 }
 
@@ -134,6 +136,40 @@ async function claimSceneStartFrame(sceneId: string, assetId: string) {
 
 async function markSceneFailed(sceneId: string) {
   await prisma.scene.update({ where: { id: sceneId }, data: { status: "FAILED" } });
+}
+
+async function deleteFollowingDraftScenes(userId: string, sceneId: string) {
+  const scene = await sequenceSceneForCleanup(userId, sceneId);
+  if (!scene?.branchId) return;
+  const ids = await followingDraftSceneIds(userId, scene.branchId, scene.orderIndex);
+  if (!ids.length) return;
+  await prisma.scene.deleteMany({ where: { id: { in: ids } } });
+}
+
+async function sequenceSceneForCleanup(userId: string, sceneId: string) {
+  return prisma.scene.findFirst({
+    where: { id: sceneId, branchId: { startsWith: SEQUENCE_PREFIX }, project: { userId } },
+    select: { branchId: true, orderIndex: true }
+  });
+}
+
+async function followingDraftSceneIds(userId: string, branchId: string, orderIndex: number) {
+  const scenes = await prisma.scene.findMany({
+    where: followingDraftWhere(userId, branchId, orderIndex),
+    select: { id: true }
+  });
+  return scenes.map((scene) => scene.id);
+}
+
+function followingDraftWhere(userId: string, branchId: string, orderIndex: number) {
+  return {
+    branchId,
+    generationJobId: null,
+    orderIndex: { gt: orderIndex },
+    project: { userId },
+    status: "DRAFT" as SceneStatus,
+    videoAssetId: null
+  };
 }
 
 type SequenceScene = Awaited<ReturnType<typeof sequenceScenes>>[number];

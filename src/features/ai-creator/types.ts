@@ -1,6 +1,7 @@
 export type AiCreatorImageModel = {
   id: string;
   displayName: string;
+  aiCreatorImageCount: number;
   defaultAspectRatio: string;
   defaultResolution: string;
   maxImagesPerRequest?: number;

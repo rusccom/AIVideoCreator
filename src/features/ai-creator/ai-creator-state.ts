@@ -1,4 +1,5 @@
 import {
+  AI_CREATOR_MAX_IMAGES_PER_SCENE,
   DEFAULT_IMAGE_BATCH_SIZE,
   DEFAULT_IMAGES_PER_SCENE,
   DEFAULT_SCENE_DURATION_SECONDS,
@@ -40,9 +41,14 @@ export function createLoadingSlots(count = DEFAULT_IMAGES_PER_SCENE): AiCreatorM
   }));
 }
 
+export function imageCount(model?: AiCreatorImageModel) {
+  const value = model?.aiCreatorImageCount ?? DEFAULT_IMAGES_PER_SCENE;
+  return Math.max(1, Math.min(value, AI_CREATOR_MAX_IMAGES_PER_SCENE));
+}
+
 export function imageBatchSize(model?: AiCreatorImageModel) {
   const value = model?.maxImagesPerRequest ?? DEFAULT_IMAGE_BATCH_SIZE;
-  return Math.max(1, Math.min(value, IMAGE_API_MAX_IMAGES_PER_REQUEST, DEFAULT_IMAGES_PER_SCENE));
+  return Math.max(1, Math.min(value, IMAGE_API_MAX_IMAGES_PER_REQUEST, imageCount(model)));
 }
 
 export function selectedImageModel(models: AiCreatorImageModel[], modelId: string) {

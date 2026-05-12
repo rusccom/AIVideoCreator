@@ -110,6 +110,7 @@ function toImageModel(model: Awaited<ReturnType<typeof prisma.aiModel.findMany>>
   return {
     id: supported.id,
     displayName: supported.displayName,
+    aiCreatorImageCount: model.aiCreatorImageCount,
     defaultAspectRatio: supported.defaultAspectRatio,
     defaultResolution: supported.defaultResolution,
     maxImagesPerRequest: supported.imageDefaults?.maxImagesPerRequest ?? 4,

@@ -1,5 +1,4 @@
-import { DEFAULT_IMAGES_PER_SCENE } from "./config";
-import { imageBatchSize } from "./ai-creator-state";
+import { imageBatchSize, imageCount } from "./ai-creator-state";
 import { generateProjectImageAssets } from "@/features/image-generation/client/project-image-client";
 import type { AiCreatorImageModel } from "./types";
 
@@ -17,7 +16,7 @@ type GenerateCreatorImagesInput = {
 };
 
 export async function generateCreatorImages(input: GenerateCreatorImagesInput) {
-  await Promise.all(imageBatches(DEFAULT_IMAGES_PER_SCENE, imageBatchSize(input.imageModel)).map((batch) => {
+  await Promise.all(imageBatches(imageCount(input.imageModel), imageBatchSize(input.imageModel)).map((batch) => {
     return requestImageBatch(input, batch.count)
       .then((assets) => input.onBatch(batch.startIndex, batch.count, assets))
       .catch(() => input.onBatch(batch.startIndex, batch.count, []));

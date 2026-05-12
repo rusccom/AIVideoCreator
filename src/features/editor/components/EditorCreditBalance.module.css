@@ -1,0 +1,14 @@
+.credit {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid rgba(34, 211, 238, 0.26);
+  border-radius: 999px;
+  padding: 0 11px;
+  color: #d9f7ff;
+  background: rgba(34, 211, 238, 0.08);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}

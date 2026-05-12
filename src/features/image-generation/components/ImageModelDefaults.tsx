@@ -21,7 +21,7 @@ export function ImageModelDefaults({ model }: ImageModelDefaultsProps) {
 function defaultFields(model: EditableAiModel) {
   const defaults = model.imageDefaults;
   return [
-    field("Images", `${defaults?.defaultNumImages ?? 1}`),
+    field("Model default images", `${defaults?.defaultNumImages ?? 1}`),
     field("Image size", defaults?.defaultImageSize),
     field("Aspect ratio", defaults?.defaultImageSize ? undefined : model.defaultAspectRatio),
     field("Resolution", defaults?.defaultImageSize ? undefined : model.defaultResolution),

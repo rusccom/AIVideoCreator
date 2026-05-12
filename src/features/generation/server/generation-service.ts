@@ -8,6 +8,7 @@ import { failGenerationJob } from "./generation-result-service";
 import type { GenerateVideoInput, ResolvedGenerateVideoInput, SelectStartImageInput } from "./generation-schema";
 import { getModel } from "./model-registry";
 import { estimateVideoCredits, resolveVideoInput } from "./pricing-service";
+import { providerErrorPayload } from "./provider-error";
 
 export async function selectStartImage(
   userId: string,
@@ -105,7 +106,7 @@ function submitInput(
 }
 
 async function markSubmitFailed(jobId: string, error: unknown) {
-  await failGenerationJob(jobId, errorPayload(error), "fal submit failed");
+  await failGenerationJob(jobId, providerErrorPayload(error), "fal submit failed");
 }
 
 async function assertCredits(userId: string, credits: number) {
@@ -117,7 +118,7 @@ async function reserveJobCredits(userId: string, credits: number, jobId: string)
   try {
     await reserveCredits(userId, credits, jobId, "video generation");
   } catch (error) {
-    await failGenerationJob(jobId, errorPayload(error), "credit reserve failed");
+    await failGenerationJob(jobId, providerErrorPayload(error), "credit reserve failed");
     throw error;
   }
 }
@@ -155,9 +156,4 @@ async function endFrameUrl(userId: string, assetId: string | null | undefined, s
 
 function asJson(value: unknown) {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
-}
-
-function errorPayload(error: unknown) {
-  if (error instanceof Error) return { name: error.name, message: error.message };
-  return { error };
 }

@@ -9,6 +9,7 @@ export async function updateImageModelAction(formData: FormData) {
   await updateImageModel({
     id: value(formData, "id"),
     key: value(formData, "key"),
+    aiCreatorImageCount: numberValue(formData, "aiCreatorImageCount"),
     active: formData.has("active")
   });
   refresh();
@@ -16,6 +17,10 @@ export async function updateImageModelAction(formData: FormData) {
 
 function value(formData: FormData, key: string) {
   return String(formData.get(key) ?? "");
+}
+
+function numberValue(formData: FormData, key: string) {
+  return Number(value(formData, key));
 }
 
 function refresh() {

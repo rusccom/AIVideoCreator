@@ -19,6 +19,7 @@ export type EditableAiModel = {
   defaultDurationSeconds: number;
   usageRequestCount: number;
   usageGeneratedImages: number;
+  aiCreatorImageCount: number;
   lastUsedAt?: Date | null;
   imageDefaults?: EditableImageModelDefaults;
   active: boolean;

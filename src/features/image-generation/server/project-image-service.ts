@@ -3,6 +3,7 @@ import { createAssetFromRemoteUrl } from "@/features/assets/server/asset-storage
 import { buildFalInput } from "@/features/generation/models/build-fal-input";
 import { getSupportedModel } from "@/features/generation/models/catalog";
 import { submitFalJob } from "@/features/generation/server/fal-client";
+import { providerErrorPayload } from "@/features/generation/server/provider-error";
 import { prisma } from "@/shared/server/prisma";
 import { recordImageModelUsage } from "./image-model-service";
 import type { GenerateProjectImageInput } from "./image-generation-schema";
@@ -88,7 +89,7 @@ async function markJobReady(jobId: string, assets: Asset[]) {
 async function markJobFailed(jobId: string, error: unknown) {
   return prisma.generationJob.update({
     where: { id: jobId },
-    data: { status: "FAILED", errorJson: asJson(errorPayload(error)), completedAt: new Date() }
+    data: { status: "FAILED", errorJson: asJson(providerErrorPayload(error)), completedAt: new Date() }
   });
 }
 
@@ -165,10 +166,6 @@ function record(value: unknown) {
 
 function asJson(value: unknown) {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
-}
-
-function errorPayload(error: unknown) {
-  return error instanceof Error ? { name: error.name, message: error.message } : { error };
 }
 
 function isImagePayload(value: ImagePayload | null): value is ImagePayload {

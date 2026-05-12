@@ -283,6 +283,7 @@ model AiModel {
   defaultDurationSeconds     Int       @default(6)
   usageRequestCount          Int       @default(0)
   usageGeneratedImages       Int       @default(0)
+  aiCreatorImageCount        Int       @default(4)
   lastUsedAt                 DateTime?
   active                     Boolean   @default(true)
   createdAt                  DateTime  @default(now())

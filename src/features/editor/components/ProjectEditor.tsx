@@ -48,10 +48,8 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
         credits={credits}
         imageModels={project.imageModels}
         projectId={project.id}
-        sceneCount={project.scenes.length}
         scenes={project.scenes}
         title={project.title}
-        totalDuration={project.totalDuration}
         videoModels={project.videoModels}
       />
       <DndContext

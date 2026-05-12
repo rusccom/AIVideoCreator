@@ -3,6 +3,7 @@ import { createAssetFromRemoteUrl } from "@/features/assets/server/asset-storage
 import { completeProjectImageGeneration } from "@/features/image-generation/server/project-image-service";
 import { prisma } from "@/shared/server/prisma";
 import { commitCredits, refundCredits } from "./credit-service";
+import { providerErrorPayload } from "./provider-error";
 
 export async function completeGenerationJob(jobId: string, data: unknown) {
   const claim = await claimGenerationCompletion(jobId);
@@ -37,7 +38,7 @@ async function completeVideoGenerationJob(job: JobRecord, data: unknown) {
     await commitCredits(job.id);
     return markJobReady(job.id, data);
   } catch (error) {
-    return failGenerationJob(job.id, errorPayload(error), "generation completion failed");
+    return failGenerationJob(job.id, providerErrorPayload(error), "generation completion failed");
   }
 }
 
@@ -118,11 +119,6 @@ function record(value: unknown) {
 
 function asJson(value: unknown) {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
-}
-
-function errorPayload(error: unknown) {
-  if (error instanceof Error) return { name: error.name, message: error.message };
-  return { error };
 }
 
 type JobRecord = Awaited<ReturnType<typeof prisma.generationJob.findUniqueOrThrow>>;

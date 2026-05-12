@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { AiCreatorPollingPulse } from "./AiCreatorPollingPulse";
@@ -46,12 +47,17 @@ export function AiCreatorProgressModal(props: AiCreatorProgressModalProps) {
           />
           <div className="ai-creator-progress-content">
             <div>
-              <h2>{progressTitle(progress.total)}</h2>
+              <h2>{progressTitle(progress)}</h2>
               <p>{progressText(progress)}</p>
             </div>
             <div aria-label="Clip generation progress" {...progressBarProps(state)}>
               <span />
             </div>
+            {isStoppedStatus(progress.status) ? (
+              <button className="button button-secondary" onClick={props.onDone} type="button">
+                <X size={16} /> Close
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -77,7 +83,8 @@ function runProgressPolling(
     const progress = await safeFetchProgress(target);
     if (!active) return;
     setState((state) => applyProgress(state, progress));
-    if (progress && isFinalStatus(progress.status)) return props.onDone();
+    if (progress?.status === "READY") return props.onDone();
+    if (progress && isStoppedStatus(progress.status)) return;
     timer = window.setTimeout(refresh, POLL_INTERVAL_MS);
   };
   void refresh();
@@ -112,8 +119,8 @@ async function fetchSequence(sequenceId: string) {
   return response.json() as Promise<ProgressState>;
 }
 
-function isFinalStatus(status: string) {
-  return status === "READY" || status === "FAILED" || status === "CANCELED";
+function isStoppedStatus(status: string) {
+  return status === "FAILED" || status === "CANCELED";
 }
 
 function progressTarget(props: AiCreatorProgressModalProps) {
@@ -122,13 +129,14 @@ function progressTarget(props: AiCreatorProgressModalProps) {
 
 function progressText(progress: ProgressState) {
   if (progress.status === "READY") return readyText(progress.total);
-  if (progress.status === "FAILED" || progress.status === "CANCELED") return "Clip generation stopped.";
+  if (isStoppedStatus(progress.status)) return stoppedText(progress);
   if (progress.total > 1) return `Generating clips ${nextClipNumber(progress)} of ${progress.total}.`;
   return "Please wait while the clip is being created.";
 }
 
-function progressTitle(total: number) {
-  return total > 1 ? "Generating clips" : "Generating clip";
+function progressTitle(progress: ProgressState) {
+  if (isStoppedStatus(progress.status)) return "Generation stopped";
+  return progress.total > 1 ? "Generating clips" : "Generating clip";
 }
 
 function progressBarProps(state: ProgressViewState) {
@@ -178,4 +186,9 @@ function nextClipNumber(progress: ProgressState) {
 
 function readyText(total: number) {
   return total > 1 ? "All clips are ready." : "Clip is ready.";
+}
+
+function stoppedText(progress: ProgressState) {
+  if (progress.readyCount > 0) return `${progress.readyCount} of ${progress.total} clips were saved.`;
+  return "No clips were saved.";
 }

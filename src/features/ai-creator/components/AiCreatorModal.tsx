@@ -8,6 +8,7 @@ import { estimateCreatorVideoCredits, generateCreatorVideo, type StartedCreatorV
 import {
   buildSceneDrafts,
   createLoadingSlots,
+  imageCount,
   initialIdeaForm,
   selectedImageModel,
   selectedVideoModel
@@ -84,7 +85,7 @@ export function AiCreatorModal(props: AiCreatorModalProps) {
     const imageModel = selectedImageModel(imageModels, nextForm.imageModelId);
     if (!scene || !props.projectId || !imageModel) return;
     setLoading(true);
-    setMediaSlots(createLoadingSlots());
+    setMediaSlots(createLoadingSlots(imageCount(imageModel)));
     setSelectedAssetId(undefined);
     await generateSceneImages(scene, imageModel, nextForm);
     setLoading(false);

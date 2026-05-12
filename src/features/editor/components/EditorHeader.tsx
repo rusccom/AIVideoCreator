@@ -1,5 +1,6 @@
 import { EditorAccountActions } from "./EditorAccountActions";
 import { EditorBackLink } from "./EditorBackLink";
+import { EditorCreditBalance } from "./EditorCreditBalance";
 import { EditorProjectSummary } from "./EditorProjectSummary";
 import type { EditorImageModel, EditorScene, EditorVideoModel } from "../types";
 
@@ -10,8 +11,6 @@ type EditorHeaderProps = {
   projectId: string;
   scenes: EditorScene[];
   title: string;
-  sceneCount: number;
-  totalDuration: string;
   videoModels: EditorVideoModel[];
 };
 
@@ -22,15 +21,9 @@ export function EditorHeader(props: EditorHeaderProps) {
         <EditorBackLink />
         <EditorProjectSummary
           aspectRatio={props.aspectRatio}
-          projectId={props.projectId}
-          sceneCount={props.sceneCount}
           title={props.title}
-          totalDuration={props.totalDuration}
         />
-        <div className="editor-workspace-chip">
-          <strong>Creator workspace</strong>
-          <span className="badge">{props.credits} credits</span>
-        </div>
+        <EditorCreditBalance credits={props.credits} />
       </div>
       <div className="editor-header-right">
         <EditorAccountActions

@@ -35,6 +35,7 @@ export type EditorTimelineItem = {
 export type EditorImageModel = {
   id: string;
   displayName: string;
+  aiCreatorImageCount: number;
   defaultAspectRatio: string;
   defaultResolution: string;
   maxImagesPerRequest: number;
