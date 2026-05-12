@@ -1,19 +1,13 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
 import type { CreateSceneInput, PickFrameInput, UpdateSceneInput } from "./scene-schema";
 
 export async function createScene(projectId: string, input: CreateSceneInput) {
   const orderIndex = await nextSceneIndex(projectId);
-  return prisma.scene.create({
-    data: {
-      projectId,
-      orderIndex,
-      durationSeconds: input.durationSeconds,
-      userPrompt: input.prompt,
-      modelId: input.modelId,
-      startFrameAssetId: input.startFrameAssetId,
-      parentSceneId: input.parentSceneId,
-      branchId: input.branchId
-    }
+  return prisma.$transaction(async (tx) => {
+    const scene = await tx.scene.create({ data: sceneCreateData(projectId, orderIndex, input) });
+    await tx.timelineItem.create({ data: await timelineCreateData(tx, scene) });
+    return scene;
   });
 }
 
@@ -90,6 +84,32 @@ async function nextSceneIndex(projectId: string) {
   return last ? last.orderIndex + 1 : 0;
 }
 
+function sceneCreateData(projectId: string, orderIndex: number, input: CreateSceneInput) {
+  return {
+    projectId,
+    orderIndex,
+    durationSeconds: input.durationSeconds,
+    userPrompt: input.prompt,
+    modelId: input.modelId,
+    startFrameAssetId: input.startFrameAssetId,
+    parentSceneId: input.parentSceneId,
+    branchId: input.branchId
+  };
+}
+
+async function timelineCreateData(tx: Prisma.TransactionClient, scene: CreatedScene) {
+  return {
+    projectId: scene.projectId,
+    sceneId: scene.id,
+    durationSeconds: scene.durationSeconds,
+    orderIndex: await nextTimelineIndex(tx, scene.projectId)
+  };
+}
+
+async function nextTimelineIndex(tx: Prisma.TransactionClient, projectId: string) {
+  return tx.timelineItem.count({ where: { projectId } });
+}
+
 async function markFollowingScenesStale(projectId: string, orderIndex: number) {
   await prisma.scene.updateMany({
     where: { projectId, orderIndex: { gt: orderIndex } },
@@ -123,3 +143,5 @@ async function assertSceneOwner(userId: string, sceneId: string) {
     throw new Error("Scene not found");
   }
 }
+
+type CreatedScene = Prisma.SceneGetPayload<{}>;

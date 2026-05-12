@@ -2,37 +2,47 @@
 
 import { useEffect, useRef } from "react";
 import type { PlaybackState } from "../hooks/use-playback";
+import { useResolvedTimelineVideoUrls } from "../hooks/use-resolved-timeline-video-urls";
 import type { ScenePosition } from "../playback/playback-timeline";
-import { useResolvedAssetUrl } from "../hooks/use-resolved-asset-url";
 import { ResolvedAssetImage } from "./ResolvedAssetImage";
 
 type PreviewVideoProps = {
   playback: PlaybackState;
 };
 
-const DRIFT_THRESHOLD_SECONDS = 0.4;
+const DRIFT_THRESHOLD_SECONDS = 0.25;
+const PUBLISH_INTERVAL_MS = 33;
+const SWITCH_MARGIN_SECONDS = 0.12;
 
 export function PreviewVideo({ playback }: PreviewVideoProps) {
-  const ref = useRef<HTMLVideoElement>(null);
+  const activeRef = useRef<HTMLVideoElement>(null);
+  const preloadRef = useRef<HTMLVideoElement>(null);
   const position = playback.currentPosition;
-  const videoUrl = useResolvedAssetUrl(position?.scene.videoUrl ?? null);
-  useTimeSync(ref, playback.currentTime, position?.startTime ?? 0);
-  usePlaybackSync(ref, playback.isPlaying && Boolean(videoUrl), playback.pause);
-  if (!videoUrl) return <FallbackFrame position={position} />;
+  const urls = useResolvedTimelineVideoUrls(playback.timeline.items);
+  const currentUrl = position ? urls[position.item.id] : null;
+  const next = position ? playback.timeline.nextPlayable(position) : null;
+  const nextUrl = next ? urls[next.item.id] : null;
+  useActiveVideo(activeRef, playback, position, currentUrl);
+  usePreloadVideo(preloadRef, nextUrl);
+  useTimelineClock(activeRef, playback, position, next);
+  if (!currentUrl) return <FallbackFrame position={position} />;
   return (
-    <video
-      className="preview-video"
-      onEnded={() => advanceOrStop(playback)}
-      onLoadedMetadata={() => syncOnLoad(ref.current, playback)}
-      onTimeUpdate={() => publishTime(ref.current, position, playback.setCurrentTime)}
-      ref={ref}
-      src={videoUrl}
-    />
+    <>
+      <video
+        className="preview-video"
+        onEnded={() => advanceOrStop(playback)}
+        playsInline
+        preload="auto"
+        ref={activeRef}
+        src={currentUrl}
+      />
+      {nextUrl ? <video aria-hidden className="preview-video-buffer" muted playsInline preload="auto" ref={preloadRef} src={nextUrl} /> : null}
+    </>
   );
 }
 
 function FallbackFrame({ position }: { position: ScenePosition | null }) {
-  const fallback = position ? "Ready to generate" : "Create a clip first";
+  const fallback = position ? "Ready to generate" : "Add clips to the timeline";
   return (
     <ResolvedAssetImage
       alt="Start frame"
@@ -43,41 +53,100 @@ function FallbackFrame({ position }: { position: ScenePosition | null }) {
   );
 }
 
-function useTimeSync(
+function useActiveVideo(
+  ref: React.RefObject<HTMLVideoElement | null>,
+  playback: PlaybackState,
+  position: ScenePosition | null,
+  url: string | null
+) {
+  useVideoTimeSync(ref, playback.currentTime, position, url);
+  useVideoPlaybackSync(ref, playback.isPlaying, playback.pause, url);
+}
+
+function useVideoTimeSync(
   ref: React.RefObject<HTMLVideoElement | null>,
   currentTime: number,
-  startTime: number
-) {
-  useEffect(() => {
-    const video = ref.current;
-    if (!video) return;
-    const localTime = Math.max(0, currentTime - startTime);
-    if (Math.abs(video.currentTime - localTime) > DRIFT_THRESHOLD_SECONDS) {
-      video.currentTime = localTime;
-    }
-  }, [ref, currentTime, startTime]);
-}
-
-function usePlaybackSync(
-  ref: React.RefObject<HTMLVideoElement | null>,
-  shouldPlay: boolean,
-  onPlayFail: () => void
-) {
-  useEffect(() => {
-    const video = ref.current;
-    if (!video) return;
-    if (shouldPlay) void video.play().catch(onPlayFail);
-    else if (!video.paused) video.pause();
-  }, [ref, shouldPlay, onPlayFail]);
-}
-
-function publishTime(
-  video: HTMLVideoElement | null,
   position: ScenePosition | null,
-  setCurrentTime: (time: number) => void
+  url: string | null
 ) {
-  if (!video || !position) return;
-  setCurrentTime(position.startTime + video.currentTime);
+  useEffect(() => {
+    const video = ref.current;
+    if (!video || !position || !url) return;
+    syncVideoTime(video, currentTime, position.startTime);
+  }, [ref, currentTime, position, url]);
+}
+
+function useVideoPlaybackSync(
+  ref: React.RefObject<HTMLVideoElement | null>,
+  isPlaying: boolean,
+  pause: () => void,
+  url: string | null
+) {
+  useEffect(() => {
+    const video = ref.current;
+    if (!video || !url) return;
+    if (isPlaying) void video.play().catch(pause);
+    else if (!video.paused) video.pause();
+  }, [ref, isPlaying, pause, url]);
+}
+
+function usePreloadVideo(ref: React.RefObject<HTMLVideoElement | null>, url?: string | null) {
+  useEffect(() => {
+    const video = ref.current;
+    if (!video || !url) return;
+    video.load();
+  }, [ref, url]);
+}
+
+function useTimelineClock(
+  ref: React.RefObject<HTMLVideoElement | null>,
+  playback: PlaybackState,
+  position: ScenePosition | null,
+  next: ScenePosition | null
+) {
+  useEffect(() => {
+    if (!playback.isPlaying || !position) return;
+    const context = { next, playback, position, ref };
+    const clock = { advanced: false, frame: 0, last: 0 };
+    const tick = (time: number) => runClock(context, clock, time);
+    clock.frame = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(clock.frame);
+  }, [ref, playback.isPlaying, playback.seek, playback.setCurrentTime, position, next]);
+}
+
+function runClock(
+  context: ClockContext,
+  clock: ClockState,
+  time: number
+) {
+  const video = context.ref.current;
+  if (!video) return;
+  publishClock(video, context.playback, context.position, clock, time);
+  if (shouldAdvance(video, context.next, clock)) return advanceToNext(context, clock);
+  clock.frame = window.requestAnimationFrame((nextTime) => runClock(context, clock, nextTime));
+}
+
+function publishClock(
+  video: HTMLVideoElement,
+  playback: PlaybackState,
+  position: ScenePosition,
+  clock: ClockState,
+  time: number
+) {
+  if (time - clock.last < PUBLISH_INTERVAL_MS) return;
+  clock.last = time;
+  playback.setCurrentTime(position.startTime + video.currentTime);
+}
+
+function shouldAdvance(video: HTMLVideoElement, next: ScenePosition | null, clock: ClockState) {
+  if (!next || clock.advanced || !Number.isFinite(video.duration)) return false;
+  return video.duration - video.currentTime <= SWITCH_MARGIN_SECONDS;
+}
+
+function advanceToNext(context: ClockContext, clock: ClockState) {
+  if (!context.next) return;
+  clock.advanced = true;
+  context.playback.seek(context.next.startTime);
 }
 
 function advanceOrStop(playback: PlaybackState) {
@@ -87,9 +156,22 @@ function advanceOrStop(playback: PlaybackState) {
   else playback.pause();
 }
 
-function syncOnLoad(video: HTMLVideoElement | null, playback: PlaybackState) {
-  if (!video || !playback.currentPosition) return;
-  const localTime = Math.max(0, playback.currentTime - playback.currentPosition.startTime);
-  video.currentTime = localTime;
-  if (playback.isPlaying) void video.play().catch(playback.pause);
+function syncVideoTime(video: HTMLVideoElement, currentTime: number, startTime: number) {
+  const localTime = Math.max(0, currentTime - startTime);
+  if (Math.abs(video.currentTime - localTime) > DRIFT_THRESHOLD_SECONDS) {
+    video.currentTime = localTime;
+  }
 }
+
+type ClockState = {
+  advanced: boolean;
+  frame: number;
+  last: number;
+};
+
+type ClockContext = {
+  next: ScenePosition | null;
+  playback: PlaybackState;
+  position: ScenePosition;
+  ref: React.RefObject<HTMLVideoElement | null>;
+};

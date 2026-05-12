@@ -1,14 +1,14 @@
-import type { EditorScene } from "../types";
+import type { EditorTimelineItem } from "../types";
 import type { TimelineScale } from "./timeline-scales";
 
 export type ClipBox = {
-  scene: EditorScene;
+  item: EditorTimelineItem;
   left: number;
   width: number;
 };
 
 export type TimelineLayoutInput = {
-  scenes: readonly EditorScene[];
+  items: readonly EditorTimelineItem[];
   scale: TimelineScale;
   viewportWidth: number;
   contentSeconds: number;
@@ -24,7 +24,7 @@ export class TimelineLayout {
     this.pxPerSecond = input.viewportWidth / input.scale.visibleSeconds;
     this.seconds = Math.max(input.scale.visibleSeconds, input.contentSeconds);
     this.width = this.seconds * this.pxPerSecond;
-    this.clipBoxes = buildClipBoxes(input.scenes, this.pxPerSecond);
+    this.clipBoxes = buildClipBoxes(input.items, this.pxPerSecond);
   }
 
   timeToPx(time: number) {
@@ -36,12 +36,12 @@ export class TimelineLayout {
   }
 }
 
-function buildClipBoxes(scenes: readonly EditorScene[], pxPerSecond: number): ClipBox[] {
+function buildClipBoxes(items: readonly EditorTimelineItem[], pxPerSecond: number): ClipBox[] {
   let cursor = 0;
-  return scenes.map((scene) => {
+  return items.map((item) => {
     const left = cursor * pxPerSecond;
-    const width = scene.durationSeconds * pxPerSecond;
-    cursor += scene.durationSeconds;
-    return { scene, left, width };
+    const width = item.durationSeconds * pxPerSecond;
+    cursor += item.durationSeconds;
+    return { item, left, width };
   });
 }

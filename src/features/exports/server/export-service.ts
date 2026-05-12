@@ -22,8 +22,9 @@ export async function getExportJob(userId: string, exportId: string) {
 }
 
 export async function listReadyScenes(projectId: string) {
-  return prisma.scene.findMany({
-    where: { projectId, status: "READY", videoAssetId: { not: null } },
+  return prisma.timelineItem.findMany({
+    where: { projectId, scene: { status: "READY", videoAssetId: { not: null } } },
+    include: { scene: true },
     orderBy: { orderIndex: "asc" }
   });
 }

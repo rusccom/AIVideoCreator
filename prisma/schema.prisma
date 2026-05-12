@@ -96,6 +96,7 @@ model Project {
   assets  Asset[]
   jobs    GenerationJob[]
   exports ExportJob[]
+  timelineItems TimelineItem[]
 
   @@index([userId, updatedAt])
 }
@@ -121,9 +122,28 @@ model Scene {
 
   project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   jobs    GenerationJob[]
+  timelineItems TimelineItem[]
 
   @@unique([projectId, orderIndex, branchId])
   @@index([projectId, orderIndex])
+}
+
+model TimelineItem {
+  id               String   @id @default(cuid())
+  projectId        String
+  sceneId          String
+  orderIndex       Int
+  trimStartSeconds Int      @default(0)
+  trimEndSeconds   Int?
+  durationSeconds  Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scene   Scene   @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, orderIndex])
+  @@index([projectId, sceneId])
 }
 
 model Asset {

@@ -1,0 +1,40 @@
+.scene-item {
+  cursor: grab;
+  touch-action: none;
+}
+
+.scene-item:active,
+.timeline-clip-slot:active {
+  cursor: grabbing;
+}
+
+.timeline-track {
+  outline: 1px dashed transparent;
+  outline-offset: -8px;
+}
+
+.timeline-clip-slot {
+  touch-action: none;
+  will-change: transform;
+}
+
+.timeline-drag-overlay {
+  min-width: 148px;
+  border: 1px solid rgba(34, 211, 238, 0.64);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 800;
+  background: rgba(18, 20, 29, 0.94);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
+}
+
+.preview-screen .preview-video-buffer {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}

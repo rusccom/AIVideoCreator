@@ -12,9 +12,9 @@ import { TimelineTransport } from "./TimelineTransport";
 import { TimelineZoomControls } from "./TimelineZoomControls";
 
 type StoryboardTimelineProps = {
-  onSelectScene: (sceneId: string) => void;
+  onSelectItem: (itemId: string) => void;
   playback: PlaybackState;
-  selectedSceneId?: string;
+  selectedItemId?: string;
 };
 
 const VIEWPORT_WIDTH = 720;
@@ -23,7 +23,7 @@ export function StoryboardTimeline(props: StoryboardTimelineProps) {
   const [scaleIndex, setScaleIndex] = useState(0);
   const scale = timelineScales[scaleIndex];
   const layout = useTimelineLayout({
-    scenes: props.playback.timeline.scenes,
+    items: props.playback.timeline.items,
     scale,
     viewportWidth: VIEWPORT_WIDTH,
     contentSeconds: props.playback.timeline.totalDuration
@@ -55,8 +55,8 @@ export function StoryboardTimeline(props: StoryboardTimelineProps) {
           <TimelineScale seconds={layout.seconds} step={scale.tickSeconds} width={layout.width} />
           <TimelineTrack
             clipBoxes={layout.clipBoxes}
-            onSelect={props.onSelectScene}
-            selectedSceneId={props.selectedSceneId}
+            onSelect={props.onSelectItem}
+            selectedItemId={props.selectedItemId}
             width={layout.width}
           />
           <TimelinePlayhead position={layout.timeToPx(props.playback.currentTime)} />

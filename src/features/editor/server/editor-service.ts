@@ -1,6 +1,6 @@
 import { prisma } from "@/shared/server/prisma";
 import { supportedModels } from "@/features/generation/models/catalog";
-import type { EditorAsset, EditorImageModel, EditorProject, EditorScene, EditorVideoModel } from "../types";
+import type { EditorAsset, EditorImageModel, EditorProject, EditorScene, EditorTimelineItem, EditorVideoModel } from "../types";
 import { loadEditorAssets } from "./asset-loader";
 
 export async function getEditorProject(
@@ -9,18 +9,23 @@ export async function getEditorProject(
 ): Promise<EditorProject | null> {
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId },
-    include: { scenes: { orderBy: { orderIndex: "asc" } } }
+    include: {
+      scenes: { orderBy: { orderIndex: "asc" } },
+      timelineItems: { include: { scene: true }, orderBy: { orderIndex: "asc" } }
+    }
   });
   if (!project) return null;
   const assets = await loadEditorAssets(project.id, project.scenes);
+  const timelineItems = project.timelineItems.map((item) => toTimelineItem(item, assets.byId));
   const videoModels = await listModels("image-to-video", toVideoModel);
   const imageModels = await listModels("text-to-image", toImageModel);
   return {
     id: project.id,
     title: project.title,
     aspectRatio: project.aspectRatio,
-    totalDuration: `${totalSceneSeconds(project.scenes)}s`,
+    totalDuration: `${totalTimelineSeconds(timelineItems)}s`,
     scenes: project.scenes.map((scene) => toEditorScene(scene, assets.byId)),
+    timelineItems,
     assets: assets.recent.map(toEditorAsset),
     imageModels,
     videoModels
@@ -69,6 +74,19 @@ function toEditorAsset(asset: Awaited<ReturnType<typeof getAssetType>>) {
   } satisfies EditorAsset;
 }
 
+function toTimelineItem(
+  item: Awaited<ReturnType<typeof getTimelineItemType>>,
+  assets: Map<string, Awaited<ReturnType<typeof getAssetType>>>
+) {
+  return {
+    id: item.id,
+    sceneId: item.sceneId,
+    orderIndex: item.orderIndex,
+    durationSeconds: item.durationSeconds ?? item.scene.durationSeconds,
+    scene: toEditorScene(item.scene, assets)
+  } satisfies EditorTimelineItem;
+}
+
 function toVideoModel(model: Awaited<ReturnType<typeof prisma.aiModel.findMany>>[number]) {
   const supported = supportedModels.find((item) => item.id === model.key);
   if (!supported) return null;
@@ -110,8 +128,8 @@ function titleCase(value: string) {
   return value.charAt(0) + value.slice(1).toLowerCase();
 }
 
-function totalSceneSeconds(scenes: Array<{ durationSeconds: number }>) {
-  return scenes.reduce((total, scene) => total + scene.durationSeconds, 0);
+function totalTimelineSeconds(items: Array<{ durationSeconds: number }>) {
+  return items.reduce((total, item) => total + item.durationSeconds, 0);
 }
 
 function priceMap(value: unknown, resolutions: string[]) {
@@ -130,6 +148,10 @@ async function getSceneType() {
 
 async function getAssetType() {
   return prisma.asset.findFirstOrThrow();
+}
+
+async function getTimelineItemType() {
+  return prisma.timelineItem.findFirstOrThrow({ include: { scene: true } });
 }
 
 function isModel<T>(model: T | null): model is T {

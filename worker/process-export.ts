@@ -32,7 +32,7 @@ async function processExportJob(job: ExportJob) {
     const output = await renderExport(context, workspace);
     const asset = await createExportAsset(job, output.path, output.duration);
     await markReady(job.id, asset.storageKey, output.duration);
-    return { jobId: job.id, scenes: context.scenes.length };
+    return { jobId: job.id, items: context.items.length };
   } finally {
     await removeJobWorkspace(workspace);
   }
@@ -44,21 +44,21 @@ async function renderExport(context: ExportContext, workspace: string) {
   const outputPath = join(workspace, "export.mp4");
   await writeFile(listPath, concatList(normalized), "utf8");
   await runFfmpeg(["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", outputPath]);
-  return { duration: totalDuration(context.scenes), path: outputPath };
+  return { duration: totalDuration(context.items), path: outputPath };
 }
 
 async function normalizeClips(context: ExportContext, workspace: string) {
   const paths: string[] = [];
-  for (const [index, scene] of context.scenes.entries()) {
-    paths.push(await normalizeClip(context, scene, index, workspace));
+  for (const [index, item] of context.items.entries()) {
+    paths.push(await normalizeClip(context, item, index, workspace));
   }
   return paths;
 }
 
-async function normalizeClip(context: ExportContext, scene: ReadyScene, index: number, workspace: string) {
+async function normalizeClip(context: ExportContext, item: ReadyTimelineItem, index: number, workspace: string) {
   const input = join(workspace, `clip-${index}.mp4`);
   const output = join(workspace, `clip-${index}-normalized.mp4`);
-  await downloadAsset(context.assets.get(scene.videoAssetId ?? "")!, input);
+  await downloadAsset(context.assets.get(item.scene.videoAssetId ?? "")!, input);
   const hasAudio = await probeHasAudioStream(input);
   await runFfmpeg(normalizeCommand({ dimensions: context.dimensions, hasAudio, input, output }));
   return output;
@@ -85,9 +85,9 @@ function audioMapping(hasAudio: boolean) {
 }
 
 async function exportContext(job: ExportJob) {
-  const [project, scenes] = await Promise.all([projectForJob(job), readyScenes(job.projectId)]);
-  if (scenes.length === 0) throw new Error("No ready scenes to export");
-  return { assets: await videoAssets(scenes), dimensions: dimensions(job.resolution, project.aspectRatio), scenes };
+  const [project, items] = await Promise.all([projectForJob(job), readyTimelineItems(job.projectId)]);
+  if (items.length === 0) throw new Error("No ready timeline clips to export");
+  return { assets: await videoAssets(items), dimensions: dimensions(job.resolution, project.aspectRatio), items };
 }
 
 async function createExportAsset(job: ExportJob, localPath: string, duration: number) {
@@ -135,8 +135,8 @@ function escapePath(path: string) {
   return path.replace(/\\/g, "/").replace(/'/g, "'\\''");
 }
 
-function totalDuration(scenes: ReadyScene[]) {
-  return scenes.reduce((total, scene) => total + scene.durationSeconds, 0);
+function totalDuration(items: ReadyTimelineItem[]) {
+  return items.reduce((total, item) => total + itemDuration(item), 0);
 }
 
 function dimensions(resolution: string, aspectRatio: string) {
@@ -146,17 +146,22 @@ function dimensions(resolution: string, aspectRatio: string) {
   return { height: base, width: Math.round((base * 16) / 9) };
 }
 
-async function videoAssets(scenes: ReadyScene[]) {
-  const ids = scenes.map((scene) => scene.videoAssetId).filter(isString);
+async function videoAssets(items: ReadyTimelineItem[]) {
+  const ids = items.map((item) => item.scene.videoAssetId).filter(isString);
   const assets = await prisma.asset.findMany({ where: { id: { in: ids } } });
   return new Map(assets.map((asset) => [asset.id, asset]));
 }
 
-function readyScenes(projectId: string) {
-  return prisma.scene.findMany({
-    where: { projectId, status: "READY", videoAssetId: { not: null } },
+function readyTimelineItems(projectId: string) {
+  return prisma.timelineItem.findMany({
+    where: { projectId, scene: { status: "READY", videoAssetId: { not: null } } },
+    include: { scene: true },
     orderBy: { orderIndex: "asc" }
   });
+}
+
+function itemDuration(item: ReadyTimelineItem) {
+  return item.durationSeconds ?? item.scene.durationSeconds;
 }
 
 function projectForJob(job: ExportJob) {
@@ -180,7 +185,7 @@ function isString(value: unknown): value is string {
 }
 
 type ExportJob = Awaited<ReturnType<typeof nextExportJob>> & {};
-type ReadyScene = Awaited<ReturnType<typeof readyScenes>>[number];
+type ReadyTimelineItem = Awaited<ReturnType<typeof readyTimelineItems>>[number];
 type ExportContext = Awaited<ReturnType<typeof exportContext>>;
 type Dimensions = ReturnType<typeof dimensions>;
 

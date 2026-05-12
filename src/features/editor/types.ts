@@ -24,6 +24,14 @@ export type EditorAsset = {
   url?: string | null;
 };
 
+export type EditorTimelineItem = {
+  id: string;
+  sceneId: string;
+  orderIndex: number;
+  durationSeconds: number;
+  scene: EditorScene;
+};
+
 export type EditorImageModel = {
   id: string;
   displayName: string;
@@ -53,6 +61,7 @@ export type EditorProject = {
   aspectRatio: string;
   totalDuration: string;
   scenes: EditorScene[];
+  timelineItems: EditorTimelineItem[];
   assets: EditorAsset[];
   imageModels: EditorImageModel[];
   videoModels: EditorVideoModel[];

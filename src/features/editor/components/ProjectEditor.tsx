@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { closestCenter, DndContext, DragOverlay } from "@dnd-kit/core";
 import { useRouter } from "next/navigation";
 import type { EditorProject, EditorScene, EditorVideoModel } from "../types";
 import { usePlayback } from "../hooks/use-playback";
+import { useTimelineDrag } from "../hooks/use-timeline-drag";
+import { useTimelineItems } from "../hooks/use-timeline-items";
 import { EditorHeader } from "./EditorHeader";
 import { PhotoPanel } from "./PhotoPanel";
 import { PreviewPlayer } from "./PreviewPlayer";
@@ -18,8 +21,11 @@ type ProjectEditorProps = {
 
 export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   const router = useRouter();
-  const playback = usePlayback(project.scenes);
+  const timeline = useTimelineItems(project);
+  const playback = usePlayback(timeline.items);
+  const drag = useTimelineDrag({ ...timeline, project });
   const selectedScene = playback.currentPosition?.scene;
+  const selectedTimelineItem = playback.currentPosition?.item;
   const [showCreate, setShowCreate] = useState(false);
   const [sceneAssetId, setSceneAssetId] = useState<string>();
   const [generating, setGenerating] = useState(false);
@@ -65,33 +71,41 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
         videoModels={project.videoModels}
       />
       {message ? <div className="editor-message">{message}</div> : null}
-      <div className="editor-workspace">
-        <SceneRail
-          onCreate={openSceneCreate}
-          onSelect={playback.seekToScene}
-          scenes={project.scenes}
-          selectedSceneId={selectedScene?.id}
-        />
-        <PreviewPlayer
-          creditCost={selectedCost}
-          generating={generationActive}
-          onGenerate={generateClip}
+      <DndContext
+        collisionDetection={closestCenter}
+        onDragEnd={drag.onDragEnd}
+        onDragStart={drag.onDragStart}
+        sensors={drag.sensors}
+      >
+        <div className="editor-workspace">
+          <SceneRail
+            onCreate={openSceneCreate}
+            onSelect={playback.seekToScene}
+            scenes={project.scenes}
+            selectedSceneId={selectedScene?.id}
+          />
+          <PreviewPlayer
+            creditCost={selectedCost}
+            generating={generationActive}
+            onGenerate={generateClip}
+            playback={playback}
+            submitting={generating}
+          />
+          <PhotoPanel
+            assets={project.assets}
+            imageModels={project.imageModels}
+            onCreateVideoFromPhoto={openSceneFromPhoto}
+            projectAspectRatio={project.aspectRatio}
+            projectId={project.id}
+          />
+        </div>
+        <StoryboardTimeline
+          onSelectItem={playback.seekToItem}
           playback={playback}
-          submitting={generating}
+          selectedItemId={selectedTimelineItem?.id}
         />
-        <PhotoPanel
-          assets={project.assets}
-          imageModels={project.imageModels}
-          onCreateVideoFromPhoto={openSceneFromPhoto}
-          projectAspectRatio={project.aspectRatio}
-          projectId={project.id}
-        />
-      </div>
-      <StoryboardTimeline
-        onSelectScene={playback.seekToScene}
-        playback={playback}
-        selectedSceneId={selectedScene?.id}
-      />
+        <DragOverlay>{drag.activeLabel ? <div className="timeline-drag-overlay">{drag.activeLabel}</div> : null}</DragOverlay>
+      </DndContext>
       {showCreate ? (
         <SceneCreateModal
           assets={project.assets}

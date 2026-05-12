@@ -80,8 +80,16 @@ async function videoAsset(job: FrameJob, sceneVideoAssetId?: string | null) {
 
 function frameCommand(inputJson: Prisma.JsonValue, input: string, output: string) {
   const seconds = frameTimeSeconds(inputJson);
-  const seek = seconds === null ? ["-sseof", "-0.2"] : ["-ss", String(seconds)];
-  return ["-y", ...seek, "-i", input, "-frames:v", "1", "-q:v", "2", output];
+  if (seconds !== null) return pickedFrameCommand(seconds, input, output);
+  return lastFrameCommand(input, output);
+}
+
+function pickedFrameCommand(seconds: number, input: string, output: string) {
+  return ["-y", "-ss", String(seconds), "-i", input, "-frames:v", "1", "-q:v", "2", output];
+}
+
+function lastFrameCommand(input: string, output: string) {
+  return ["-y", "-i", input, "-an", "-q:v", "2", "-update", "1", output];
 }
 
 function frameTimeSeconds(inputJson: Prisma.JsonValue) {

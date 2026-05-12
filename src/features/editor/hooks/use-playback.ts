@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import type { EditorScene } from "../types";
+import type { EditorTimelineItem } from "../types";
 import { PlaybackTimeline, type ScenePosition } from "../playback/playback-timeline";
 
 export type PlaybackState = {
@@ -11,14 +11,15 @@ export type PlaybackState = {
   isPlaying: boolean;
   setCurrentTime: (time: number) => void;
   seek: (time: number) => void;
+  seekToItem: (itemId: string) => void;
   seekToScene: (sceneId: string) => void;
   play: () => void;
   pause: () => void;
   toggle: () => void;
 };
 
-export function usePlayback(scenes: readonly EditorScene[]): PlaybackState {
-  const timeline = useMemo(() => new PlaybackTimeline(scenes), [scenes]);
+export function usePlayback(items: readonly EditorTimelineItem[]): PlaybackState {
+  const timeline = useMemo(() => new PlaybackTimeline(items), [items]);
   const [currentTime, setCurrentTimeRaw] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const setCurrentTime = useCallback(
@@ -28,6 +29,10 @@ export function usePlayback(scenes: readonly EditorScene[]): PlaybackState {
   const seek = setCurrentTime;
   const seekToScene = useCallback(
     (sceneId: string) => seekToSceneStart(timeline, sceneId, setCurrentTime),
+    [timeline, setCurrentTime]
+  );
+  const seekToItem = useCallback(
+    (itemId: string) => seekToItemStart(timeline, itemId, setCurrentTime),
     [timeline, setCurrentTime]
   );
   const play = useCallback(() => setIsPlaying(true), []);
@@ -41,11 +46,21 @@ export function usePlayback(scenes: readonly EditorScene[]): PlaybackState {
     isPlaying,
     setCurrentTime,
     seek,
+    seekToItem,
     seekToScene,
     play,
     pause,
     toggle
   };
+}
+
+function seekToItemStart(
+  timeline: PlaybackTimeline,
+  itemId: string,
+  setCurrentTime: (time: number) => void
+) {
+  const position = timeline.positionForItem(itemId);
+  if (position) setCurrentTime(position.startTime);
 }
 
 function seekToSceneStart(

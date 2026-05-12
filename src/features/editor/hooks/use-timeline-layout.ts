@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import type { EditorScene } from "../types";
+import type { EditorTimelineItem } from "../types";
 import { TimelineLayout } from "../playback/timeline-layout";
 import type { TimelineScale } from "../playback/timeline-scales";
 
 type UseTimelineLayoutInput = {
-  scenes: readonly EditorScene[];
+  items: readonly EditorTimelineItem[];
   scale: TimelineScale;
   viewportWidth: number;
   contentSeconds: number;
@@ -16,11 +16,11 @@ export function useTimelineLayout(input: UseTimelineLayoutInput) {
   return useMemo(
     () =>
       new TimelineLayout({
-        scenes: input.scenes,
+        items: input.items,
         scale: input.scale,
         viewportWidth: input.viewportWidth,
         contentSeconds: input.contentSeconds
       }),
-    [input.scenes, input.scale, input.viewportWidth, input.contentSeconds]
+    [input.items, input.scale, input.viewportWidth, input.contentSeconds]
   );
 }

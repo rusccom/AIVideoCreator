@@ -1,6 +1,7 @@
-import type { EditorScene } from "../types";
+import type { EditorScene, EditorTimelineItem } from "../types";
 
 export type ScenePosition = {
+  item: EditorTimelineItem;
   scene: EditorScene;
   index: number;
   startTime: number;
@@ -11,10 +12,14 @@ export class PlaybackTimeline {
   readonly positions: readonly ScenePosition[];
   readonly totalDuration: number;
 
-  constructor(scenes: readonly EditorScene[]) {
-    this.positions = buildPositions(scenes);
+  constructor(items: readonly EditorTimelineItem[]) {
+    this.positions = buildPositions(items);
     const last = this.positions[this.positions.length - 1];
     this.totalDuration = last ? last.endTime : 0;
+  }
+
+  get items(): readonly EditorTimelineItem[] {
+    return this.positions.map((position) => position.item);
   }
 
   get scenes(): readonly EditorScene[] {
@@ -32,6 +37,10 @@ export class PlaybackTimeline {
     return this.positions.find((position) => position.scene.id === sceneId) ?? null;
   }
 
+  positionForItem(itemId: string): ScenePosition | null {
+    return this.positions.find((position) => position.item.id === itemId) ?? null;
+  }
+
   nextPlayable(after: ScenePosition): ScenePosition | null {
     for (let cursor = after.index + 1; cursor < this.positions.length; cursor += 1) {
       const candidate = this.positions[cursor];
@@ -41,12 +50,12 @@ export class PlaybackTimeline {
   }
 }
 
-function buildPositions(scenes: readonly EditorScene[]): ScenePosition[] {
+function buildPositions(items: readonly EditorTimelineItem[]): ScenePosition[] {
   let cursor = 0;
-  return scenes.map((scene, index) => {
+  return items.map((item, index) => {
     const startTime = cursor;
-    cursor += scene.durationSeconds;
-    return { scene, index, startTime, endTime: cursor };
+    cursor += item.durationSeconds;
+    return { item, scene: item.scene, index, startTime, endTime: cursor };
   });
 }
 
