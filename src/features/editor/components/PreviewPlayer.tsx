@@ -1,6 +1,9 @@
+"use client";
+
 import { Play } from "lucide-react";
 import type { EditorScene } from "../types";
 import type { PlaybackState } from "../hooks/use-playback";
+import { usePreviewFit } from "../hooks/use-preview-fit";
 import { GenerationProgressBar } from "./GenerationProgressBar";
 import { PreviewVideo } from "./PreviewVideo";
 
@@ -9,16 +12,20 @@ type PreviewPlayerProps = {
   generating: boolean;
   onGenerate: () => void;
   playback: PlaybackState;
+  projectAspectRatio: string;
   submitting: boolean;
 };
 
 export function PreviewPlayer(props: PreviewPlayerProps) {
   const scene = props.playback.currentPosition?.scene;
+  const preview = usePreviewFit(props.projectAspectRatio);
   return (
     <section className="editor-panel preview-panel">
-      <div>
-        <div className="preview-screen">
-          <PreviewVideo playback={props.playback} />
+      <div className="preview-player-body">
+        <div className="preview-stage" ref={preview.stageRef}>
+          <div className="preview-screen" style={preview.screenStyle}>
+            <PreviewVideo playback={props.playback} />
+          </div>
         </div>
         {props.generating ? <GenerationProgressBar /> : null}
       </div>

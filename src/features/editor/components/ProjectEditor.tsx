@@ -89,6 +89,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
             generating={generationActive}
             onGenerate={generateClip}
             playback={playback}
+            projectAspectRatio={project.aspectRatio}
             submitting={generating}
           />
           <PhotoPanel
