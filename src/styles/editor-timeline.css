@@ -3,6 +3,61 @@
   touch-action: none;
 }
 
+.editor-shell {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  height: 100dvh;
+  min-height: 0;
+  max-width: 100vw;
+  overflow: hidden;
+}
+
+.editor-workspace {
+  grid-row: 3;
+  min-height: 0;
+}
+
+.editor-message {
+  grid-row: 2;
+}
+
+.timeline-panel {
+  grid-row: 4;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.timeline-scroll {
+  max-width: 100%;
+}
+
+.editor-workspace > .editor-panel:not(.preview-panel) {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.editor-workspace > .editor-panel,
+.preview-panel > div:first-child,
+.preview-screen {
+  min-height: 0;
+}
+
+.preview-panel > div:first-child {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.scene-list,
+.asset-list,
+.photo-panel-body {
+  overflow: auto;
+}
+
+.preview-screen,
+.preview-screen video,
+.preview-image {
+  min-height: 0;
+}
+
 .scene-item:active,
 .timeline-clip-slot:active {
   cursor: grabbing;

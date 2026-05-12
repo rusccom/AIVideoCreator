@@ -9,21 +9,17 @@ export type ScenePosition = {
 };
 
 export class PlaybackTimeline {
+  readonly items: readonly EditorTimelineItem[];
+  readonly scenes: readonly EditorScene[];
   readonly positions: readonly ScenePosition[];
   readonly totalDuration: number;
 
   constructor(items: readonly EditorTimelineItem[]) {
+    this.items = items;
+    this.scenes = items.map((item) => item.scene);
     this.positions = buildPositions(items);
     const last = this.positions[this.positions.length - 1];
     this.totalDuration = last ? last.endTime : 0;
-  }
-
-  get items(): readonly EditorTimelineItem[] {
-    return this.positions.map((position) => position.item);
-  }
-
-  get scenes(): readonly EditorScene[] {
-    return this.positions.map((position) => position.scene);
   }
 
   positionAtTime(time: number): ScenePosition | null {

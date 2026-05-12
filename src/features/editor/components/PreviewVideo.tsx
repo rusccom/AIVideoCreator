@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import type { EditorTimelineItem } from "../types";
 import type { PlaybackState } from "../hooks/use-playback";
 import { useResolvedTimelineVideoUrls } from "../hooks/use-resolved-timeline-video-urls";
 import type { ScenePosition } from "../playback/playback-timeline";
@@ -11,16 +12,17 @@ type PreviewVideoProps = {
 };
 
 const DRIFT_THRESHOLD_SECONDS = 0.25;
-const PUBLISH_INTERVAL_MS = 33;
+const PUBLISH_INTERVAL_MS = 100;
 const SWITCH_MARGIN_SECONDS = 0.12;
 
 export function PreviewVideo({ playback }: PreviewVideoProps) {
   const activeRef = useRef<HTMLVideoElement>(null);
   const preloadRef = useRef<HTMLVideoElement>(null);
   const position = playback.currentPosition;
-  const urls = useResolvedTimelineVideoUrls(playback.timeline.items);
-  const currentUrl = position ? urls[position.item.id] : null;
   const next = position ? playback.timeline.nextPlayable(position) : null;
+  const videoItems = useMemo(() => playbackItems(position, next), [position, next]);
+  const urls = useResolvedTimelineVideoUrls(videoItems);
+  const currentUrl = position ? urls[position.item.id] : null;
   const nextUrl = next ? urls[next.item.id] : null;
   useActiveVideo(activeRef, playback, position, currentUrl);
   usePreloadVideo(preloadRef, nextUrl);
@@ -28,16 +30,50 @@ export function PreviewVideo({ playback }: PreviewVideoProps) {
   if (!currentUrl) return <FallbackFrame position={position} />;
   return (
     <>
-      <video
-        className="preview-video"
-        onEnded={() => advanceOrStop(playback)}
-        playsInline
-        preload="auto"
-        ref={activeRef}
-        src={currentUrl}
-      />
-      {nextUrl ? <video aria-hidden className="preview-video-buffer" muted playsInline preload="auto" ref={preloadRef} src={nextUrl} /> : null}
+      {renderActiveVideo(activeRef, playback, currentUrl)}
+      {renderBufferVideo(preloadRef, nextUrl)}
     </>
+  );
+}
+
+function playbackItems(
+  position: ScenePosition | null,
+  next: ScenePosition | null
+): readonly EditorTimelineItem[] {
+  if (!position) return [];
+  if (!next) return [position.item];
+  return [position.item, next.item];
+}
+
+function renderActiveVideo(
+  ref: React.RefObject<HTMLVideoElement | null>,
+  playback: PlaybackState,
+  url: string
+) {
+  return (
+    <video
+      className="preview-video"
+      onEnded={() => advanceOrStop(playback)}
+      playsInline
+      preload={playback.isPlaying ? "auto" : "metadata"}
+      ref={ref}
+      src={url}
+    />
+  );
+}
+
+function renderBufferVideo(ref: React.RefObject<HTMLVideoElement | null>, url?: string | null) {
+  if (!url) return null;
+  return (
+    <video
+      aria-hidden
+      className="preview-video-buffer"
+      muted
+      playsInline
+      preload="metadata"
+      ref={ref}
+      src={url}
+    />
   );
 }
 
