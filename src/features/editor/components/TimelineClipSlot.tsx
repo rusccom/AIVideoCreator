@@ -18,6 +18,7 @@ export function TimelineClipSlot(props: TimelineClipSlotProps) {
   return (
     <div
       className="timeline-clip-slot"
+      data-timeline-item-id={item.id}
       ref={mergeRefs(drop.setNodeRef, drag.setNodeRef)}
       style={slotStyle(props.box, drag.transform)}
       {...drag.attributes}

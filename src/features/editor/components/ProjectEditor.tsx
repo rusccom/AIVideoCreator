@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { closestCenter, DndContext, DragOverlay } from "@dnd-kit/core";
+import { DndContext, DragOverlay, pointerWithin } from "@dnd-kit/core";
 import { useRouter } from "next/navigation";
-import type { EditorProject, EditorScene, EditorVideoModel } from "../types";
+import type { EditorProject, EditorScene } from "../types";
 import { usePlayback } from "../hooks/use-playback";
 import { useTimelineDrag } from "../hooks/use-timeline-drag";
 import { useTimelineItems } from "../hooks/use-timeline-items";
@@ -28,24 +28,8 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   const selectedTimelineItem = playback.currentPosition?.item;
   const [showCreate, setShowCreate] = useState(false);
   const [sceneAssetId, setSceneAssetId] = useState<string>();
-  const [generating, setGenerating] = useState(false);
-  const [pendingGenerationSceneId, setPendingGenerationSceneId] = useState<string>();
-  const [message, setMessage] = useState("");
-  const selectedCost = videoCost(project.videoModels, selectedScene);
-  const generationActive = generating || sceneGenerationActive(selectedScene, pendingGenerationSceneId);
+  const generationActive = sceneGenerationActive(selectedScene);
   useGenerationPolling(selectedScene, router);
-  useGenerationCleanup(selectedScene, pendingGenerationSceneId, setPendingGenerationSceneId);
-
-  async function generateClip() {
-    if (!selectedScene) return;
-    setGenerating(true);
-    setMessage("");
-    const response = await submitGeneration(selectedScene, project);
-    setGenerating(false);
-    if (response.ok) setPendingGenerationSceneId(selectedScene.id);
-    setMessage(response.ok ? "Generation queued." : await responseError(response));
-    router.refresh();
-  }
 
   function openSceneCreate() {
     setSceneAssetId(undefined);
@@ -70,9 +54,8 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
         totalDuration={project.totalDuration}
         videoModels={project.videoModels}
       />
-      {message ? <div className="editor-message">{message}</div> : null}
       <DndContext
-        collisionDetection={closestCenter}
+        collisionDetection={pointerWithin}
         onDragEnd={drag.onDragEnd}
         onDragStart={drag.onDragStart}
         sensors={drag.sensors}
@@ -85,12 +68,9 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
             selectedSceneId={selectedScene?.id}
           />
           <PreviewPlayer
-            creditCost={selectedCost}
             generating={generationActive}
-            onGenerate={generateClip}
             playback={playback}
             projectAspectRatio={project.aspectRatio}
-            submitting={generating}
           />
           <PhotoPanel
             assets={project.assets}
@@ -131,48 +111,8 @@ function useGenerationPolling(scene: EditorScene | undefined, router: ReturnType
   }, [router, scene]);
 }
 
-function useGenerationCleanup(
-  scene: EditorScene | undefined,
-  pendingId: string | undefined,
-  reset: (value: string | undefined) => void
-) {
-  useEffect(() => {
-    if (!scene || scene.id !== pendingId) return;
-    if (scene.statusValue === "READY" || scene.statusValue === "FAILED") reset(undefined);
-  }, [scene, pendingId, reset]);
-}
-
-async function submitGeneration(scene: EditorScene, project: EditorProject) {
-  return fetch(`/api/scenes/${scene.id}/generate-video`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(generationBody(scene, project))
-  });
-}
-
-function generationBody(scene: EditorScene, project: EditorProject) {
-  return {
-    aspectRatio: videoAspectRatio(project, scene.modelId),
-    prompt: scene.prompt,
-    modelId: scene.modelId,
-    duration: scene.durationSeconds
-  };
-}
-
-function videoCost(models: readonly EditorVideoModel[], scene?: EditorScene) {
-  const model = models.find((item) => item.id === scene?.modelId);
-  const price = model?.pricePerSecondByResolution[model.defaultResolution] ?? 0;
-  return scene && price > 0 ? Math.ceil(scene.durationSeconds * price) : null;
-}
-
-function videoAspectRatio(project: EditorProject, modelId: string) {
-  const model = project.videoModels.find((item) => item.id === modelId);
-  if (model?.supportedAspectRatios.includes(project.aspectRatio)) return project.aspectRatio;
-  return model?.supportedAspectRatios.includes("auto") ? "auto" : model?.defaultAspectRatio;
-}
-
-function sceneGenerationActive(scene: EditorScene | undefined, pendingSceneId?: string) {
-  return scene?.statusValue === "GENERATING" || Boolean(scene?.id && scene.id === pendingSceneId);
+function sceneGenerationActive(scene: EditorScene | undefined) {
+  return scene?.statusValue === "GENERATING";
 }
 
 function finishCreate(
@@ -190,13 +130,4 @@ async function pollJob(jobId: string, router: ReturnType<typeof useRouter>) {
   if (!response.ok) return;
   const data = await response.json();
   if (data.status === "READY" || data.status === "FAILED") router.refresh();
-}
-
-async function responseError(response: Response) {
-  try {
-    const data = (await response.json()) as { error?: string };
-    return data.error ?? "Generation could not start.";
-  } catch {
-    return "Generation could not start.";
-  }
 }

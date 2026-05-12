@@ -30,23 +30,55 @@ function handleDragEnd(
 ) {
   setActiveLabel("");
   const active = dragData(event.active.data.current);
-  const index = dropIndex(event.over?.data.current, input.items);
-  if (!active || index === null) return;
+  if (!active || !isTimelineDrop(event.over?.data.current)) return;
+  const movingId = active.type === "timeline-item" ? active.itemId : undefined;
+  const index = dropIndex(event, input.items, movingId);
+  if (index === null) return;
   if (active.type === "clip") input.addScene(active.sceneId, index);
-  if (active.type === "timeline-item") input.moveItem(active.itemId, moveIndex(input.items, active.itemId, index));
+  if (active.type === "timeline-item") input.moveItem(active.itemId, index);
 }
 
-function moveIndex(items: EditorTimelineItem[], itemId: string, targetIndex: number) {
-  const currentIndex = items.findIndex((item) => item.id === itemId);
-  return currentIndex >= 0 && currentIndex < targetIndex ? targetIndex - 1 : targetIndex;
-}
-
-function dropIndex(data: unknown, items: EditorTimelineItem[]) {
-  const drop = dropData(data);
+function dropIndex(event: DragEndEvent, items: EditorTimelineItem[], movingId?: string) {
+  const pointerIndex = timelinePointerIndex(event, items, movingId);
+  if (pointerIndex !== null) return pointerIndex;
+  const drop = dropData(event.over?.data.current);
   if (!drop) return null;
   if (drop.type === "timeline-board") return items.length;
-  const index = items.findIndex((item) => item.id === drop.itemId);
+  return itemIndex(items, drop.itemId);
+}
+
+function timelinePointerIndex(event: DragEndEvent, items: EditorTimelineItem[], movingId?: string) {
+  const pointerX = pointerClientX(event);
+  if (pointerX === null) return null;
+  const centers = timelineCenters(items, movingId);
+  const index = centers.findIndex((center) => pointerX < center);
+  return index < 0 ? items.length : index;
+}
+
+function timelineCenters(items: EditorTimelineItem[], movingId?: string) {
+  return items.filter((item) => item.id !== movingId).flatMap((item) => {
+    const node = document.querySelector(`[data-timeline-item-id="${item.id}"]`);
+    if (!(node instanceof HTMLElement)) return [];
+    const rect = node.getBoundingClientRect();
+    return [rect.left + rect.width / 2];
+  });
+}
+
+function pointerClientX(event: DragEndEvent) {
+  if ("clientX" in event.activatorEvent && typeof event.activatorEvent.clientX === "number") {
+    return event.activatorEvent.clientX + event.delta.x;
+  }
+  const rect = event.active.rect.current.translated;
+  return rect ? rect.left + rect.width / 2 : null;
+}
+
+function itemIndex(items: EditorTimelineItem[], itemId: string) {
+  const index = items.findIndex((item) => item.id === itemId);
   return index < 0 ? null : index;
+}
+
+function isTimelineDrop(data: unknown) {
+  return Boolean(dropData(data));
 }
 
 function labelForDrag(
