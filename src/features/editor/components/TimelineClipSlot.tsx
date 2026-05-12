@@ -1,7 +1,6 @@
 "use client";
 
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import type { ClipBox } from "../playback/timeline-layout";
 import { TimelineClipCard } from "./TimelineClipCard";
 
@@ -18,10 +17,10 @@ export function TimelineClipSlot(props: TimelineClipSlotProps) {
   const drag = useDraggable({ id: dragId(item.id), data: dragData(item.id) });
   return (
     <div
-      className="timeline-clip-slot"
+      className={slotClass(drag.isDragging)}
       data-timeline-item-id={item.id}
       ref={mergeRefs(drop.setNodeRef, drag.setNodeRef)}
-      style={slotStyle(props.box, props.insertOffset, drag.transform)}
+      style={slotStyle(props.box, props.insertOffset)}
       {...drag.attributes}
       {...drag.listeners}
     >
@@ -30,13 +29,15 @@ export function TimelineClipSlot(props: TimelineClipSlotProps) {
   );
 }
 
-function slotStyle(box: ClipBox, insertOffset: number, transform: ReturnType<typeof useDraggable>["transform"]) {
+function slotStyle(box: ClipBox, insertOffset: number) {
   return {
     left: box.left + insertOffset,
-    opacity: transform ? 0.62 : 1,
-    transform: CSS.Transform.toString(transform),
     width: box.width
   };
+}
+
+function slotClass(dragging: boolean) {
+  return dragging ? "timeline-clip-slot dragging" : "timeline-clip-slot";
 }
 
 function mergeRefs<T>(first: (node: T | null) => void, second: (node: T | null) => void) {

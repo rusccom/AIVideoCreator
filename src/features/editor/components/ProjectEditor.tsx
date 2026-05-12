@@ -83,6 +83,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
           />
         </div>
         <StoryboardTimeline
+          activeItemId={drag.activeItemId}
           insertionIndex={drag.insertionIndex}
           onSelectItem={playback.seekToItem}
           playback={playback}

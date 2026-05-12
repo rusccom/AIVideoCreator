@@ -21,6 +21,7 @@ export function EditorHeader(props: EditorHeaderProps) {
       <div className="editor-header-left">
         <EditorBackLink />
         <EditorProjectSummary
+          aspectRatio={props.aspectRatio}
           projectId={props.projectId}
           sceneCount={props.sceneCount}
           title={props.title}

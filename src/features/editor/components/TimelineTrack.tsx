@@ -3,6 +3,7 @@ import type { ClipBox } from "../playback/timeline-layout";
 import { TimelineClipSlot } from "./TimelineClipSlot";
 
 type TimelineTrackProps = {
+  activeItemId: string | null;
   clipBoxes: readonly ClipBox[];
   insertionIndex: number | null;
   onSelect: (itemId: string) => void;
@@ -22,7 +23,7 @@ export function TimelineTrack(props: TimelineTrackProps) {
       {props.clipBoxes.map((box, index) => (
         <TimelineClipSlot
           box={box}
-          insertOffset={insertOffset(index, props.insertionIndex)}
+          insertOffset={insertOffset(box, index, props)}
           key={box.item.id}
           onSelect={props.onSelect}
           selected={box.item.id === props.selectedItemId}
@@ -32,8 +33,9 @@ export function TimelineTrack(props: TimelineTrackProps) {
   );
 }
 
-function insertOffset(index: number, insertionIndex: number | null) {
-  if (insertionIndex === null || index < insertionIndex) return 0;
+function insertOffset(box: ClipBox, index: number, props: TimelineTrackProps) {
+  if (box.item.id === props.activeItemId) return 0;
+  if (props.insertionIndex === null || index < props.insertionIndex) return 0;
   return TIMELINE_INSERT_GAP_PX;
 }
 

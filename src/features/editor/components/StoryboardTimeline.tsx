@@ -12,6 +12,7 @@ import { TimelineTransport } from "./TimelineTransport";
 import { TimelineZoomControls } from "./TimelineZoomControls";
 
 type StoryboardTimelineProps = {
+  activeItemId: string | null;
   insertionIndex: number | null;
   onSelectItem: (itemId: string) => void;
   playback: PlaybackState;
@@ -56,6 +57,7 @@ export function StoryboardTimeline(props: StoryboardTimelineProps) {
         >
           <TimelineScale seconds={layout.seconds} step={scale.tickSeconds} width={boardWidth} />
           <TimelineTrack
+            activeItemId={props.activeItemId}
             clipBoxes={layout.clipBoxes}
             insertionIndex={props.insertionIndex}
             onSelect={props.onSelectItem}

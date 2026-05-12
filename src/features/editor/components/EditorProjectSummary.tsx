@@ -1,4 +1,5 @@
 type EditorProjectSummaryProps = {
+  aspectRatio: string;
   projectId: string;
   sceneCount: number;
   title: string;
@@ -10,7 +11,7 @@ export function EditorProjectSummary(props: EditorProjectSummaryProps) {
     <div className="editor-project-summary">
       <h1>{props.title}</h1>
       <p>
-        {props.sceneCount} linked clips - {props.totalDuration} - {props.projectId}
+        {props.sceneCount} linked clips - {props.totalDuration} - {props.aspectRatio} - {props.projectId}
       </p>
     </div>
   );

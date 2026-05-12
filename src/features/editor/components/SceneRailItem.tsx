@@ -1,7 +1,6 @@
 "use client";
 
 import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import type { EditorScene } from "../types";
 import { StatusBadge } from "./StatusBadge";
 
@@ -15,10 +14,9 @@ export function SceneRailItem(props: SceneRailItemProps) {
   const drag = useDraggable({ id: `clip:${props.scene.id}`, data: dragData(props.scene.id) });
   return (
     <button
-      className={sceneClass(props.selected)}
+      className={sceneClass(props.selected, drag.isDragging)}
       onClick={() => props.onSelect(props.scene.id)}
       ref={drag.setNodeRef}
-      style={dragStyle(drag.transform)}
       type="button"
       {...drag.attributes}
       {...drag.listeners}
@@ -37,13 +35,9 @@ function dragData(sceneId: string) {
   return { sceneId, type: "clip" };
 }
 
-function dragStyle(transform: ReturnType<typeof useDraggable>["transform"]) {
-  return {
-    opacity: transform ? 0.62 : 1,
-    transform: CSS.Transform.toString(transform)
-  };
-}
-
-function sceneClass(selected: boolean) {
-  return selected ? "scene-item active" : "scene-item";
+function sceneClass(selected: boolean, dragging: boolean) {
+  const classes = ["scene-item"];
+  if (selected) classes.push("active");
+  if (dragging) classes.push("dragging");
+  return classes.join(" ");
 }

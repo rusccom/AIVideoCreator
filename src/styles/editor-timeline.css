@@ -115,6 +115,11 @@
   cursor: grabbing;
 }
 
+.scene-item.dragging,
+.timeline-clip-slot.dragging .timeline-clip {
+  opacity: 0.72;
+}
+
 .timeline-track {
   outline: 1px dashed transparent;
   outline-offset: -8px;

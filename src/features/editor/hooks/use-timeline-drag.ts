@@ -21,15 +21,18 @@ type UseTimelineDragInput = {
 export function useTimelineDrag(input: UseTimelineDragInput) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const [activeLabel, setActiveLabel] = useState("");
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null);
   const sceneNames = useMemo(() => sceneNameMap(input.project), [input.project]);
+  const setters = { setActiveItemId, setActiveLabel, setInsertionIndex };
   return {
+    activeItemId,
     activeLabel,
     insertionIndex,
-    onDragCancel: () => resetDrag(setActiveLabel, setInsertionIndex),
-    onDragEnd: (event: DragEndEvent) => handleDragEnd(input, event, setActiveLabel, setInsertionIndex),
+    onDragCancel: () => resetDrag(setters),
+    onDragEnd: (event: DragEndEvent) => handleDragEnd(input, event, setters),
     onDragMove: (event: DragMoveEvent) => handleDragMove(input, event, setInsertionIndex),
-    onDragStart: (event: DragStartEvent) => handleDragStart(event, sceneNames, input.items, setActiveLabel, setInsertionIndex),
+    onDragStart: (event: DragStartEvent) => handleDragStart(event, sceneNames, input.items, setters),
     sensors
   };
 }
@@ -37,10 +40,9 @@ export function useTimelineDrag(input: UseTimelineDragInput) {
 function handleDragEnd(
   input: UseTimelineDragInput,
   event: DragEndEvent,
-  setActiveLabel: (value: string) => void,
-  setInsertionIndex: (value: number | null) => void
+  setters: DragStateSetters
 ) {
-  resetDrag(setActiveLabel, setInsertionIndex);
+  resetDrag(setters);
   const active = dragData(event.active.data.current);
   if (!active || !isTimelineDrop(event.over?.data.current)) return;
   const movingId = active.type === "timeline-item" ? active.itemId : undefined;
@@ -65,11 +67,12 @@ function handleDragStart(
   event: DragStartEvent,
   sceneNames: Map<string, string>,
   items: EditorTimelineItem[],
-  setActiveLabel: (value: string) => void,
-  setInsertionIndex: (value: number | null) => void
+  setters: DragStateSetters
 ) {
-  setInsertionIndex(null);
-  setActiveLabel(labelForDrag(event, sceneNames, items));
+  const active = dragData(event.active.data.current);
+  setters.setActiveItemId(active?.type === "timeline-item" ? active.itemId : null);
+  setters.setInsertionIndex(null);
+  setters.setActiveLabel(labelForDrag(event, sceneNames, items));
 }
 
 function dropIndex(event: TimelineDragEvent, items: EditorTimelineItem[], movingId?: string) {
@@ -130,12 +133,10 @@ function sceneNameMap(project: EditorProject) {
   return new Map(project.scenes.map((scene) => [scene.id, scene.name]));
 }
 
-function resetDrag(
-  setActiveLabel: (value: string) => void,
-  setInsertionIndex: (value: number | null) => void
-) {
-  setActiveLabel("");
-  setInsertionIndex(null);
+function resetDrag(setters: DragStateSetters) {
+  setters.setActiveLabel("");
+  setters.setActiveItemId(null);
+  setters.setInsertionIndex(null);
 }
 
 function dragData(value: unknown): TimelineDragData | null {
@@ -163,3 +164,9 @@ type TimelineDropData =
   | { itemId: string; type: "timeline-slot" };
 
 type TimelineDragEvent = DragEndEvent | DragMoveEvent;
+
+type DragStateSetters = {
+  setActiveItemId: (value: string | null) => void;
+  setActiveLabel: (value: string) => void;
+  setInsertionIndex: (value: number | null) => void;
+};

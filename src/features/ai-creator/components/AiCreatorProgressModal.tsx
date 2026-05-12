@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
+import { AiCreatorPollingPulse } from "./AiCreatorPollingPulse";
 
 type AiCreatorProgressModalProps = {
   jobId: string;
@@ -22,20 +23,36 @@ type ProgressTarget = {
   total: number;
 };
 
+type ProgressViewState = {
+  progress: ProgressState;
+  pulse: number;
+};
+
+const POLL_INTERVAL_MS = 4000;
+
 export function AiCreatorProgressModal(props: AiCreatorProgressModalProps) {
-  const progress = useProgressStatus(props);
+  const state = useProgressStatus(props);
+  const progress = state.progress;
 
   return (
     <div aria-modal="true" className="project-modal-backdrop" role="dialog">
       <div className="project-modal ai-creator-progress-modal">
-        <div className="project-modal-header">
-          <div>
-            <h2>{progressTitle(progress.total)}</h2>
-            <p>{progressText(progress)}</p>
+        <div className="ai-creator-progress-layout">
+          <AiCreatorPollingPulse
+            pulse={state.pulse}
+            readyCount={progress.readyCount}
+            status={progress.status}
+            total={progress.total}
+          />
+          <div className="ai-creator-progress-content">
+            <div>
+              <h2>{progressTitle(progress.total)}</h2>
+              <p>{progressText(progress)}</p>
+            </div>
+            <div aria-label="Clip generation progress" {...progressBarProps(state)}>
+              <span />
+            </div>
           </div>
-        </div>
-        <div aria-label="Clip generation progress" {...progressBarProps(progress)}>
-          <span />
         </div>
       </div>
     </div>
@@ -43,31 +60,35 @@ export function AiCreatorProgressModal(props: AiCreatorProgressModalProps) {
 }
 
 function useProgressStatus(props: AiCreatorProgressModalProps) {
-  const [progress, setProgress] = useState(initialProgress(props.total));
-  useEffect(() => {
-    let active = true;
-    const target = progressTarget(props);
-    const refresh = () => refreshProgressStatus(target, setProgress, props.onDone, () => active);
-    void refresh();
-    const timer = window.setInterval(refresh, 4000);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, [props.jobId, props.onDone, props.sequenceId, props.total]);
-  return progress;
+  const [state, setState] = useState(initialProgressView(props.total));
+  useEffect(() => runProgressPolling(props, setState), [props.jobId, props.onDone, props.sequenceId, props.total]);
+  return state;
 }
 
-async function refreshProgressStatus(
-  target: ProgressTarget,
-  setProgress: (progress: ProgressState) => void,
-  onDone: () => void,
-  isActive: () => boolean
+function runProgressPolling(
+  props: AiCreatorProgressModalProps,
+  setState: (updater: (state: ProgressViewState) => ProgressViewState) => void
 ) {
-  const progress = await safeFetchProgress(target);
-  if (!progress || !isActive()) return;
-  setProgress(progress);
-  if (isFinalStatus(progress.status)) onDone();
+  let active = true;
+  let timer: number | undefined;
+  const target = progressTarget(props);
+  const refresh = async () => {
+    setState(nextPulse);
+    const progress = await safeFetchProgress(target);
+    if (!active) return;
+    setState((state) => applyProgress(state, progress));
+    if (progress && isFinalStatus(progress.status)) return props.onDone();
+    timer = window.setTimeout(refresh, POLL_INTERVAL_MS);
+  };
+  void refresh();
+  return () => {
+    active = false;
+    if (timer) window.clearTimeout(timer);
+  };
+}
+
+function applyProgress(state: ProgressViewState, progress: ProgressState | null) {
+  return progress ? { ...state, progress } : state;
 }
 
 async function safeFetchProgress(target: ProgressTarget) {
@@ -110,7 +131,8 @@ function progressTitle(total: number) {
   return total > 1 ? "Generating clips" : "Generating clip";
 }
 
-function progressBarProps(progress: ProgressState) {
+function progressBarProps(state: ProgressViewState) {
+  const progress = state.progress;
   return {
     "aria-valuemax": progress.total,
     "aria-valuemin": 0,
@@ -118,12 +140,15 @@ function progressBarProps(progress: ProgressState) {
     className: "generation-progress generation-progress-modal",
     "data-mode": progress.total > 1 ? "determinate" : "indeterminate",
     role: "progressbar",
-    style: progressStyle(progress)
+    style: progressStyle(progress, state.pulse)
   };
 }
 
-function progressStyle(progress: ProgressState) {
-  return { "--progress-value": `${progressPercent(progress)}%` } as CSSProperties;
+function progressStyle(progress: ProgressState, pulse: number) {
+  return {
+    "--progress-shift": `${progressShift(pulse)}%`,
+    "--progress-value": `${progressPercent(progress)}%`
+  } as CSSProperties;
 }
 
 function progressPercent(progress: ProgressState) {
@@ -133,6 +158,18 @@ function progressPercent(progress: ProgressState) {
 
 function initialProgress(total: number) {
   return { readyCount: 0, status: "GENERATING", total };
+}
+
+function initialProgressView(total: number) {
+  return { progress: initialProgress(total), pulse: 0 };
+}
+
+function nextPulse(state: ProgressViewState) {
+  return { ...state, pulse: state.pulse + 1 };
+}
+
+function progressShift(pulse: number) {
+  return (pulse % 7) * 55 - 120;
 }
 
 function nextClipNumber(progress: ProgressState) {
