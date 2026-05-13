@@ -34,7 +34,6 @@ export function PhotoLibraryModal(props: PhotoLibraryModalProps) {
   const [menu, setMenu] = useState<PhotoMenuState | null>(null);
   const [showGeneration, setShowGeneration] = useState(false);
   const selectedAsset = library.assets.find((asset) => asset.id === selectedId);
-  const canDelete = props.mode === "manage";
 
   useEffect(() => {
     if (!menu) return;
@@ -65,7 +64,7 @@ export function PhotoLibraryModal(props: PhotoLibraryModalProps) {
   }
 
   async function deleteSelected() {
-    if (!selectedAsset || !canDelete) return;
+    if (!selectedAsset) return;
     await deleteAsset(selectedAsset.id);
   }
 
@@ -76,7 +75,6 @@ export function PhotoLibraryModal(props: PhotoLibraryModalProps) {
   }
 
   function openMenu(asset: PhotoLibraryAsset, event: MouseEvent) {
-    if (!canDelete) return;
     event.preventDefault();
     setSelectedId(asset.id);
     setMenu(menuState(asset, event));
@@ -95,7 +93,7 @@ export function PhotoLibraryModal(props: PhotoLibraryModalProps) {
           </button>
         </div>
         <PhotoLibraryToolbar
-          canDelete={canDelete && Boolean(selectedAsset)}
+          canDelete={Boolean(selectedAsset)}
           canGenerate={props.imageModels.length > 0}
           count={library.assets.length}
           deleting={Boolean(library.deletingId)}
