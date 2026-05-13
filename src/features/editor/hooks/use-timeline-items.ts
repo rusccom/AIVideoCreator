@@ -14,7 +14,11 @@ export function useTimelineItems(project: EditorProject) {
     (itemId: string, index: number) => moveTimelineItem(project.id, items, setItems, itemId, index),
     [project.id, items]
   );
-  return { addScene, items, moveItem };
+  const deleteItem = useCallback(
+    (itemId: string) => deleteTimelineItem(items, setItems, itemId),
+    [items]
+  );
+  return { addScene, deleteItem, items, moveItem };
 }
 
 async function addTimelineScene(
@@ -44,6 +48,18 @@ async function moveTimelineItem(
   if (next === current) return;
   setItems(next);
   const saved = await reorderTimeline(projectId, next.map((item) => item.id));
+  if (!saved) setItems(current);
+}
+
+async function deleteTimelineItem(
+  current: EditorTimelineItem[],
+  setItems: SetTimelineItems,
+  itemId: string
+) {
+  const next = renumber(current.filter((item) => item.id !== itemId));
+  if (next.length === current.length) return;
+  setItems(next);
+  const saved = await destroyTimelineItem(itemId);
   if (!saved) setItems(current);
 }
 
@@ -97,6 +113,11 @@ async function reorderTimeline(projectId: string, itemIds: string[]) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ itemIds })
   });
+  return response.ok;
+}
+
+async function destroyTimelineItem(itemId: string) {
+  const response = await fetch(`/api/timeline-items/${itemId}`, { method: "DELETE" });
   return response.ok;
 }
 

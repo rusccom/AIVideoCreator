@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireCurrentUser } from "@/features/auth/server/current-user";
 import { updateProjectSchema } from "@/features/projects/server/project-schema";
-import { archiveProject, getProject, updateProject } from "@/features/projects/server/project-service";
+import { deleteProject, getProject, updateProject } from "@/features/projects/server/project-service";
 import { notFound, parseJson, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";
@@ -31,6 +31,6 @@ export async function PATCH(request: Request, context: RouteContext) {
 export async function DELETE(_request: Request, context: RouteContext) {
   const user = await requireCurrentUser();
   const { projectId } = await context.params;
-  const project = await archiveProject(user.id, projectId);
+  const project = await deleteProject(user.id, projectId);
   return NextResponse.json({ project });
 }

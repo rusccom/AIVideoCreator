@@ -3,6 +3,12 @@ import type { LoginInput, RegisterInput } from "./auth-schema";
 import { hashPassword, verifyPassword } from "./password";
 import type { SessionUser } from "./session";
 
+type ChangePasswordInput = {
+  currentPassword: string;
+  newPassword: string;
+  userId: string;
+};
+
 export async function registerUser(input: RegisterInput) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) {
@@ -43,6 +49,19 @@ export async function loginUser(input: LoginInput) {
     throw new Error("Invalid credentials");
   }
   return user;
+}
+
+export async function changeUserPassword(input: ChangePasswordInput) {
+  const user = await prisma.user.findUnique({ where: { id: input.userId } });
+  if (!user?.passwordHash) {
+    throw new Error("Invalid credentials");
+  }
+  const valid = await verifyPassword(input.currentPassword, user.passwordHash);
+  if (!valid) {
+    throw new Error("Invalid credentials");
+  }
+  const passwordHash = await hashPassword(input.newPassword);
+  await prisma.user.update({ where: { id: input.userId }, data: { passwordHash } });
 }
 
 export function toSessionUser(user: {

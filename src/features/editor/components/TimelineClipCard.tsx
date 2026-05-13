@@ -1,9 +1,11 @@
 import { Link2, TriangleAlert } from "lucide-react";
+import type { MouseEvent } from "react";
 import type { EditorTimelineItem } from "../types";
 import { StatusBadge } from "./StatusBadge";
 
 type TimelineClipCardProps = {
   item: EditorTimelineItem;
+  onContextMenu: (item: EditorTimelineItem, event: MouseEvent) => void;
   onSelect: (itemId: string) => void;
   selected: boolean;
 };
@@ -13,7 +15,12 @@ export function TimelineClipCard(props: TimelineClipCardProps) {
   const Icon = scene.linkState === "Linked" ? Link2 : TriangleAlert;
 
   return (
-    <button className={clipClass(props.item, props.selected)} onClick={() => props.onSelect(props.item.id)} type="button">
+    <button
+      className={clipClass(props.item, props.selected)}
+      onClick={() => props.onSelect(props.item.id)}
+      onContextMenu={(event) => props.onContextMenu(props.item, event)}
+      type="button"
+    >
       <div className="timeline-preview" />
       <div className="timeline-copy">
         <strong>{scene.name} - {scene.status}</strong>

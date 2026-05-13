@@ -14,6 +14,7 @@ export type EditorScene = {
   startFrameUrl?: string | null;
   videoUrl?: string | null;
   endFrameUrl?: string | null;
+  endFrameAssetId?: string | null;
   linkState: "Linked" | "Needs relink";
 };
 

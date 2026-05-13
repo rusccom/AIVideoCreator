@@ -17,9 +17,6 @@ export function StudioTopbar({ credits, editorMode = false }: StudioTopbarProps)
         </div>
       </div>
       <div className="studio-topbar-actions">
-        <Link className="button button-secondary" href="/app/billing">
-          Upgrade
-        </Link>
         <button className="button button-quiet" type="button">
           <Download size={16} /> Export
         </button>

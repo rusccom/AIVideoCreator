@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { DndContext, DragOverlay, pointerWithin } from "@dnd-kit/core";
+import { Trash2, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
-import type { EditorProject, EditorScene } from "../types";
+import type { EditorProject, EditorScene, EditorTimelineItem } from "../types";
 import { usePlayback } from "../hooks/use-playback";
 import { useTimelineDrag } from "../hooks/use-timeline-drag";
 import { useTimelineItems } from "../hooks/use-timeline-items";
 import { EditorHeader } from "./EditorHeader";
+import { EditorContextMenu, type EditorContextMenuItem } from "./EditorContextMenu";
 import { PhotoPanel } from "./PhotoPanel";
 import { PreviewPlayer } from "./PreviewPlayer";
 import { SceneCreateModal } from "./SceneCreateModal";
@@ -19,6 +21,15 @@ type ProjectEditorProps = {
   project: EditorProject;
 };
 
+type EditorMenuState =
+  | { kind: "scene"; scene: EditorScene; x: number; y: number }
+  | { item: EditorTimelineItem; kind: "timeline"; x: number; y: number };
+
+type ContinueTarget = {
+  sceneId?: string;
+  timelineItemId?: string;
+};
+
 export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   const router = useRouter();
   const timeline = useTimelineItems(project);
@@ -28,16 +39,70 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   const selectedTimelineItem = playback.currentPosition?.item;
   const [showCreate, setShowCreate] = useState(false);
   const [sceneAssetId, setSceneAssetId] = useState<string>();
+  const [sceneParentId, setSceneParentId] = useState<string>();
+  const [scenePrompt, setScenePrompt] = useState(project.title);
+  const [menu, setMenu] = useState<EditorMenuState | null>(null);
   const generationActive = sceneGenerationActive(selectedScene);
+  const lastSceneId = project.scenes[project.scenes.length - 1]?.id;
+  const lastTimelineItemId = timeline.items[timeline.items.length - 1]?.id;
+  const continueTarget = { sceneId: lastSceneId, timelineItemId: lastTimelineItemId };
   useGenerationPolling(selectedScene, router);
+  useMenuListeners(menu, () => setMenu(null));
 
   function openSceneCreate() {
     setSceneAssetId(undefined);
+    setSceneParentId(undefined);
+    setScenePrompt(project.title);
     setShowCreate(true);
   }
 
   function openSceneFromPhoto(assetId: string) {
     setSceneAssetId(assetId);
+    setSceneParentId(undefined);
+    setScenePrompt(project.title);
+    setShowCreate(true);
+  }
+
+  function closeSceneCreate() {
+    setShowCreate(false);
+    setSceneAssetId(undefined);
+    setSceneParentId(undefined);
+  }
+
+  function finishSceneCreate() {
+    closeSceneCreate();
+    router.refresh();
+  }
+
+  function openSceneMenu(scene: EditorScene, event: MouseEvent) {
+    openMenu(event);
+    playback.seekToScene(scene.id);
+    setMenu({ kind: "scene", scene, ...menuPoint(event, scene.id === lastSceneId) });
+  }
+
+  function openTimelineMenu(item: EditorTimelineItem, event: MouseEvent) {
+    openMenu(event);
+    playback.seekToItem(item.id);
+    setMenu({ item, kind: "timeline", ...menuPoint(event, item.id === lastTimelineItemId) });
+  }
+
+  async function deleteSceneFromMenu(scene: EditorScene) {
+    setMenu(null);
+    await deleteScene(scene.id);
+    router.refresh();
+  }
+
+  async function deleteTimelineFromMenu(item: EditorTimelineItem) {
+    setMenu(null);
+    await timeline.deleteItem(item.id);
+  }
+
+  function continueFromScene(scene: EditorScene) {
+    setMenu(null);
+    if (!scene.endFrameAssetId) return;
+    setSceneAssetId(scene.endFrameAssetId);
+    setSceneParentId(scene.id);
+    setScenePrompt(scene.prompt);
     setShowCreate(true);
   }
 
@@ -54,6 +119,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
       />
       <DndContext
         collisionDetection={pointerWithin}
+        id={`editor-${project.id}`}
         onDragCancel={drag.onDragCancel}
         onDragEnd={drag.onDragEnd}
         onDragMove={drag.onDragMove}
@@ -62,6 +128,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
       >
         <div className="editor-workspace">
           <SceneRail
+            onContextMenu={openSceneMenu}
             onCreate={openSceneCreate}
             onSelect={playback.seekToScene}
             scenes={project.scenes}
@@ -83,20 +150,29 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
         <StoryboardTimeline
           activeItemId={drag.activeItemId}
           insertionIndex={drag.insertionIndex}
+          onContextMenu={openTimelineMenu}
           onSelectItem={playback.seekToItem}
           playback={playback}
           selectedItemId={selectedTimelineItem?.id}
         />
         <DragOverlay>{drag.activeLabel ? <div className="timeline-drag-overlay">{drag.activeLabel}</div> : null}</DragOverlay>
       </DndContext>
+      {menu ? (
+        <EditorContextMenu
+          items={menuItems(menu, continueTarget, deleteSceneFromMenu, deleteTimelineFromMenu, continueFromScene)}
+          x={menu.x}
+          y={menu.y}
+        />
+      ) : null}
       {showCreate ? (
         <SceneCreateModal
           assets={project.assets}
-          defaultPrompt={project.title}
+          defaultPrompt={scenePrompt}
           initialAssetId={sceneAssetId}
           models={project.videoModels}
-          onClose={() => setShowCreate(false)}
-          onCreated={() => finishCreate(setShowCreate, setSceneAssetId, router)}
+          onClose={closeSceneCreate}
+          onCreated={finishSceneCreate}
+          parentSceneId={sceneParentId}
           projectId={project.id}
         />
       ) : null}
@@ -117,19 +193,100 @@ function sceneGenerationActive(scene: EditorScene | undefined) {
   return scene?.statusValue === "GENERATING";
 }
 
-function finishCreate(
-  setShowCreate: (value: boolean) => void,
-  setSceneAssetId: (value?: string) => void,
-  router: ReturnType<typeof useRouter>
-) {
-  setShowCreate(false);
-  setSceneAssetId(undefined);
-  router.refresh();
-}
-
 async function pollJob(jobId: string, router: ReturnType<typeof useRouter>) {
   const response = await fetch(`/api/jobs/${jobId}`);
   if (!response.ok) return;
   const data = await response.json();
   if (data.status === "READY" || data.status === "FAILED") router.refresh();
+}
+
+function useMenuListeners(menu: EditorMenuState | null, close: () => void) {
+  useEffect(() => {
+    if (!menu) return;
+    const timer = window.setTimeout(() => addMenuListeners(close));
+    return () => {
+      window.clearTimeout(timer);
+      removeMenuListeners(close);
+    };
+  }, [close, menu]);
+}
+
+function menuItems(
+  menu: EditorMenuState,
+  target: ContinueTarget,
+  onDeleteScene: (scene: EditorScene) => void,
+  onDeleteTimeline: (item: EditorTimelineItem) => void,
+  onContinue: (scene: EditorScene) => void
+) {
+  const scene = menu.kind === "scene" ? menu.scene : menu.item.scene;
+  const items = canContinue(menu, target) ? [continueItem(scene, onContinue)] : [];
+  return [...items, deleteItem(menu, onDeleteScene, onDeleteTimeline)];
+}
+
+function canContinue(menu: EditorMenuState, target: ContinueTarget) {
+  if (menu.kind === "scene") return menu.scene.id === target.sceneId;
+  return menu.item.id === target.timelineItemId;
+}
+
+function continueItem(scene: EditorScene, onContinue: (scene: EditorScene) => void) {
+  return {
+    disabled: !scene.endFrameAssetId,
+    icon: <Video size={16} />,
+    id: "continue",
+    label: "Continue based on this video",
+    onSelect: () => onContinue(scene)
+  } satisfies EditorContextMenuItem;
+}
+
+function deleteItem(
+  menu: EditorMenuState,
+  onDeleteScene: (scene: EditorScene) => void,
+  onDeleteTimeline: (item: EditorTimelineItem) => void
+) {
+  return {
+    danger: true,
+    icon: <Trash2 size={16} />,
+    id: "delete",
+    label: "Delete",
+    onSelect: () => deleteSelected(menu, onDeleteScene, onDeleteTimeline)
+  } satisfies EditorContextMenuItem;
+}
+
+function deleteSelected(
+  menu: EditorMenuState,
+  onDeleteScene: (scene: EditorScene) => void,
+  onDeleteTimeline: (item: EditorTimelineItem) => void
+) {
+  return menu.kind === "scene" ? onDeleteScene(menu.scene) : onDeleteTimeline(menu.item);
+}
+
+function openMenu(event: MouseEvent) {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+function menuPoint(event: MouseEvent, hasContinue: boolean) {
+  const height = hasContinue ? 116 : 72;
+  return {
+    x: clamp(event.clientX, window.innerWidth - 294),
+    y: clamp(event.clientY, window.innerHeight - height)
+  };
+}
+
+async function deleteScene(sceneId: string) {
+  await fetch(`/api/scenes/${sceneId}`, { method: "DELETE" });
+}
+
+function removeMenuListeners(close: () => void) {
+  window.removeEventListener("click", close);
+  window.removeEventListener("scroll", close, true);
+}
+
+function addMenuListeners(close: () => void) {
+  window.addEventListener("click", close);
+  window.addEventListener("scroll", close, true);
+}
+
+function clamp(value: number, max: number) {
+  return Math.max(12, Math.min(value, max));
 }

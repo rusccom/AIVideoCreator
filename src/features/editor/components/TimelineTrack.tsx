@@ -1,11 +1,14 @@
+import type { MouseEvent } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import type { ClipBox } from "../playback/timeline-layout";
+import type { EditorTimelineItem } from "../types";
 import { TimelineClipSlot } from "./TimelineClipSlot";
 
 type TimelineTrackProps = {
   activeItemId: string | null;
   clipBoxes: readonly ClipBox[];
   insertionIndex: number | null;
+  onContextMenu: (item: EditorTimelineItem, event: MouseEvent) => void;
   onSelect: (itemId: string) => void;
   selectedItemId?: string;
   width: number;
@@ -25,6 +28,7 @@ export function TimelineTrack(props: TimelineTrackProps) {
           box={box}
           insertOffset={insertOffset(box, index, props)}
           key={box.item.id}
+          onContextMenu={props.onContextMenu}
           onSelect={props.onSelect}
           selected={box.item.id === props.selectedItemId}
         />

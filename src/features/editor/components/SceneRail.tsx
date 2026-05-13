@@ -1,8 +1,10 @@
 import { Plus } from "lucide-react";
+import type { MouseEvent } from "react";
 import type { EditorScene } from "../types";
 import { SceneRailItem } from "./SceneRailItem";
 
 type SceneRailProps = {
+  onContextMenu: (scene: EditorScene, event: MouseEvent) => void;
   onCreate: () => void;
   onSelect: (sceneId: string) => void;
   selectedSceneId?: string;
@@ -23,6 +25,7 @@ export function SceneRail(props: SceneRailProps) {
         {props.scenes.map((scene) => (
           <SceneRailItem
             key={scene.id}
+            onContextMenu={props.onContextMenu}
             onSelect={props.onSelect}
             scene={scene}
             selected={scene.id === props.selectedSceneId}

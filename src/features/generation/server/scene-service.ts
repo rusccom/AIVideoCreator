@@ -2,6 +2,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
 import type { CreateSceneInput, PickFrameInput, UpdateSceneInput } from "./scene-schema";
 
+const ORDER_OFFSET = 1000000;
+
 export async function createScene(projectId: string, input: CreateSceneInput) {
   const orderIndex = await nextSceneIndex(projectId);
   return prisma.$transaction(async (tx) => {
@@ -38,6 +40,16 @@ export async function updateSceneForUser(
 ) {
   await assertSceneOwner(userId, sceneId);
   return updateScene(sceneId, input);
+}
+
+export async function deleteSceneForUser(userId: string, sceneId: string) {
+  const scene = await sceneForDelete(userId, sceneId);
+  return prisma.$transaction(async (tx) => {
+    await tx.scene.delete({ where: { id: scene.id } });
+    await compactSceneOrder(tx, scene.projectId);
+    await compactTimelineOrder(tx, scene.projectId);
+    return { id: scene.id };
+  });
 }
 
 export async function createNextScene(previousSceneId: string, prompt: string) {
@@ -117,6 +129,18 @@ async function markFollowingScenesStale(projectId: string, orderIndex: number) {
   });
 }
 
+async function compactSceneOrder(tx: Prisma.TransactionClient, projectId: string) {
+  const scenes = await orderedScenes(tx, projectId);
+  await moveScenesToTemporaryOrder(tx, projectId);
+  await Promise.all(scenes.map((scene, index) => setSceneOrder(tx, scene.id, index)));
+}
+
+async function compactTimelineOrder(tx: Prisma.TransactionClient, projectId: string) {
+  const items = await orderedTimelineItems(tx, projectId);
+  await moveTimelineToTemporaryOrder(tx, projectId);
+  await Promise.all(items.map((item, index) => setTimelineOrder(tx, item.id, index)));
+}
+
 async function sceneOwner(sceneId: string) {
   return prisma.scene.findUniqueOrThrow({
     where: { id: sceneId },
@@ -142,6 +166,53 @@ async function assertSceneOwner(userId: string, sceneId: string) {
   if (!scene) {
     throw new Error("Scene not found");
   }
+}
+
+async function sceneForDelete(userId: string, sceneId: string) {
+  const scene = await prisma.scene.findFirst({
+    where: { id: sceneId, project: { userId } },
+    select: { id: true, projectId: true }
+  });
+  if (!scene) throw new Error("Scene not found");
+  return scene;
+}
+
+async function orderedScenes(tx: Prisma.TransactionClient, projectId: string) {
+  return tx.scene.findMany({
+    where: { projectId },
+    orderBy: { orderIndex: "asc" },
+    select: { id: true }
+  });
+}
+
+async function orderedTimelineItems(tx: Prisma.TransactionClient, projectId: string) {
+  return tx.timelineItem.findMany({
+    where: { projectId },
+    orderBy: { orderIndex: "asc" },
+    select: { id: true }
+  });
+}
+
+function moveScenesToTemporaryOrder(tx: Prisma.TransactionClient, projectId: string) {
+  return tx.scene.updateMany({
+    where: { projectId },
+    data: { orderIndex: { increment: ORDER_OFFSET } }
+  });
+}
+
+function moveTimelineToTemporaryOrder(tx: Prisma.TransactionClient, projectId: string) {
+  return tx.timelineItem.updateMany({
+    where: { projectId },
+    data: { orderIndex: { increment: ORDER_OFFSET } }
+  });
+}
+
+function setSceneOrder(tx: Prisma.TransactionClient, id: string, orderIndex: number) {
+  return tx.scene.update({ where: { id }, data: { orderIndex } });
+}
+
+function setTimelineOrder(tx: Prisma.TransactionClient, id: string, orderIndex: number) {
+  return tx.timelineItem.update({ where: { id }, data: { orderIndex } });
 }
 
 type CreatedScene = Prisma.SceneGetPayload<{}>;

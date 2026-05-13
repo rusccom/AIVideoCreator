@@ -61,6 +61,7 @@ function toEditorScene(
     startFrameUrl: assetUrl(assets.get(scene.startFrameAssetId ?? "")),
     videoUrl: assetUrl(assets.get(scene.videoAssetId ?? "")),
     endFrameUrl: assetUrl(assets.get(scene.endFrameAssetId ?? "")),
+    endFrameAssetId: scene.endFrameAssetId,
     linkState: scene.isStale ? "Needs relink" : "Linked"
   } satisfies EditorScene;
 }

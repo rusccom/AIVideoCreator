@@ -15,7 +15,7 @@ export async function loadEditorAssets(projectId: string, scenes: readonly Scene
   const missingIds = collectMissingIds(scenes, recent);
   const referenced = missingIds.length ? await loadAssetsByIds(missingIds) : [];
   return {
-    recent,
+    recent: mergeAssets(recent, referenced),
     byId: indexById([...recent, ...referenced])
   };
 }
@@ -49,4 +49,13 @@ function addIfMissing(target: Set<string>, known: Set<string>, id: string | null
 
 function indexById(assets: readonly EditorAssetRecord[]) {
   return new Map(assets.map((asset) => [asset.id, asset]));
+}
+
+function mergeAssets(first: readonly EditorAssetRecord[], second: readonly EditorAssetRecord[]) {
+  const seen = new Set<string>();
+  return [...first, ...second].filter((asset) => {
+    if (seen.has(asset.id)) return false;
+    seen.add(asset.id);
+    return true;
+  });
 }

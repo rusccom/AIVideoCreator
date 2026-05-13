@@ -37,6 +37,17 @@ export async function getAssetReadUrl(userId: string, assetId: string) {
   return r2Storage.createGetUrl(stored.storageKey);
 }
 
+export async function deleteAssetForUser(userId: string, assetId: string) {
+  const asset = await prisma.asset.findFirst({
+    where: { id: assetId, userId },
+    select: { id: true, storageKey: true, storageProvider: true }
+  });
+  if (!asset) throw new Error("Asset not found");
+  await prisma.asset.delete({ where: { id: asset.id } });
+  await deleteStoredObject(asset);
+  return { id: asset.id };
+}
+
 async function storedAsset(asset: AssetReadRecord) {
   if (!asset.storageKey.startsWith("http")) return asset;
   return moveRemoteAssetToR2(asset);
@@ -54,6 +65,11 @@ function assetReadFields() {
   } as const;
 }
 
+async function deleteStoredObject(asset: AssetDeleteRecord) {
+  if (asset.storageProvider !== "r2" || asset.storageKey.startsWith("http")) return;
+  await r2Storage.deleteObject(asset.storageKey).catch(() => undefined);
+}
+
 type AssetReadRecord = {
   id: string;
   mimeType: string;
@@ -62,4 +78,10 @@ type AssetReadRecord = {
   storageKey: string;
   type: AssetType;
   userId: string;
+};
+
+type AssetDeleteRecord = {
+  id: string;
+  storageKey: string;
+  storageProvider: string;
 };

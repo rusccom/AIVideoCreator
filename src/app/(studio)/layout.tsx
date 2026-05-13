@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import "@/styles/studio.css";
+import "@/styles/project-card-menu.css";
 import "@/styles/editor.css";
 import "@/styles/editor-timeline.css";
 import "@/styles/editor-photo.css";

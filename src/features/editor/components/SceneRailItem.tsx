@@ -1,10 +1,12 @@
 "use client";
 
 import { useDraggable } from "@dnd-kit/core";
+import type { MouseEvent } from "react";
 import type { EditorScene } from "../types";
 import { StatusBadge } from "./StatusBadge";
 
 type SceneRailItemProps = {
+  onContextMenu: (scene: EditorScene, event: MouseEvent) => void;
   onSelect: (sceneId: string) => void;
   scene: EditorScene;
   selected: boolean;
@@ -16,6 +18,7 @@ export function SceneRailItem(props: SceneRailItemProps) {
     <button
       className={sceneClass(props.selected, drag.isDragging)}
       onClick={() => props.onSelect(props.scene.id)}
+      onContextMenu={(event) => props.onContextMenu(props.scene, event)}
       ref={drag.setNodeRef}
       type="button"
       {...drag.attributes}

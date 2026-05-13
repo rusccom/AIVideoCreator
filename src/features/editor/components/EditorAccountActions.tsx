@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { UserCircle } from "lucide-react";
 import { AiCreatorButton } from "@/features/ai-creator/components/AiCreatorButton";
 import type { EditorImageModel, EditorScene, EditorVideoModel } from "../types";
@@ -22,9 +21,6 @@ export function EditorAccountActions(props: EditorAccountActionsProps) {
         projectId={props.projectId}
         videoModels={props.videoModels}
       />
-      <Link className="button button-secondary" href="/app/billing">
-        Upgrade
-      </Link>
       <DownloadClipButton
         hasReadyScenes={hasReadyScenes(props.scenes)}
         projectId={props.projectId}

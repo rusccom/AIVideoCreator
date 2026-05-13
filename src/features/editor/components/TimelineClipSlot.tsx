@@ -1,12 +1,15 @@
 "use client";
 
 import { useDraggable, useDroppable } from "@dnd-kit/core";
+import type { MouseEvent } from "react";
 import type { ClipBox } from "../playback/timeline-layout";
+import type { EditorTimelineItem } from "../types";
 import { TimelineClipCard } from "./TimelineClipCard";
 
 type TimelineClipSlotProps = {
   box: ClipBox;
   insertOffset: number;
+  onContextMenu: (item: EditorTimelineItem, event: MouseEvent) => void;
   onSelect: (itemId: string) => void;
   selected: boolean;
 };
@@ -24,7 +27,12 @@ export function TimelineClipSlot(props: TimelineClipSlotProps) {
       {...drag.attributes}
       {...drag.listeners}
     >
-      <TimelineClipCard item={item} onSelect={props.onSelect} selected={props.selected} />
+      <TimelineClipCard
+        item={item}
+        onContextMenu={props.onContextMenu}
+        onSelect={props.onSelect}
+        selected={props.selected}
+      />
     </div>
   );
 }

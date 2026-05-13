@@ -34,12 +34,12 @@ function isBusy(status: ExportDownloadStatus) {
 }
 
 function tooltip(hasReadyScenes: boolean) {
-  return hasReadyScenes ? "Скачать таймлайн в один файл" : "Сначала сгенерируйте клипы";
+  return hasReadyScenes ? "Download timeline as one file" : "Generate clips first";
 }
 
 function label(status: ExportDownloadStatus) {
-  if (status === "creating") return "Подготовка…";
-  if (status === "processing") return "Рендер…";
-  if (status === "ready") return "Скачивание…";
-  return "Скачать клип";
+  if (status === "creating") return "Preparing...";
+  if (status === "processing") return "Rendering...";
+  if (status === "ready") return "Downloading...";
+  return "Download clip";
 }

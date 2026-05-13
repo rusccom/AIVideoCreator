@@ -50,6 +50,13 @@ export function PhotoPanel(props: PhotoPanelProps) {
     props.onCreateVideoFromPhoto(assetId);
   }
 
+  async function deletePhoto(assetId: string) {
+    setMenu(null);
+    clearSelectedAsset(selectedAssetId, setSelectedAssetId, assetId);
+    await deleteAsset(assetId);
+    router.refresh();
+  }
+
   return (
     <section className="editor-panel photo-panel">
       <div className="editor-panel-header">
@@ -69,7 +76,15 @@ export function PhotoPanel(props: PhotoPanelProps) {
           selectedAssetId={selectedAssetId}
         />
       </div>
-      {menu ? <PhotoContextMenu asset={menu.asset} onCreateVideo={createVideoFromPhoto} x={menu.x} y={menu.y} /> : null}
+      {menu ? (
+        <PhotoContextMenu
+          asset={menu.asset}
+          onCreateVideo={createVideoFromPhoto}
+          onDelete={deletePhoto}
+          x={menu.x}
+          y={menu.y}
+        />
+      ) : null}
       {showCreate ? (
         <PhotoCreateModal
           imageModels={props.imageModels}
@@ -92,11 +107,23 @@ function finishCreate(setShowCreate: (value: boolean) => void, refresh: () => vo
   refresh();
 }
 
+function clearSelectedAsset(
+  current: string | undefined,
+  setSelectedAssetId: (value?: string) => void,
+  assetId: string
+) {
+  if (current === assetId) setSelectedAssetId(undefined);
+}
+
+async function deleteAsset(assetId: string) {
+  await fetch(`/api/assets/${assetId}`, { method: "DELETE" });
+}
+
 function menuState(asset: EditorAsset, event: MouseEvent) {
   return {
     asset,
     x: clamp(event.clientX, window.innerWidth - 294),
-    y: clamp(event.clientY, window.innerHeight - 72)
+    y: clamp(event.clientY, window.innerHeight - 116)
   };
 }
 

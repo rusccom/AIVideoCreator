@@ -10,6 +10,7 @@ type SceneCreateModalProps = {
   models: EditorVideoModel[];
   onClose: () => void;
   onCreated: () => void;
+  parentSceneId?: string;
   projectId: string;
 };
 
@@ -34,7 +35,7 @@ export function SceneCreateModal(props: SceneCreateModalProps) {
     setSaving(true);
     setError("");
     try {
-      await createScene(props.projectId, form, file);
+      await createScene(props.projectId, form, file, props.parentSceneId);
       props.onCreated();
     } catch (nextError) {
       setError(errorMessage(nextError));
@@ -103,12 +104,17 @@ export function SceneCreateModal(props: SceneCreateModalProps) {
   );
 }
 
-async function createScene(projectId: string, form: SceneFormState, file: File | null) {
+async function createScene(
+  projectId: string,
+  form: SceneFormState,
+  file: File | null,
+  parentSceneId?: string
+) {
   const startFrameAssetId = await startFrameAsset(projectId, form, file);
   const response = await fetch(`/api/projects/${projectId}/scenes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(sceneBody(form, startFrameAssetId))
+    body: JSON.stringify(sceneBody(form, startFrameAssetId, parentSceneId))
   });
   if (!response.ok) throw new Error("Clip could not be created.");
 }
@@ -178,8 +184,8 @@ function updateNumber(setForm: SetForm, key: keyof SceneFormState, value: string
   setForm((current) => ({ ...current, [key]: Number(value) }));
 }
 
-function sceneBody(form: SceneFormState, startFrameAssetId: string) {
-  return { prompt: form.prompt, modelId: form.modelId, durationSeconds: form.durationSeconds, startFrameAssetId };
+function sceneBody(form: SceneFormState, startFrameAssetId: string, parentSceneId?: string) {
+  return { parentSceneId, prompt: form.prompt, modelId: form.modelId, durationSeconds: form.durationSeconds, startFrameAssetId };
 }
 
 function uploadBody(projectId: string, file: File) {

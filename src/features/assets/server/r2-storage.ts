@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand, S3Client, type PutObjectCommandInput } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client, type PutObjectCommandInput } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createReadStream } from "node:fs";
 import { Readable } from "node:stream";
@@ -27,6 +27,14 @@ export const r2Storage = {
       ResponseContentDisposition: contentDisposition(options?.downloadFileName)
     });
     return getSignedUrl(getR2Client(), command, { expiresIn: 900 });
+  },
+
+  async deleteObject(key: string) {
+    const command = new DeleteObjectCommand({
+      Bucket: r2Env().R2_BUCKET,
+      Key: key
+    });
+    await getR2Client().send(command);
   },
 
   async uploadLocalFile(input: R2LocalUploadInput) {

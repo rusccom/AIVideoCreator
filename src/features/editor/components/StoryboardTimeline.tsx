@@ -8,12 +8,13 @@ import { clampScaleIndex, timelineScales } from "../playback/timeline-scales";
 import { TimelinePlayhead } from "./TimelinePlayhead";
 import { TimelineScale } from "./TimelineScale";
 import { TIMELINE_INSERT_GAP_PX, TimelineTrack } from "./TimelineTrack";
-import { TimelineTransport } from "./TimelineTransport";
 import { TimelineZoomControls } from "./TimelineZoomControls";
+import type { EditorTimelineItem } from "../types";
 
 type StoryboardTimelineProps = {
   activeItemId: string | null;
   insertionIndex: number | null;
+  onContextMenu: (item: EditorTimelineItem, event: MouseEvent) => void;
   onSelectItem: (itemId: string) => void;
   playback: PlaybackState;
   selectedItemId?: string;
@@ -36,12 +37,6 @@ export function StoryboardTimeline(props: StoryboardTimelineProps) {
       <div className="editor-panel-header">
         <h2>Storyboard Timeline</h2>
         <div className="timeline-header-actions">
-          <TimelineTransport
-            currentTime={props.playback.currentTime}
-            isPlaying={props.playback.isPlaying}
-            onToggle={props.playback.toggle}
-            totalDuration={props.playback.timeline.totalDuration}
-          />
           <TimelineZoomControls
             onZoomIn={() => setScaleIndex(clampScaleIndex(scaleIndex - 1))}
             onZoomOut={() => setScaleIndex(clampScaleIndex(scaleIndex + 1))}
@@ -60,6 +55,7 @@ export function StoryboardTimeline(props: StoryboardTimelineProps) {
             activeItemId={props.activeItemId}
             clipBoxes={layout.clipBoxes}
             insertionIndex={props.insertionIndex}
+            onContextMenu={props.onContextMenu}
             onSelect={props.onSelectItem}
             selectedItemId={props.selectedItemId}
             width={boardWidth}

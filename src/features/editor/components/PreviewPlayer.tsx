@@ -5,6 +5,7 @@ import { Maximize2 } from "lucide-react";
 import type { PlaybackState } from "../hooks/use-playback";
 import { usePreviewFit } from "../hooks/use-preview-fit";
 import { GenerationProgressBar } from "./GenerationProgressBar";
+import { PreviewPlaybackOverlay } from "./PreviewPlaybackOverlay";
 import { PreviewVideo } from "./PreviewVideo";
 
 type PreviewPlayerProps = {
@@ -22,6 +23,7 @@ export function PreviewPlayer(props: PreviewPlayerProps) {
         <div className="preview-stage" ref={preview.stageRef}>
           <div className="preview-screen" ref={screenRef} style={preview.screenStyle}>
             <PreviewVideo playback={props.playback} />
+            <PreviewPlaybackOverlay playback={props.playback} />
             <button
               aria-label="Open video fullscreen"
               className="preview-fullscreen-button"
