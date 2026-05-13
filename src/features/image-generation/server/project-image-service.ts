@@ -3,6 +3,7 @@ import { createAssetFromRemoteUrl } from "@/features/assets/server/asset-storage
 import { buildFalInput } from "@/features/generation/models/build-fal-input";
 import { getSupportedModel } from "@/features/generation/models/catalog";
 import { submitFalJob } from "@/features/generation/server/fal-client";
+import { modelActive, modelStatsForKey } from "@/features/generation/server/model-stats-service";
 import { providerErrorPayload } from "@/features/generation/server/provider-error";
 import { touchProject } from "@/features/projects/server/project-touch-service";
 import { recordOutboxEvent } from "@/shared/server/outbox";
@@ -47,8 +48,8 @@ export async function completeProjectImageGeneration(job: ImageGenerationJob, da
 
 async function imageModel(modelId: string) {
   const supported = getSupportedModel(modelId);
-  const stored = await prisma.aiModel.findFirst({ where: { key: modelId, active: true } });
-  if (!supported || !stored || supported.type !== "text-to-image") {
+  const stats = await modelStatsForKey(modelId);
+  if (!supported || supported.type !== "text-to-image" || !modelActive(supported, stats)) {
     throw new Error("Image model is not available");
   }
   return supported;

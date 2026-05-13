@@ -1,36 +1,45 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
 import { supportedModels } from "@/features/generation/models/catalog";
+import {
+  modelActive,
+  modelImageCount,
+  modelPriceMap,
+  modelStatsByKey,
+  type ModelStats
+} from "@/features/generation/server/model-stats-service";
 import type { EditableAiModel } from "@/features/owner/types";
 import type { AiModelInput } from "./ai-model-schema";
 
 export async function listAiModels(): Promise<EditableAiModel[]> {
-  const models = await prisma.aiModel.findMany({
-    where: { key: { in: supportedModels.map((model) => model.id) } },
-    orderBy: [{ provider: "asc" }, { type: "asc" }, { displayName: "asc" }]
-  });
-  return models.map(mergeSupportedFields).filter(isEditableModel);
+  const stats = await modelStatsByKey(supportedModels.map((model) => model.id));
+  return supportedModels.map((model) => editableModel(model, stats.get(model.id)));
 }
 
 export async function updateAiModel(input: AiModelInput) {
-  if (!input.id) throw new Error("Model id is required");
   const supported = supportedModels.find((model) => model.id === input.key);
   if (!supported) throw new Error("Unsupported model");
-  return prisma.aiModel.update({
-    where: { id: input.id },
-    data: {
-      ...lockedModelData(supported),
+  return prisma.aiModelStats.upsert({
+    where: { key: input.key },
+    create: {
+      key: input.key,
       active: input.active,
-      pricePerSecondByResolution: asJson(input.pricePerSecondByResolution),
-      minDurationSeconds: input.minDurationSeconds,
-      maxDurationSeconds: input.maxDurationSeconds,
-      defaultDurationSeconds: input.defaultDurationSeconds
+      pricePerSecondOverride: asJson(input.pricePerSecondByResolution)
+    },
+    update: {
+      active: input.active,
+      pricePerSecondOverride: asJson(input.pricePerSecondByResolution)
     }
   });
 }
 
-function lockedModelData(model: (typeof supportedModels)[number]) {
+function editableModel(
+  model: (typeof supportedModels)[number],
+  stats?: ModelStats
+): EditableAiModel {
   return {
+    id: model.id,
+    key: model.id,
     provider: model.provider,
     providerModelId: model.providerModelId,
     type: model.type,
@@ -40,39 +49,22 @@ function lockedModelData(model: (typeof supportedModels)[number]) {
     supportedResolutions: model.supportedResolutions,
     supportsStartFrame: model.supportsStartFrame,
     supportsEndFrame: model.supportsEndFrame,
-    supportsSeed: model.supportsSeed
-  };
-}
-
-function mergeSupportedFields(
-  model: Awaited<ReturnType<typeof prisma.aiModel.findMany>>[number]
-): EditableAiModel | null {
-  const supported = supportedModels.find((item) => item.id === model.key);
-  if (!supported) return null;
-  return {
-    ...model,
-    ...lockedModelData(supported),
-    defaultAspectRatio: supported.defaultAspectRatio,
-    defaultResolution: supported.defaultResolution,
-    imageDefaults: supported.imageDefaults,
-    pricePerSecondByResolution: priceMap(model.pricePerSecondByResolution, supported.supportedResolutions)
+    supportsSeed: model.supportsSeed,
+    defaultAspectRatio: model.defaultAspectRatio,
+    defaultDurationSeconds: model.defaultDurationSeconds,
+    defaultResolution: model.defaultResolution,
+    imageDefaults: model.imageDefaults,
+    minDurationSeconds: model.minDurationSeconds,
+    maxDurationSeconds: model.maxDurationSeconds,
+    pricePerSecondByResolution: modelPriceMap(model, stats),
+    active: modelActive(model, stats),
+    aiCreatorImageCount: modelImageCount(model, stats),
+    lastUsedAt: stats?.lastUsedAt ?? null,
+    usageGeneratedImages: stats?.usageGeneratedImages ?? 0,
+    usageRequestCount: stats?.usageRequestCount ?? 0
   } satisfies EditableAiModel;
-}
-
-function priceMap(value: Prisma.JsonValue, resolutions: string[]) {
-  const source = jsonRecord(value);
-  return Object.fromEntries(resolutions.map((item) => [item, Number(source[item] ?? 0)]));
-}
-
-function jsonRecord(value: Prisma.JsonValue) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  return value as Record<string, unknown>;
 }
 
 function asJson(value: unknown) {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
-}
-
-function isEditableModel(model: EditableAiModel | null): model is EditableAiModel {
-  return Boolean(model);
 }

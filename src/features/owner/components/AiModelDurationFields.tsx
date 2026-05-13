@@ -1,6 +1,6 @@
 import type { EditableAiModel } from "../types";
 import { ModelFieldSection } from "./ModelFieldSection";
-import { ModelTextInput } from "./ModelTextInput";
+import { ModelReadonlyField } from "./ModelReadonlyField";
 
 type AiModelDurationFieldsProps = {
   model: EditableAiModel;
@@ -9,10 +9,10 @@ type AiModelDurationFieldsProps = {
 export function AiModelDurationFields({ model }: AiModelDurationFieldsProps) {
   return (
     <ModelFieldSection title="Duration limits">
-      <div className="ai-model-edit-grid">
-        <ModelTextInput label="Min seconds" min={1} name="minDurationSeconds" type="number" value={`${model.minDurationSeconds}`} />
-        <ModelTextInput label="Max seconds" min={1} name="maxDurationSeconds" type="number" value={`${model.maxDurationSeconds}`} />
-        <ModelTextInput label="Default seconds" min={1} name="defaultDurationSeconds" type="number" value={`${model.defaultDurationSeconds}`} />
+      <div className="ai-model-info-grid">
+        <ModelReadonlyField label="Min seconds" value={`${model.minDurationSeconds}`} />
+        <ModelReadonlyField label="Max seconds" value={`${model.maxDurationSeconds}`} />
+        <ModelReadonlyField label="Default seconds" value={`${model.defaultDurationSeconds}`} />
       </div>
     </ModelFieldSection>
   );

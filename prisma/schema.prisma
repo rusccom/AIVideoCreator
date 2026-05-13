@@ -363,32 +363,20 @@ model OutboxEvent {
   @@index([aggregateType, aggregateId, createdAt])
 }
 
-model AiModel {
-  id                         String    @id @default(cuid())
-  key                        String    @unique
-  provider                   String
-  providerModelId            String
-  type                       String
-  displayName                String
-  qualityTier                String
-  supportedAspectRatios      String[]
-  supportedResolutions       String[]
-  supportsStartFrame         Boolean   @default(false)
-  supportsEndFrame           Boolean   @default(false)
-  supportsSeed               Boolean   @default(false)
-  pricePerSecondByResolution Json      @default("{}")
-  minDurationSeconds         Int       @default(1)
-  maxDurationSeconds         Int       @default(6)
-  defaultDurationSeconds     Int       @default(6)
-  usageRequestCount          Int       @default(0)
-  usageGeneratedImages       Int       @default(0)
-  aiCreatorImageCount        Int       @default(4)
-  lastUsedAt                 DateTime?
-  active                     Boolean   @default(true)
-  createdAt                  DateTime  @default(now())
-  updatedAt                  DateTime  @updatedAt
+model AiModelStats {
+  key                    String    @id
+  usageRequestCount      Int       @default(0)
+  usageGeneratedImages   Int       @default(0)
+  aiCreatorImageCount    Int       @default(4)
+  lastUsedAt             DateTime?
+  pricePerSecondOverride Json?
+  active                 Boolean   @default(true)
+  selected               Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
-  @@index([provider, type, active])
+  @@index([active])
+  @@index([selected, active])
 }
 
 model ReasoningModel {

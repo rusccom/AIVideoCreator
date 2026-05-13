@@ -1,7 +1,6 @@
-import type { Prisma } from "@prisma/client";
-import { prisma } from "@/shared/server/prisma";
 import { getSupportedModel } from "../models/catalog";
 import type { SupportedModelDefinition } from "../models/types";
+import { modelActive, modelPriceMap, modelStatsForKey, type ModelStats } from "./model-stats-service";
 
 export type ModelType = "image-to-video" | "text-to-image";
 export type ResolutionPriceMap = Record<string, number>;
@@ -28,44 +27,20 @@ export type ModelDefinition = {
 };
 
 export async function getModel(modelId: string) {
-  const model = await prisma.aiModel.findFirst({
-    where: { key: modelId, active: true }
-  });
   const supported = getSupportedModel(modelId);
-  if (!model || !supported) {
-    throw new Error("Model is not available");
-  }
+  if (!supported) throw new Error("Model is not available");
+  const stats = await modelStatsForKey(modelId);
+  if (!modelActive(supported, stats)) throw new Error("Model is not available");
   if (supported.type !== "image-to-video") {
     throw new Error("Model is not a video generation model");
   }
-  return mergeModel(supported, model);
+  return mergeModel(supported, stats);
 }
 
-type StoredModel = {
-  pricePerSecondByResolution: Prisma.JsonValue;
-  minDurationSeconds: number;
-  maxDurationSeconds: number;
-  defaultDurationSeconds: number;
-  active: boolean;
-};
-
-function mergeModel(supported: SupportedModelDefinition, model: StoredModel) {
+function mergeModel(supported: SupportedModelDefinition, stats: ModelStats | null) {
   return {
     ...supported,
-    pricePerSecondByResolution: priceMap(model, supported.supportedResolutions),
-    minDurationSeconds: model.minDurationSeconds,
-    maxDurationSeconds: model.maxDurationSeconds,
-    defaultDurationSeconds: model.defaultDurationSeconds,
-    active: model.active
+    pricePerSecondByResolution: modelPriceMap(supported, stats),
+    active: modelActive(supported, stats)
   } satisfies ModelDefinition;
-}
-
-function priceMap(model: StoredModel, resolutions: string[]) {
-  const source = jsonRecord(model.pricePerSecondByResolution);
-  return Object.fromEntries(resolutions.map((item) => [item, Number(source[item] ?? 0)]));
-}
-
-function jsonRecord(value: Prisma.JsonValue) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  return value as Record<string, unknown>;
 }

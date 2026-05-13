@@ -1,5 +1,5 @@
-import { prisma } from "@/shared/server/prisma";
 import { getSupportedModel } from "@/features/generation/models/catalog";
+import { recordModelUsage, updateModelStats } from "@/features/generation/server/model-stats-service";
 
 type UpdateImageModelInput = {
   active: boolean;
@@ -13,21 +13,11 @@ export async function updateImageModel(input: UpdateImageModelInput) {
   if (supported?.type !== "text-to-image") {
     throw new Error("Unsupported image model");
   }
-  return prisma.aiModel.update({
-    where: { id: input.id },
-    data: { active: input.active, aiCreatorImageCount: imageCount(input.aiCreatorImageCount) }
-  });
+  return updateModelStats({ active: input.active, aiCreatorImageCount: imageCount(input.aiCreatorImageCount), key: input.key });
 }
 
 export function recordImageModelUsage(modelKey: string, generatedImages: number) {
-  return prisma.aiModel.update({
-    where: { key: modelKey },
-    data: {
-      usageRequestCount: { increment: 1 },
-      usageGeneratedImages: { increment: generatedImages },
-      lastUsedAt: new Date()
-    }
-  });
+  return recordModelUsage(modelKey, generatedImages);
 }
 
 function imageCount(value: number) {

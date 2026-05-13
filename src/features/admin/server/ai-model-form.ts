@@ -8,10 +8,7 @@ export function parseAiModelForm(formData: FormData) {
     id: optionalString(formData.get("id")),
     key,
     active: formData.has("active"),
-    pricePerSecondByResolution: priceMap(formData, model?.supportedResolutions ?? []),
-    minDurationSeconds: numberValue(formData, "minDurationSeconds"),
-    maxDurationSeconds: numberValue(formData, "maxDurationSeconds"),
-    defaultDurationSeconds: numberValue(formData, "defaultDurationSeconds")
+    pricePerSecondByResolution: priceMap(formData, model?.supportedResolutions ?? [])
   });
 }
 

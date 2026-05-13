@@ -1,5 +1,13 @@
 import { prisma } from "@/shared/server/prisma";
 import { supportedModels } from "@/features/generation/models/catalog";
+import {
+  modelActive,
+  modelImageCount,
+  modelPriceMap,
+  modelStatsByKey,
+  type ModelStats
+} from "@/features/generation/server/model-stats-service";
+import type { SupportedModelDefinition } from "@/features/generation/models/types";
 import type { EditorAsset, EditorImageModel, EditorProject, EditorScene, EditorTimelineItem, EditorVideoModel } from "../types";
 import { loadEditorAssets } from "./asset-loader";
 
@@ -33,12 +41,9 @@ export async function getEditorProject(
 }
 
 async function listModels<T>(type: string, mapper: ModelMapper<T>) {
-  const keys = supportedModels.filter((model) => model.type === type).map((model) => model.id);
-  const models = await prisma.aiModel.findMany({
-    where: { active: true, key: { in: keys }, type },
-    orderBy: { displayName: "asc" }
-  });
-  return models.map(mapper).filter(isModel);
+  const models = supportedModels.filter((model) => model.type === type);
+  const stats = await modelStatsByKey(models.map((model) => model.id));
+  return models.filter((model) => modelActive(model, stats.get(model.id))).map((model) => mapper(model, stats.get(model.id)));
 }
 
 function toEditorScene(
@@ -87,35 +92,31 @@ function toTimelineItem(
   } satisfies EditorTimelineItem;
 }
 
-function toVideoModel(model: Awaited<ReturnType<typeof prisma.aiModel.findMany>>[number]) {
-  const supported = supportedModels.find((item) => item.id === model.key);
-  if (!supported) return null;
+function toVideoModel(model: SupportedModelDefinition, stats?: ModelStats) {
   return {
-    id: supported.id,
-    displayName: supported.displayName,
-    defaultAspectRatio: supported.defaultAspectRatio,
+    id: model.id,
+    displayName: model.displayName,
+    defaultAspectRatio: model.defaultAspectRatio,
     defaultDurationSeconds: model.defaultDurationSeconds,
-    defaultResolution: supported.defaultResolution,
+    defaultResolution: model.defaultResolution,
     maxDurationSeconds: model.maxDurationSeconds,
     minDurationSeconds: model.minDurationSeconds,
-    pricePerSecondByResolution: priceMap(model.pricePerSecondByResolution, supported.supportedResolutions),
-    supportedAspectRatios: supported.supportedAspectRatios,
-    supportedResolutions: supported.supportedResolutions
+    pricePerSecondByResolution: modelPriceMap(model, stats),
+    supportedAspectRatios: model.supportedAspectRatios,
+    supportedResolutions: model.supportedResolutions
   } satisfies EditorVideoModel;
 }
 
-function toImageModel(model: Awaited<ReturnType<typeof prisma.aiModel.findMany>>[number]) {
-  const supported = supportedModels.find((item) => item.id === model.key);
-  if (!supported) return null;
+function toImageModel(model: SupportedModelDefinition, stats?: ModelStats) {
   return {
-    id: supported.id,
-    displayName: supported.displayName,
-    aiCreatorImageCount: model.aiCreatorImageCount,
-    defaultAspectRatio: supported.defaultAspectRatio,
-    defaultResolution: supported.defaultResolution,
-    maxImagesPerRequest: supported.imageDefaults?.maxImagesPerRequest ?? 4,
-    supportedAspectRatios: supported.supportedAspectRatios,
-    supportedResolutions: supported.supportedResolutions
+    id: model.id,
+    displayName: model.displayName,
+    aiCreatorImageCount: modelImageCount(model, stats),
+    defaultAspectRatio: model.defaultAspectRatio,
+    defaultResolution: model.defaultResolution,
+    maxImagesPerRequest: model.imageDefaults?.maxImagesPerRequest ?? 4,
+    supportedAspectRatios: model.supportedAspectRatios,
+    supportedResolutions: model.supportedResolutions
   } satisfies EditorImageModel;
 }
 
@@ -131,16 +132,6 @@ function totalTimelineSeconds(items: Array<{ durationSeconds: number }>) {
   return items.reduce((total, item) => total + item.durationSeconds, 0);
 }
 
-function priceMap(value: unknown, resolutions: string[]) {
-  const source = jsonRecord(value);
-  return Object.fromEntries(resolutions.map((item) => [item, Number(source[item] ?? 0)]));
-}
-
-function jsonRecord(value: unknown) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  return value as Record<string, unknown>;
-}
-
 async function getSceneType() {
   return prisma.scene.findFirstOrThrow();
 }
@@ -153,9 +144,5 @@ async function getTimelineItemType() {
   return prisma.timelineItem.findFirstOrThrow({ include: { scene: true } });
 }
 
-function isModel<T>(model: T | null): model is T {
-  return Boolean(model);
-}
-
-type ModelMapper<T> = (model: Awaited<ReturnType<typeof prisma.aiModel.findMany>>[number]) => T | null;
+type ModelMapper<T> = (model: SupportedModelDefinition, stats?: ModelStats) => T;
 type ResolvedAssetRecord = Awaited<ReturnType<typeof getAssetType>> & { resolvedUrl?: string | null };
