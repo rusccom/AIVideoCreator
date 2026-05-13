@@ -100,7 +100,7 @@ function applyProgress(state: ProgressViewState, progress: ProgressState | null)
 
 async function safeFetchProgress(target: ProgressTarget) {
   try {
-    return target.sequenceId ? await fetchSequence(target.sequenceId) : await fetchJob(target.jobId, target.total);
+    return target.sequenceId ? await fetchSequence(target.sequenceId, target.total) : await fetchJob(target.jobId, target.total);
   } catch {
     return null;
   }
@@ -113,10 +113,14 @@ async function fetchJob(jobId: string, total: number) {
   return { readyCount: job.status === "READY" ? total : 0, status: job.status, total };
 }
 
-async function fetchSequence(sequenceId: string) {
+async function fetchSequence(sequenceId: string, total: number) {
   const response = await fetch(`/api/ai-creator/sequences/${sequenceId}`, { cache: "no-store" });
   if (!response.ok) throw new Error("Sequence refresh failed");
-  return response.json() as Promise<ProgressState>;
+  return normalizeSequenceProgress(await response.json() as ProgressState, total);
+}
+
+function normalizeSequenceProgress(progress: ProgressState, total: number) {
+  return { ...progress, total: progress.total > 0 ? progress.total : total };
 }
 
 function isStoppedStatus(status: string) {

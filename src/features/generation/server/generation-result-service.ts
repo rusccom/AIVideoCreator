@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { cleanupFailedAiCreatorSequence } from "@/features/ai-creator/server/ai-creator-sequence-cleanup";
 import { createAssetFromRemoteUrl } from "@/features/assets/server/asset-storage-service";
 import { completeProjectImageGeneration } from "@/features/image-generation/server/project-image-service";
 import { prisma } from "@/shared/server/prisma";
@@ -17,6 +18,7 @@ export async function failGenerationJob(jobId: string, payload: unknown, reason:
   const job = await prisma.generationJob.findUniqueOrThrow({ where: { id: jobId } });
   await refundCredits(jobId, reason);
   await markSceneFailed(job.sceneId);
+  await cleanupFailedAiCreatorSequence(job.sceneId);
   return prisma.generationJob.update({
     where: { id: jobId },
     data: { status: "FAILED", errorJson: asJson(payload), completedAt: new Date() }

@@ -14,10 +14,13 @@ export function createAiCreatorSequenceId() {
 
 export async function getAiCreatorSequenceStatus(userId: string, sequenceId: string) {
   const scenes = await sequenceScenes(userId, sequenceId);
+  if (!scenes.length) return emptySequenceStatus(sequenceId, 0);
   const total = scenes.length;
   await refreshSequenceJobs(userId, scenes);
+  if (!await hasSequenceScenes(userId, sequenceId)) return emptySequenceStatus(sequenceId, total);
   await advanceSequence(userId, sequenceId);
-  return sequenceStatus(sequenceId, await sequenceScenes(userId, sequenceId), total);
+  const finalScenes = await sequenceScenes(userId, sequenceId);
+  return finalScenes.length ? sequenceStatus(sequenceId, finalScenes, total) : emptySequenceStatus(sequenceId, total);
 }
 
 export async function startNextAiCreatorScene(userId: string, parentSceneId: string, frameAssetId: string) {
@@ -35,13 +38,16 @@ export async function startNextAiCreatorScene(userId: string, parentSceneId: str
 }
 
 async function sequenceScenes(userId: string, sequenceId: string) {
-  const scenes = await prisma.scene.findMany({
+  return prisma.scene.findMany({
     where: { branchId: sequenceId, project: { userId } },
     orderBy: { orderIndex: "asc" },
     select: { id: true, status: true, generationJobId: true }
   });
-  if (!scenes.length) throw new Error("AI Creator sequence not found");
-  return scenes;
+}
+
+async function hasSequenceScenes(userId: string, sequenceId: string) {
+  const count = await prisma.scene.count({ where: { branchId: sequenceId, project: { userId } } });
+  return count > 0;
 }
 
 async function refreshSequenceJobs(userId: string, scenes: SequenceScene[]) {
@@ -85,6 +91,16 @@ function sequenceStatus(sequenceId: string, scenes: SequenceScene[], total = sce
 function finalStatus(scenes: SequenceScene[], readyCount: number) {
   if (scenes.some((scene) => scene.status === "FAILED")) return "FAILED";
   return readyCount === scenes.length ? "READY" : "GENERATING";
+}
+
+function emptySequenceStatus(sequenceId: string, total: number) {
+  return {
+    id: sequenceId,
+    readyCount: 0,
+    scenes: [] as SequenceScene[],
+    status: "FAILED",
+    total
+  };
 }
 
 async function nextSequenceScene(userId: string, parentSceneId: string) {
