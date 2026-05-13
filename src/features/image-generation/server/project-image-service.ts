@@ -4,6 +4,7 @@ import { buildFalInput } from "@/features/generation/models/build-fal-input";
 import { getSupportedModel } from "@/features/generation/models/catalog";
 import { submitFalJob } from "@/features/generation/server/fal-client";
 import { providerErrorPayload } from "@/features/generation/server/provider-error";
+import { touchProject } from "@/features/projects/server/project-touch-service";
 import { prisma } from "@/shared/server/prisma";
 import { recordImageModelUsage } from "./image-model-service";
 import type { GenerateProjectImageInput } from "./image-generation-schema";
@@ -31,7 +32,9 @@ export async function completeProjectImageGeneration(job: ImageGenerationJob, da
     if (images.length === 0) throw new Error("Image generation returned no images");
     const assets = await createImageAssets(job.userId, job.projectId!, images);
     await recordImageModelUsage(job.modelId, images.length);
-    return markJobReady(job.id, assets);
+    const ready = await markJobReady(job.id, assets);
+    await touchProject(job.projectId!).catch(() => undefined);
+    return ready;
   } catch (error) {
     return markJobFailed(job.id, error);
   }

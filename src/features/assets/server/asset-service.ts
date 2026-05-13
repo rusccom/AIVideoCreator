@@ -1,4 +1,5 @@
-import type { AssetType } from "@prisma/client";
+import type { AssetType, Prisma } from "@prisma/client";
+import { touchOwnedProjectInTransaction } from "@/features/projects/server/project-touch-service";
 import { prisma } from "@/shared/server/prisma";
 import type { UploadUrlInput } from "./asset-schema";
 import { moveRemoteAssetToR2 } from "./asset-storage-service";
@@ -20,7 +21,7 @@ export async function createUploadUrl(userId: string, input: UploadUrlInput) {
     }
   });
   const storageKey = buildStorageKey({ ...input, userId, assetId: asset.id });
-  await prisma.asset.update({ where: { id: asset.id }, data: { storageKey } });
+  await saveUploadAsset(userId, input, asset.id, storageKey);
   return { assetId: asset.id, uploadUrl: await r2Storage.createPutUrl(storageKey, input.mimeType) };
 }
 
@@ -40,12 +41,49 @@ export async function getAssetReadUrl(userId: string, assetId: string) {
 export async function deleteAssetForUser(userId: string, assetId: string) {
   const asset = await prisma.asset.findFirst({
     where: { id: assetId, userId },
-    select: { id: true, storageKey: true, storageProvider: true }
+    select: { id: true, projectId: true, storageKey: true, storageProvider: true }
   });
   if (!asset) throw new Error("Asset not found");
-  await prisma.asset.delete({ where: { id: asset.id } });
+  await deleteAssetRecord(userId, asset);
   await deleteStoredObject(asset);
   return { id: asset.id };
+}
+
+async function saveUploadAsset(
+  userId: string,
+  input: UploadUrlInput,
+  assetId: string,
+  storageKey: string
+) {
+  await prisma.$transaction(async (tx) => {
+    await tx.asset.update({ where: { id: assetId }, data: { storageKey } });
+    await touchUploadedProject(tx, userId, input.projectId);
+  });
+}
+
+async function deleteAssetRecord(userId: string, asset: AssetDeleteRecord) {
+  await prisma.$transaction(async (tx) => {
+    await tx.asset.delete({ where: { id: asset.id } });
+    await touchDeletedAssetProject(tx, userId, asset.projectId);
+  });
+}
+
+async function touchUploadedProject(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  projectId?: string | null
+) {
+  if (!projectId) return;
+  await touchOwnedProjectInTransaction(tx, userId, projectId);
+}
+
+async function touchDeletedAssetProject(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  projectId?: string | null
+) {
+  if (!projectId) return;
+  await touchOwnedProjectInTransaction(tx, userId, projectId);
 }
 
 async function storedAsset(asset: AssetReadRecord) {
@@ -82,6 +120,7 @@ type AssetReadRecord = {
 
 type AssetDeleteRecord = {
   id: string;
+  projectId: string | null;
   storageKey: string;
   storageProvider: string;
 };

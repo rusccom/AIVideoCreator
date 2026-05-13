@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
+import { touchProjectInTransaction } from "@/features/projects/server/project-touch-service";
 import type { CreateTimelineItemInput, ReorderTimelineInput } from "./timeline-schema";
 
 const ORDER_OFFSET = 1000000;
@@ -28,6 +29,7 @@ export async function deleteTimelineItemForUser(userId: string, itemId: string) 
   return prisma.$transaction(async (tx) => {
     await tx.timelineItem.delete({ where: { id: item.id } });
     await compactOrder(tx, item.projectId);
+    await touchProjectInTransaction(tx, item.projectId);
     return { id: item.id };
   });
 }
@@ -39,7 +41,7 @@ async function insertTimelineItem(
 ) {
   const index = await insertIndex(tx, projectId, input.index);
   await shiftFromIndex(tx, projectId, index);
-  return tx.timelineItem.create({
+  const item = await tx.timelineItem.create({
     data: {
       projectId,
       sceneId: input.sceneId,
@@ -47,6 +49,8 @@ async function insertTimelineItem(
       durationSeconds: await sceneDuration(tx, input.sceneId)
     }
   });
+  await touchProjectInTransaction(tx, projectId);
+  return item;
 }
 
 async function reorderTimeline(
@@ -57,6 +61,7 @@ async function reorderTimeline(
   await assertFullTimeline(tx, projectId, itemIds);
   await moveToTemporaryOrder(tx, projectId);
   await Promise.all(itemIds.map((id, index) => setOrder(tx, id, index)));
+  await touchProjectInTransaction(tx, projectId);
   return tx.timelineItem.findMany({ where: { projectId }, orderBy: { orderIndex: "asc" } });
 }
 

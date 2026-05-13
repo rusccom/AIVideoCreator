@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
+import { touchProjectInTransaction } from "@/features/projects/server/project-touch-service";
 import type { CreateSceneInput, PickFrameInput, UpdateSceneInput } from "./scene-schema";
 
 const ORDER_OFFSET = 1000000;
@@ -9,6 +10,7 @@ export async function createScene(projectId: string, input: CreateSceneInput) {
   return prisma.$transaction(async (tx) => {
     const scene = await tx.scene.create({ data: sceneCreateData(projectId, orderIndex, input) });
     await tx.timelineItem.create({ data: await timelineCreateData(tx, scene) });
+    await touchProjectInTransaction(tx, projectId);
     return scene;
   });
 }
@@ -48,6 +50,7 @@ export async function deleteSceneForUser(userId: string, sceneId: string) {
     await tx.scene.delete({ where: { id: scene.id } });
     await compactSceneOrder(tx, scene.projectId);
     await compactTimelineOrder(tx, scene.projectId);
+    await touchProjectInTransaction(tx, scene.projectId);
     return { id: scene.id };
   });
 }

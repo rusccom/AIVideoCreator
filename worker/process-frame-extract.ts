@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { Prisma } from "@prisma/client";
 import { createAssetFromLocalFile } from "../src/features/assets/server/asset-storage-service";
 import { startNextAiCreatorScene } from "../src/features/ai-creator/server/ai-creator-sequence-service";
+import { touchProjectInTransaction } from "../src/features/projects/server/project-touch-service";
 import { prisma } from "../src/shared/server/prisma";
 import { runFfmpeg } from "./ffmpeg";
 import { createJobWorkspace, removeJobWorkspace } from "./job-workspace";
@@ -31,7 +32,7 @@ async function processFrameJob(job: FrameJob) {
   const workspace = await createJobWorkspace(job.id);
   try {
     const frame = await extractFrame(job, video, workspace, scene.projectId);
-    await setFrameReady(job.id, scene.id, frame.id);
+    await setFrameReady(job.id, scene.id, scene.projectId, frame.id);
     await startNextAiCreatorScene(job.userId, scene.id, frame.id);
     return { jobId: job.id, frameAssetId: frame.id };
   } finally {
@@ -59,11 +60,14 @@ function createFrameAsset(job: FrameJob, projectId: string, output: string) {
   });
 }
 
-async function setFrameReady(jobId: string, sceneId: string, assetId: string) {
-  await prisma.scene.update({ where: { id: sceneId }, data: { endFrameAssetId: assetId } });
-  return prisma.generationJob.update({
-    where: { id: jobId },
-    data: { status: "READY", outputJson: asJson({ assetId }), completedAt: new Date() }
+async function setFrameReady(jobId: string, sceneId: string, projectId: string, assetId: string) {
+  return prisma.$transaction(async (tx) => {
+    await tx.scene.update({ where: { id: sceneId }, data: { endFrameAssetId: assetId } });
+    await touchProjectInTransaction(tx, projectId);
+    return tx.generationJob.update({
+      where: { id: jobId },
+      data: { status: "READY", outputJson: asJson({ assetId }), completedAt: new Date() }
+    });
   });
 }
 

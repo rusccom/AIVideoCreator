@@ -50,7 +50,12 @@ function getProjects(userId: string) {
       aspectRatio: true,
       status: true,
       updatedAt: true,
-      scenes: { select: { durationSeconds: true } }
+      timelineItems: {
+        select: {
+          durationSeconds: true,
+          scene: { select: { durationSeconds: true } }
+        }
+      }
     }
   });
 }
@@ -96,15 +101,19 @@ function toStudioProject(project: Awaited<ReturnType<typeof getProjects>>[number
     id: project.id,
     title: project.title,
     aspectRatio: project.aspectRatio,
-    clips: project.scenes.length,
-    duration: `${totalSceneSeconds(project.scenes)}s`,
+    clips: project.timelineItems.length,
+    duration: `${totalTimelineSeconds(project.timelineItems)}s`,
     status: project.status.toLowerCase(),
     updatedAt: project.updatedAt.toLocaleDateString("en-US")
   };
 }
 
-function totalSceneSeconds(scenes: Array<{ durationSeconds: number }>) {
-  return scenes.reduce((total, scene) => total + scene.durationSeconds, 0);
+function totalTimelineSeconds(items: TimelineDurationItem[]) {
+  return items.reduce((total, item) => total + itemDuration(item), 0);
+}
+
+function itemDuration(item: TimelineDurationItem) {
+  return item.durationSeconds ?? item.scene.durationSeconds;
 }
 
 function buildMetrics(
@@ -132,3 +141,8 @@ function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024 * 1024) return `${Math.round(bytes / 1024 / 1024)} MB`;
   return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
+
+type TimelineDurationItem = {
+  durationSeconds: number | null;
+  scene: { durationSeconds: number };
+};

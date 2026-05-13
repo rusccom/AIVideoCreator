@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { cleanupFailedAiCreatorSequence } from "@/features/ai-creator/server/ai-creator-sequence-cleanup";
 import { createAssetFromRemoteUrl } from "@/features/assets/server/asset-storage-service";
 import { completeProjectImageGeneration } from "@/features/image-generation/server/project-image-service";
+import { touchProjectInTransaction } from "@/features/projects/server/project-touch-service";
 import { prisma } from "@/shared/server/prisma";
 import { commitCredits, refundCredits } from "./credit-service";
 import { providerErrorPayload } from "./provider-error";
@@ -29,8 +30,20 @@ async function createVideoAsset(job: JobRecord, data: unknown) {
   const video = videoPayload(data);
   if (!video || !job.projectId || !job.sceneId) return null;
   const asset = await createAssetFromRemoteUrl(videoAssetData(job, video));
-  await prisma.scene.update({ where: { id: job.sceneId }, data: sceneData(job.id, asset.id, video) });
+  await saveReadyScene({ assetId: asset.id, jobId: job.id, projectId: job.projectId, sceneId: job.sceneId, video });
   return asset;
+}
+
+async function saveReadyScene(input: ReadySceneInput) {
+  const durationSeconds = videoDuration(input.video);
+  await prisma.$transaction(async (tx) => {
+    await tx.scene.update({
+      where: { id: input.sceneId },
+      data: sceneData(input.jobId, input.assetId, durationSeconds)
+    });
+    await tx.timelineItem.updateMany({ where: { sceneId: input.sceneId }, data: { durationSeconds } });
+    await touchProjectInTransaction(tx, input.projectId);
+  });
 }
 
 async function completeVideoGenerationJob(job: JobRecord, data: unknown) {
@@ -90,12 +103,12 @@ function videoAssetData(job: JobRecord, video: ReadyVideoPayload) {
   };
 }
 
-function sceneData(jobId: string, assetId: string, video: VideoPayload) {
+function sceneData(jobId: string, assetId: string, durationSeconds: number) {
   return {
     generationJobId: jobId,
     videoAssetId: assetId,
     status: "READY" as const,
-    durationSeconds: videoDuration(video)
+    durationSeconds
   };
 }
 
@@ -136,4 +149,12 @@ type VideoPayload = {
 
 type ReadyVideoPayload = VideoPayload & {
   url: string;
+};
+
+type ReadySceneInput = {
+  assetId: string;
+  jobId: string;
+  projectId: string;
+  sceneId: string;
+  video: VideoPayload;
 };
