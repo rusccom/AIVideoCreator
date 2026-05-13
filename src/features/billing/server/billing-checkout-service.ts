@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import type { TopUpPackageKey } from "../data/top-up-packages";
 import { findTopUpPackage } from "../data/top-up-packages";
-import { getBillingSettings } from "./billing-settings-service";
+import { getBillingConfig } from "./billing-config-service";
 import { attachCheckoutSession, createPendingPayment } from "./billing-payment-service";
 import { getStripe } from "./stripe-client";
 
@@ -17,8 +17,8 @@ export async function createTopUpCheckoutSession(
 ) {
   const item = findTopUpPackage(packageKey);
   if (!item) throw new Error("Unknown top-up package");
-  const settings = await getBillingSettings();
-  const payment = await createPendingPayment(user.id, item, settings.creditsPerUsd);
+  const config = await getBillingConfig();
+  const payment = await createPendingPayment(user.id, item, config.creditsPerUsd);
   const session = await getStripe().checkout.sessions.create(
     checkoutParams(user, payment)
   );

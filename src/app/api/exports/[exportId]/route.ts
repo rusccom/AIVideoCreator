@@ -14,17 +14,16 @@ export async function GET(_request: Request, context: RouteContext) {
     const { exportId } = await context.params;
     const job = await getExportJob(user.id, exportId);
     if (!job) return notFound();
-    const url = await exportUrl(job.storageKey, job.project?.title);
+    const url = await exportUrl(job.r2Key, job.project?.title);
     return NextResponse.json({ job: { ...job, url } });
   } catch {
     return unauthorized();
   }
 }
 
-async function exportUrl(storageKey: string | null | undefined, projectTitle?: string) {
-  if (!storageKey) return null;
-  if (storageKey.startsWith("http")) return null;
-  return r2Storage.createGetUrl(storageKey, { downloadFileName: downloadName(projectTitle) });
+async function exportUrl(r2Key: string | null | undefined, projectTitle?: string) {
+  if (!r2Key) return null;
+  return r2Storage.createGetUrl(r2Key, { downloadFileName: downloadName(projectTitle) });
 }
 
 function downloadName(projectTitle?: string) {

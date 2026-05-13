@@ -55,7 +55,6 @@ function toEditorScene(
     model: scene.modelId,
     modelId: scene.modelId,
     prompt: scene.userPrompt,
-    aiPrompt: scene.aiPrompt ?? "No enhanced prompt yet.",
     startFrameAssetId: scene.startFrameAssetId,
     generationJobId: scene.generationJobId,
     startFrameUrl: assetUrl(assets.get(scene.startFrameAssetId ?? "")),

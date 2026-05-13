@@ -44,7 +44,7 @@ async function extractFrame(job: FrameJob, video: VideoAsset, workspace: string,
   const input = join(workspace, "input.mp4");
   const output = join(workspace, "frame.jpg");
   await downloadAsset(video, input);
-  await runFfmpeg(frameCommand(job.inputJson, input, output));
+  await runFfmpeg(frameCommand(job.input, input, output));
   return createFrameAsset(job, projectId, output);
 }
 
@@ -64,9 +64,10 @@ async function setFrameReady(jobId: string, sceneId: string, projectId: string, 
   return prisma.$transaction(async (tx) => {
     await tx.scene.update({ where: { id: sceneId }, data: { endFrameAssetId: assetId } });
     await touchProjectInTransaction(tx, projectId);
+    await recordFrameResult(tx, jobId, assetId);
     return tx.generationJob.update({
       where: { id: jobId },
-      data: { status: "READY", outputJson: asJson({ assetId }), completedAt: new Date() }
+      data: { status: "READY", completedAt: new Date() }
     });
   });
 }
@@ -77,13 +78,13 @@ async function sceneForJob(job: FrameJob) {
 }
 
 async function videoAsset(job: FrameJob, sceneVideoAssetId?: string | null) {
-  const assetId = videoAssetId(job.inputJson) ?? sceneVideoAssetId;
+  const assetId = videoAssetId(job.input) ?? sceneVideoAssetId;
   if (!assetId) throw new Error("Frame job has no video asset");
   return prisma.asset.findUniqueOrThrow({ where: { id: assetId } });
 }
 
-function frameCommand(inputJson: Prisma.JsonValue, input: string, output: string) {
-  const seconds = frameTimeSeconds(inputJson);
+function frameCommand(frameInput: Prisma.JsonValue, input: string, output: string) {
+  const seconds = frameTimeSeconds(frameInput);
   if (seconds !== null) return pickedFrameCommand(seconds, input, output);
   return lastFrameCommand(input, output);
 }
@@ -96,18 +97,18 @@ function lastFrameCommand(input: string, output: string) {
   return ["-y", "-i", input, "-an", "-q:v", "2", "-update", "1", output];
 }
 
-function frameTimeSeconds(inputJson: Prisma.JsonValue) {
-  const value = record(inputJson).frameTimeSeconds;
+function frameTimeSeconds(frameInput: Prisma.JsonValue) {
+  const value = record(frameInput).frameTimeSeconds;
   return typeof value === "number" ? Math.max(0, value) : null;
 }
 
-function videoAssetId(inputJson: Prisma.JsonValue) {
-  const value = record(inputJson).videoAssetId;
+function videoAssetId(frameInput: Prisma.JsonValue) {
+  const value = record(frameInput).videoAssetId;
   return typeof value === "string" ? value : null;
 }
 
 function frameMetadata(job: FrameJob) {
-  return asJson({ jobId: job.id, sceneId: job.sceneId, input: job.inputJson });
+  return asJson({ jobId: job.id, sceneId: job.sceneId, input: job.input });
 }
 
 async function markProcessing(jobId: string) {
@@ -118,11 +119,36 @@ async function markProcessing(jobId: string) {
 }
 
 async function failFrameJob(jobId: string, error: unknown) {
-  await prisma.generationJob.update({
-    where: { id: jobId },
-    data: { status: "FAILED", errorJson: asJson(errorPayload(error)), completedAt: new Date() }
+  await prisma.$transaction(async (tx) => {
+    await recordFrameError(tx, jobId, error);
+    await tx.generationJob.update({
+      where: { id: jobId },
+      data: { status: "FAILED", completedAt: new Date() }
+    });
   });
   return { jobId, error: errorMessage(error) };
+}
+
+async function recordFrameResult(tx: Prisma.TransactionClient, jobId: string, assetId: string) {
+  const output = { assetId };
+  await tx.jobResult.upsert({
+    where: { jobId },
+    create: { jobId, assets: asJson([generatedAsset(assetId)]), rawResponse: asJson(output) },
+    update: { assets: asJson([generatedAsset(assetId)]), rawResponse: asJson(output) }
+  });
+}
+
+async function recordFrameError(tx: Prisma.TransactionClient, jobId: string, error: unknown) {
+  const payload = errorPayload(error);
+  await tx.jobError.upsert({
+    where: { jobId },
+    create: { jobId, message: errorMessage(error), rawError: asJson(payload) },
+    update: { message: errorMessage(error), rawError: asJson(payload) }
+  });
+}
+
+function generatedAsset(assetId: string) {
+  return { id: assetId, url: `/api/assets/${assetId}/signed-url` };
 }
 
 function record(value: unknown) {

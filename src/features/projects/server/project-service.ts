@@ -95,8 +95,8 @@ async function projectDeleteData(userId: string, projectId: string) {
     where: { id: projectId, userId },
     select: {
       id: true,
-      assets: { select: { origin: true, r2Key: true, storageKey: true, storageProvider: true, sizeBytes: true } },
-      exports: { select: { storageKey: true } },
+      assets: { select: { origin: true, r2Key: true, sizeBytes: true } },
+      exports: { select: { r2Key: true } },
       jobs: { select: { id: true } }
     }
   });
@@ -105,29 +105,28 @@ async function projectDeleteData(userId: string, projectId: string) {
 }
 
 async function deleteProjectStorage(project: ProjectDeleteData) {
-  await Promise.all(storageKeys(project).map(deleteObject));
+  await Promise.all(r2ObjectKeys(project).map(deleteObject));
 }
 
-function storageKeys(project: ProjectDeleteData) {
+function r2ObjectKeys(project: ProjectDeleteData) {
   const keys = [...project.assets.map(assetKey), ...project.exports.map(exportKey)];
-  return [...new Set(keys.filter(isStorageKey))];
+  return [...new Set(keys.filter(isObjectKey))];
 }
 
 function assetKey(asset: ProjectDeleteData["assets"][number]) {
-  if (asset.storageProvider !== "r2" || asset.origin !== "R2") return null;
-  return asset.r2Key ?? asset.storageKey;
+  if (asset.origin !== "R2") return null;
+  return asset.r2Key;
 }
 
 function exportKey(item: ProjectDeleteData["exports"][number]) {
-  if (!item.storageKey || item.storageKey.startsWith("http")) return null;
-  return item.storageKey;
+  return item.r2Key;
 }
 
 async function deleteObject(key: string) {
   await r2Storage.deleteObject(key).catch(() => undefined);
 }
 
-function isStorageKey(key: string | null): key is string {
+function isObjectKey(key: string | null): key is string {
   return Boolean(key);
 }
 

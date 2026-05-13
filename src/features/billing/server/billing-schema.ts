@@ -6,9 +6,3 @@ export const checkoutSchema = z.object({
 });
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
-
-export const billingSettingsSchema = z.object({
-  creditsPerUsd: z.coerce.number().int().min(1).max(100000)
-});
-
-export type BillingSettingsInput = z.infer<typeof billingSettingsSchema>;

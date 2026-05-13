@@ -1,4 +1,3 @@
-import { OwnerBillingSettingsForm } from "@/features/billing/components/OwnerBillingSettingsForm";
 import { OwnerBillingSummary } from "@/features/billing/components/OwnerBillingSummary";
 import { getOwnerBillingOverview } from "@/features/billing/server/billing-owner-service";
 import { OwnerPageHeader } from "@/features/owner/components/OwnerPageHeader";
@@ -11,15 +10,9 @@ export default async function OwnerBillingPage() {
     <main className="studio-content">
       <OwnerPageHeader
         title="Billing"
-        description="Set the credit rate and monitor top-up payments."
+        description="Monitor credit top-up payments and configured rates."
       />
       <div className="settings-grid">
-        <section className="settings-panel">
-          <h2>Credit rate</h2>
-          <OwnerBillingSettingsForm
-            creditsPerUsd={overview.settings.creditsPerUsd}
-          />
-        </section>
         <OwnerBillingSummary metrics={overview.metrics} />
       </div>
     </main>

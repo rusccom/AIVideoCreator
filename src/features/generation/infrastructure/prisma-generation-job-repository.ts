@@ -12,7 +12,7 @@ async function createVideoJob(input: CreateVideoGenerationJobInput) {
   return prisma.generationJob.create({
     data: {
       estimatedCredits: input.estimatedCredits,
-      inputJson: asJson(input.input),
+      input: asJson(input.input),
       modelId: input.modelId,
       projectId: input.projectId,
       provider: "fal",

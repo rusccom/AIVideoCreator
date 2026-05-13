@@ -15,7 +15,7 @@ export async function repairAiCreatorPrompt(
 
 async function assertFailedSequence(userId: string, sequenceId: string) {
   const scene = await prisma.scene.findFirst({
-    where: { branchId: sequenceId, project: { userId }, status: "FAILED" },
+    where: { branchEntityId: sequenceId, project: { userId }, status: "FAILED" },
     select: { id: true }
   });
   if (!scene) throw new Error("Failed scene not found");

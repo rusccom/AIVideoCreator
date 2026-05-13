@@ -14,12 +14,10 @@ export type GenerationJobRecord = {
   creditsReserved: number;
   creditsSpent: number;
   durationMs: number | null;
-  errorJson: unknown;
   estimatedCredits: number;
   id: string;
-  inputJson: unknown;
+  input: unknown;
   modelId: string;
-  outputJson: unknown;
   projectId: string | null;
   provider: string;
   providerCostEstimate: number | null;

@@ -31,7 +31,7 @@ async function processExportJob(job: ExportJob) {
   try {
     const output = await renderExport(context, workspace);
     const asset = await createExportAsset(job, output.path, output.duration);
-    await markReady(job.id, asset.storageKey, output.duration);
+    await markReady(job.id, requiredR2Key(asset.r2Key), output.duration);
     return { jobId: job.id, items: context.items.length };
   } finally {
     await removeJobWorkspace(workspace);
@@ -102,10 +102,10 @@ async function createExportAsset(job: ExportJob, localPath: string, duration: nu
   });
 }
 
-async function markReady(jobId: string, storageKey: string, duration: number) {
+async function markReady(jobId: string, r2Key: string, duration: number) {
   return prisma.exportJob.update({
     where: { id: jobId },
-    data: { status: "READY", storageKey, durationSeconds: duration, completedAt: new Date() }
+    data: { status: "READY", r2Key, durationSeconds: duration, completedAt: new Date() }
   });
 }
 
@@ -116,9 +116,14 @@ async function markProcessing(jobId: string) {
 async function failExportJob(jobId: string, error: unknown) {
   await prisma.exportJob.update({
     where: { id: jobId },
-    data: { status: "FAILED", errorJson: asJson(errorPayload(error)), completedAt: new Date() }
+    data: { status: "FAILED", errorMessage: errorMessage(error), completedAt: new Date() }
   });
   return { error: errorMessage(error), jobId };
+}
+
+function requiredR2Key(r2Key?: string | null) {
+  if (!r2Key) throw new Error("Export asset has no R2 key");
+  return r2Key;
 }
 
 function videoFilter(dimensions: Dimensions) {
@@ -170,10 +175,6 @@ function projectForJob(job: ExportJob) {
 
 function asJson(value: unknown) {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
-}
-
-function errorPayload(error: unknown) {
-  return error instanceof Error ? { name: error.name, message: error.message } : { error };
 }
 
 function errorMessage(error: unknown) {

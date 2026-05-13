@@ -9,6 +9,7 @@ import { publishPendingOutboxEvents } from "@/shared/server/outbox-publisher";
 import { prisma } from "@/shared/server/prisma";
 import { commitCredits, refundCredits } from "./credit-service";
 import { providerErrorPayload } from "./provider-error";
+import { markBranchFailed, markBranchSceneReady } from "./scene-branch-counters";
 
 export async function completeGenerationJob(jobId: string, data: unknown) {
   const claim = await claimGenerationCompletion(jobId);
@@ -81,7 +82,7 @@ function markJobReady(jobId: string, data: unknown, assets: GeneratedAsset[]) {
     await recordJobEvent(tx, jobId, "job.completed");
     return tx.generationJob.update({
       where: { id: jobId },
-      data: { status: "READY", outputJson: asJson(data), completedAt: new Date() }
+      data: { status: "READY", completedAt: new Date() }
     });
   });
 }
@@ -95,7 +96,7 @@ async function queueLastFrameJob(job: JobRecord, videoAssetId: string) {
       provider: "worker",
       modelId: "ffmpeg-last-frame",
       type: "FRAME_EXTRACT",
-      inputJson: asJson({ mode: "last", videoAssetId })
+      input: asJson({ mode: "last", videoAssetId })
     }
   });
 }
@@ -132,6 +133,9 @@ async function markSceneFailed(sceneId?: string | null) {
     if (!scene) return;
     await tx.scene.update({ where: { id: sceneId }, data: { status: "FAILED" } });
     if (scene.status === "READY") await incrementProjectReadyScenes(tx, scene.projectId, -1);
+    if (scene.branchEntityId) {
+      await markBranchFailed(tx, scene.branchEntityId, scene.status === "READY");
+    }
     await recordProjectEvent(tx, scene.projectId, "scene.failed", { sceneId });
   });
 }
@@ -158,7 +162,7 @@ function asJson(value: unknown) {
 async function sceneBeforeReady(tx: Prisma.TransactionClient, sceneId: string) {
   return tx.scene.findUniqueOrThrow({
     where: { id: sceneId },
-    select: { durationSeconds: true, status: true }
+    select: { branchEntityId: true, durationSeconds: true, status: true }
   });
 }
 
@@ -176,14 +180,16 @@ async function timelineDuration(
 
 async function updateProjectSceneCounters(
   tx: Prisma.TransactionClient,
-  previous: { status: string },
+  previous: { branchEntityId: string | null; status: string },
   projectId: string,
   timelineCount: number,
   durationSeconds: number,
   oldDuration: number
 ) {
-  if (previous.status !== "READY") await incrementProjectReadyScenes(tx, projectId, 1);
+  const readyDelta = previous.status !== "READY" ? 1 : 0;
+  if (readyDelta) await incrementProjectReadyScenes(tx, projectId, readyDelta);
   await incrementProjectTimelineItems(tx, projectId, 0, timelineCount * durationSeconds - oldDuration);
+  if (readyDelta && previous.branchEntityId) await markBranchSceneReady(tx, previous.branchEntityId);
 }
 
 function markJobFailed(jobId: string, payload: unknown) {
@@ -192,7 +198,7 @@ function markJobFailed(jobId: string, payload: unknown) {
     await recordJobEvent(tx, jobId, "job.failed");
     return tx.generationJob.update({
       where: { id: jobId },
-      data: { status: "FAILED", errorJson: asJson(payload), completedAt: new Date() }
+      data: { status: "FAILED", completedAt: new Date() }
     });
   });
 }
@@ -234,7 +240,7 @@ function errorUpdate(payload: unknown) {
 function sceneBeforeFailure(tx: Prisma.TransactionClient, sceneId: string) {
   return tx.scene.findUnique({
     where: { id: sceneId },
-    select: { projectId: true, status: true }
+    select: { branchEntityId: true, projectId: true, status: true }
   });
 }
 

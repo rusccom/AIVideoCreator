@@ -14,16 +14,13 @@ export async function createUploadUrl(userId: string, input: UploadUrlInput) {
       type: input.type,
       source: "UPLOAD",
       origin: "PENDING",
-      storageProvider: "r2",
-      storageBucket: r2Storage.bucketName(),
-      storageKey: "pending",
       mimeType: input.mimeType,
       metadataJson: { fileName: input.fileName }
     }
   });
-  const storageKey = buildStorageKey({ ...input, userId, assetId: asset.id });
-  await saveUploadAsset(userId, input, asset.id, storageKey);
-  return { assetId: asset.id, uploadUrl: await r2Storage.createPutUrl(storageKey, input.mimeType) };
+  const r2Key = buildStorageKey({ ...input, userId, assetId: asset.id });
+  await saveUploadAsset(userId, input, asset.id, r2Key);
+  return { assetId: asset.id, uploadUrl: await r2Storage.createPutUrl(r2Key, input.mimeType) };
 }
 
 export async function getAssetReadUrl(userId: string, assetId: string) {
@@ -48,8 +45,6 @@ export async function deleteAssetForUser(userId: string, assetId: string) {
       origin: true,
       projectId: true,
       r2Key: true,
-      storageKey: true,
-      storageProvider: true,
       sizeBytes: true
     }
   });
@@ -63,12 +58,12 @@ async function saveUploadAsset(
   userId: string,
   input: UploadUrlInput,
   assetId: string,
-  storageKey: string
+  r2Key: string
 ) {
   await prisma.$transaction(async (tx) => {
     await tx.asset.update({
       where: { id: assetId },
-      data: { storageKey, r2Key: storageKey, origin: "R2" }
+      data: { r2Key, origin: "R2" }
     });
     await touchUploadedProject(tx, userId, input.projectId);
   });
@@ -119,7 +114,6 @@ function assetReadFields() {
     projectId: true,
     r2Key: true,
     sizeBytes: true,
-    storageKey: true,
     type: true,
     userId: true
   } as const;
@@ -133,12 +127,12 @@ async function deleteStoredObject(asset: AssetDeleteRecord) {
 
 function r2ReadKey(asset: R2ReadableAsset) {
   if (asset.origin !== "R2") return null;
-  return asset.r2Key ?? asset.storageKey;
+  return asset.r2Key;
 }
 
 function r2DeleteKey(asset: AssetDeleteRecord) {
-  if (asset.storageProvider !== "r2" || asset.origin !== "R2") return null;
-  return asset.r2Key ?? asset.storageKey;
+  if (asset.origin !== "R2") return null;
+  return asset.r2Key;
 }
 
 type AssetReadRecord = {
@@ -149,7 +143,6 @@ type AssetReadRecord = {
   projectId: string | null;
   r2Key: string | null;
   sizeBytes: number | null;
-  storageKey: string;
   type: AssetType;
   userId: string;
 };
@@ -159,13 +152,10 @@ type AssetDeleteRecord = {
   origin: AssetOrigin;
   projectId: string | null;
   r2Key: string | null;
-  storageKey: string;
-  storageProvider: string;
   sizeBytes: number | null;
 };
 
 type R2ReadableAsset = {
   origin?: AssetOrigin;
   r2Key?: string | null;
-  storageKey: string;
 };

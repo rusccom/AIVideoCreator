@@ -1,15 +1,8 @@
-import { randomUUID } from "node:crypto";
 import type { SceneStatus } from "@prisma/client";
 import { generateVideo } from "@/features/generation/server/generation-service";
 import type { GenerateVideoInput } from "@/features/generation/server/generation-schema";
 import { getModel } from "@/features/generation/server/model-registry";
 import { prisma } from "@/shared/server/prisma";
-
-const SEQUENCE_PREFIX = "ai_creator_sequence_";
-
-export function createAiCreatorSequenceId() {
-  return `${SEQUENCE_PREFIX}${randomUUID()}`;
-}
 
 export async function getAiCreatorSequenceStatus(userId: string, sequenceId: string) {
   const scenes = await sequenceScenes(userId, sequenceId);
@@ -54,14 +47,14 @@ export async function updateFailedAiCreatorPrompt(userId: string, sequenceId: st
 
 async function sequenceScenes(userId: string, sequenceId: string) {
   return prisma.scene.findMany({
-    where: { branchId: sequenceId, project: { userId } },
+    where: { branchEntityId: sequenceId, project: { userId } },
     orderBy: { orderIndex: "asc" },
     select: { id: true, status: true, generationJobId: true, userPrompt: true }
   });
 }
 
 async function hasSequenceScenes(userId: string, sequenceId: string) {
-  const count = await prisma.scene.count({ where: { branchId: sequenceId, project: { userId } } });
+  const count = await prisma.scene.count({ where: { branchEntityId: sequenceId, project: { userId } } });
   return count > 0;
 }
 
@@ -77,7 +70,7 @@ async function advanceFromScene(userId: string, scene: SequenceFrameScene) {
 
 async function sequenceFrameScenes(userId: string, sequenceId: string) {
   return prisma.scene.findMany({
-    where: { branchId: sequenceId, project: { userId } },
+    where: { branchEntityId: sequenceId, project: { userId } },
     orderBy: { orderIndex: "asc" },
     select: { endFrameAssetId: true, id: true, status: true }
   });
@@ -126,7 +119,7 @@ async function nextSequenceScene(userId: string, parentSceneId: string) {
 
 async function failedSequenceScene(userId: string, sequenceId: string) {
   return prisma.scene.findFirst({
-    where: { branchId: sequenceId, project: { userId }, status: "FAILED" },
+    where: { branchEntityId: sequenceId, project: { userId }, status: "FAILED" },
     orderBy: { orderIndex: "asc" },
     select: {
       durationSeconds: true,
@@ -142,7 +135,7 @@ async function failedSequenceScene(userId: string, sequenceId: string) {
 
 function nextSceneWhere(userId: string, parentSceneId: string) {
   return {
-    branchId: { startsWith: SEQUENCE_PREFIX },
+    branch: { is: { kind: "AI_CREATOR" as const } },
     parentSceneId,
     startFrameAssetId: null,
     status: "DRAFT" as SceneStatus,
@@ -195,30 +188,30 @@ async function markSceneFailed(sceneId: string) {
 
 async function deleteFollowingDraftScenes(userId: string, sceneId: string) {
   const scene = await sequenceSceneForCleanup(userId, sceneId);
-  if (!scene?.branchId) return;
-  const ids = await followingDraftSceneIds(userId, scene.branchId, scene.orderIndex);
+  if (!scene?.branchEntityId) return;
+  const ids = await followingDraftSceneIds(userId, scene.branchEntityId, scene.orderIndex);
   if (!ids.length) return;
   await prisma.scene.deleteMany({ where: { id: { in: ids } } });
 }
 
 async function sequenceSceneForCleanup(userId: string, sceneId: string) {
   return prisma.scene.findFirst({
-    where: { id: sceneId, branchId: { startsWith: SEQUENCE_PREFIX }, project: { userId } },
-    select: { branchId: true, orderIndex: true }
+    where: { id: sceneId, branch: { is: { kind: "AI_CREATOR" } }, project: { userId } },
+    select: { branchEntityId: true, orderIndex: true }
   });
 }
 
-async function followingDraftSceneIds(userId: string, branchId: string, orderIndex: number) {
+async function followingDraftSceneIds(userId: string, branchEntityId: string, orderIndex: number) {
   const scenes = await prisma.scene.findMany({
-    where: followingDraftWhere(userId, branchId, orderIndex),
+    where: followingDraftWhere(userId, branchEntityId, orderIndex),
     select: { id: true }
   });
   return scenes.map((scene) => scene.id);
 }
 
-function followingDraftWhere(userId: string, branchId: string, orderIndex: number) {
+function followingDraftWhere(userId: string, branchEntityId: string, orderIndex: number) {
   return {
-    branchId,
+    branchEntityId,
     generationJobId: null,
     orderIndex: { gt: orderIndex },
     project: { userId },

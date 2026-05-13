@@ -9,7 +9,7 @@ type ExportJobResponse = {
     id: string;
     status: string;
     url?: string | null;
-    errorJson?: { message?: string } | null;
+    errorMessage?: string | null;
   };
 };
 
@@ -80,7 +80,7 @@ async function pollExportJob(jobId: string) {
   if (!response.ok) return { status: "FAILED" as const, error: "Failed to poll", url: undefined };
   const data = await response.json() as ExportJobResponse;
   return {
-    error: data.job.errorJson?.message,
+    error: data.job.errorMessage ?? undefined,
     status: data.job.status,
     url: data.job.url ?? undefined
   };

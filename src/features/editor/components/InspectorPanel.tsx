@@ -18,7 +18,6 @@ export function InspectorPanel(props: InspectorPanelProps) {
       <div className="inspector-body">
         {!scene ? <p className="form-note">Create a scene to edit generation settings.</p> : null}
         {scene ? <InspectorField label="User prompt" value={scene.prompt} /> : null}
-        {scene ? <InspectorField label="AI-enhanced prompt" value={scene.aiPrompt} /> : null}
         <InspectorField label="Camera movement" value="Push in - handheld" />
         <InspectorField label="Motion intensity" value="Medium" />
         <InspectorField label="Style lock" value="Enabled" />

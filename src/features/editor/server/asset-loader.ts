@@ -83,5 +83,5 @@ async function signedAssetUrl(asset: EditorAssetRecord) {
   if (asset.cdnUrl) return asset.cdnUrl;
   if (asset.origin === "EXTERNAL_URL") return asset.externalUrl;
   if (asset.origin !== "R2") return null;
-  return r2Storage.createGetUrl(asset.r2Key ?? asset.storageKey);
+  return asset.r2Key ? r2Storage.createGetUrl(asset.r2Key) : null;
 }

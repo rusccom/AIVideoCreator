@@ -138,7 +138,6 @@ model Project {
 model SceneBranch {
   id          String            @id @default(cuid())
   projectId   String
-  legacyKey   String?
   kind        SceneBranchKind
   status      SceneBranchStatus @default(GENERATING)
   totalScenes Int               @default(0)
@@ -148,7 +147,6 @@ model SceneBranch {
   project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   scenes      Scene[]
 
-  @@unique([projectId, legacyKey])
   @@index([projectId, status])
 }
 
@@ -163,11 +161,9 @@ model Scene {
   videoAssetId      String?
   endFrameAssetId   String?
   userPrompt        String
-  aiPrompt          String?
   modelId           String
   generationJobId   String?
   parentSceneId     String?
-  branchId          String?
   isStale           Boolean         @default(false)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
@@ -181,7 +177,6 @@ model Scene {
   jobs              GenerationJob[]
   timelineItems     TimelineItem[]
 
-  @@unique([projectId, orderIndex, branchId])
   @@index([projectId, orderIndex])
   @@index([projectId, status])
   @@index([branchEntityId, orderIndex])
@@ -209,34 +204,30 @@ model TimelineItem {
 }
 
 model Asset {
-  id               String      @id @default(cuid())
-  userId           String
-  projectId        String?
-  type             AssetType
-  source           AssetSource
-  origin           AssetOrigin @default(PENDING)
-  r2Key            String?
-  externalUrl      String?
-  cdnUrl           String?
-  signedUrlCache   Json?
-  storageProvider  String
-  storageBucket    String
-  storageKey       String
-  mimeType         String
-  sizeBytes        Int?
-  width            Int?
-  height           Int?
-  durationSeconds  Int?
-  thumbnailAssetId String?
-  metadataJson     Json?
-  createdAt        DateTime    @default(now())
-  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project          Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  initialProjects  Project[]   @relation("ProjectInitialFrame")
-  coveredProjects  Project[]   @relation("ProjectCover")
-  startScenes      Scene[]     @relation("SceneStartFrame")
-  videoScenes      Scene[]     @relation("SceneVideo")
-  endScenes        Scene[]     @relation("SceneEndFrame")
+  id              String      @id @default(cuid())
+  userId          String
+  projectId       String?
+  type            AssetType
+  source          AssetSource
+  origin          AssetOrigin @default(PENDING)
+  r2Key           String?
+  externalUrl     String?
+  cdnUrl          String?
+  signedUrlCache  Json?
+  mimeType        String
+  sizeBytes       Int?
+  width           Int?
+  height          Int?
+  durationSeconds Int?
+  metadataJson    Json?
+  createdAt       DateTime    @default(now())
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project         Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initialProjects Project[]   @relation("ProjectInitialFrame")
+  coveredProjects Project[]   @relation("ProjectCover")
+  startScenes     Scene[]     @relation("SceneStartFrame")
+  videoScenes     Scene[]     @relation("SceneVideo")
+  endScenes       Scene[]     @relation("SceneEndFrame")
 
   @@index([userId, projectId, type])
   @@index([projectId, type, createdAt])
@@ -253,9 +244,7 @@ model GenerationJob {
   providerRequestId    String?
   type                 JobType
   status               JobStatus      @default(QUEUED)
-  inputJson            Json
-  outputJson           Json?
-  errorJson            Json?
+  input                Json
   estimatedCredits     Int            @default(0)
   actualCredits        Int?
   durationMs           Int?
@@ -311,13 +300,6 @@ model CreditLedger {
   @@index([userId, type, createdAt])
 }
 
-model BillingSettings {
-  id            String   @id
-  creditsPerUsd Int      @default(100)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
 model Payment {
   id                      String        @id @default(cuid())
   userId                  String
@@ -344,9 +326,9 @@ model ExportJob {
   status          JobStatus @default(QUEUED)
   format          String
   resolution      String
-  storageKey      String?
+  r2Key           String?
   durationSeconds Int?
-  errorJson       Json?
+  errorMessage    String?
   createdAt       DateTime  @default(now())
   completedAt     DateTime?
   project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)

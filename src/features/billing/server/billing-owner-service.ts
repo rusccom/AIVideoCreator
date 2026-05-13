@@ -1,6 +1,6 @@
 import { PaymentStatus } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
-import { getBillingSettings } from "./billing-settings-service";
+import { getBillingConfig } from "./billing-config-service";
 
 export type OwnerBillingMetric = {
   label: string;
@@ -9,7 +9,7 @@ export type OwnerBillingMetric = {
 
 export async function getOwnerBillingOverview() {
   const [settings, totals] = await Promise.all([
-    getBillingSettings(),
+    getBillingConfig(),
     getPaymentTotals()
   ]);
   return { settings, metrics: ownerBillingMetrics(settings.creditsPerUsd, totals) };

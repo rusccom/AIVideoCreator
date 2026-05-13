@@ -6,7 +6,7 @@ export const createSceneSchema = z.object({
   durationSeconds: z.number().int().min(1).max(60).optional(),
   startFrameAssetId: z.string().optional(),
   parentSceneId: z.string().optional(),
-  branchId: z.string().optional()
+  branchEntityId: z.string().optional()
 });
 
 export const updateSceneSchema = z.object({

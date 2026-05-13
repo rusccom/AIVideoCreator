@@ -50,8 +50,8 @@ function toPhotoAsset(asset: PhotoAssetRecord) {
 }
 
 function assetUrl(asset: PhotoAssetRecord) {
-  if (asset.storageProvider !== "r2" && !asset.storageKey.startsWith("http")) return null;
-  return `/api/assets/${asset.id}/signed-url`;
+  if (asset.origin === "PENDING") return null;
+  return asset.r2Key || asset.externalUrl ? `/api/assets/${asset.id}/signed-url` : null;
 }
 
 function assertImageFile(file: File) {

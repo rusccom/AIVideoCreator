@@ -74,7 +74,7 @@ async function createImageJob(
       provider: "fal",
       modelId,
       type: "IMAGE_GENERATION",
-      inputJson: asJson(input)
+      input: asJson(input)
     }
   });
 }
@@ -95,7 +95,7 @@ async function markJobReady(jobId: string, projectId: string, assets: Asset[]) {
     await recordProjectEvent(tx, projectId, "images.ready", output);
     return tx.generationJob.update({
       where: { id: jobId },
-      data: { status: "READY", outputJson: asJson(output), completedAt: new Date() }
+      data: { status: "READY", completedAt: new Date() }
     });
   });
 }
@@ -108,7 +108,7 @@ async function markJobFailed(jobId: string, error: unknown, projectId?: string) 
     if (projectId) await recordProjectEvent(tx, projectId, "images.failed", { jobId });
     return tx.generationJob.update({
       where: { id: jobId },
-      data: { status: "FAILED", errorJson: asJson(payload), completedAt: new Date() }
+      data: { status: "FAILED", completedAt: new Date() }
     });
   });
 }

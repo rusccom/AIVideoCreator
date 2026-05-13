@@ -16,7 +16,6 @@ async function jobSummary(jobId: string) {
     where: { id: jobId },
     select: {
       id: true,
-      outputJson: true,
       result: { select: { assets: true } },
       sceneId: true,
       status: true,
@@ -25,14 +24,13 @@ async function jobSummary(jobId: string) {
   });
   return {
     ...job,
-    assets: generatedAssets(job.result?.assets ?? job.outputJson),
-    outputJson: undefined,
+    assets: generatedAssets(job.result?.assets),
     result: undefined
   };
 }
 
 function generatedAssets(value: unknown) {
-  const assets = record(value).assets;
+  const assets = Array.isArray(value) ? value : record(value).assets;
   return Array.isArray(assets) ? assets.filter(isGeneratedAsset) : [];
 }
 

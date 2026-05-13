@@ -3,7 +3,7 @@ import type Stripe from "stripe";
 import { incrementUserCredits } from "@/shared/server/counters";
 import { prisma } from "@/shared/server/prisma";
 import { topUpPackages, type TopUpPackage } from "../data/top-up-packages";
-import { calculateCredits, getBillingSettings } from "./billing-settings-service";
+import { calculateCredits, getBillingConfig } from "./billing-config-service";
 
 export type BillingTopUpOption = TopUpPackage & {
   credits: number;
@@ -21,7 +21,7 @@ export type PaymentHistoryItem = {
 
 export async function getBillingOverview(userId: string) {
   const [settings, balance, payments] = await Promise.all([
-    getBillingSettings(),
+    getBillingConfig(),
     getCreditBalance(userId),
     listPaymentHistory(userId)
   ]);

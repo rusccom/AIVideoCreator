@@ -4,6 +4,7 @@ import { recordOutboxEvent } from "@/shared/server/outbox";
 import { publishPendingOutboxEvents } from "@/shared/server/outbox-publisher";
 import { prisma } from "@/shared/server/prisma";
 import { touchProjectInTransaction } from "@/features/projects/server/project-touch-service";
+import { incrementBranchReadyScenes } from "./scene-branch-counters";
 import type { CreateSceneInput, PickFrameInput, UpdateSceneInput } from "./scene-schema";
 
 const ORDER_OFFSET = 1000000;
@@ -53,12 +54,13 @@ async function updateSceneInTransaction(
 
 async function applyReadyCountDelta(
   tx: Prisma.TransactionClient,
-  previous: { status: string; projectId: string },
-  next: { status: string; projectId: string }
+  previous: { branchEntityId: string | null; status: string; projectId: string },
+  next: { branchEntityId: string | null; status: string; projectId: string }
 ) {
   const delta = readyDelta(previous.status, next.status);
   if (delta === 0) return;
   await incrementProjectReadyScenes(tx, next.projectId, delta);
+  if (next.branchEntityId) await incrementBranchReadyScenes(tx, next.branchEntityId, delta);
 }
 
 function readyDelta(previous: string, next: string) {
@@ -105,7 +107,7 @@ export async function createNextScene(previousSceneId: string, prompt: string) {
     modelId: previous.modelId,
     startFrameAssetId: previous.endFrameAssetId ?? undefined,
     parentSceneId: previous.id,
-    branchId: previous.branchId ?? undefined
+    branchEntityId: previous.branchEntityId ?? undefined
   });
 }
 
@@ -120,7 +122,7 @@ export async function pickFrame(sceneId: string, input: PickFrameInput) {
       modelId: "ffmpeg-frame-pick",
       type: "FRAME_EXTRACT",
       status: "QUEUED",
-      inputJson: input
+      input
     }
   });
 }
@@ -151,7 +153,7 @@ function sceneCreateData(projectId: string, orderIndex: number, input: CreateSce
     modelId: input.modelId,
     startFrameAssetId: input.startFrameAssetId,
     parentSceneId: input.parentSceneId,
-    branchId: input.branchId
+    branchEntityId: input.branchEntityId
   };
 }
 
@@ -171,7 +173,7 @@ async function nextTimelineIndex(tx: Prisma.TransactionClient, projectId: string
 async function sceneForUpdate(tx: Prisma.TransactionClient, sceneId: string) {
   return tx.scene.findUniqueOrThrow({
     where: { id: sceneId },
-    select: { status: true, projectId: true, orderIndex: true }
+    select: { branchEntityId: true, status: true, projectId: true, orderIndex: true }
   });
 }
 

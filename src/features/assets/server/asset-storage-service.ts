@@ -45,7 +45,6 @@ export type RemoteStoredAsset = {
   projectId?: string | null;
   r2Key?: string | null;
   sizeBytes?: number | null;
-  storageKey: string;
   type: AssetType;
   userId: string;
 };
@@ -53,42 +52,38 @@ export type RemoteStoredAsset = {
 export async function createAssetFromLocalFile(input: LocalAssetInput) {
   const assetId = randomUUID();
   const sizeBytes = await fileSize(input.localPath);
-  const storageKey = buildLocalStorageKey(input, assetId);
-  await r2Storage.uploadLocalFile({ key: storageKey, mimeType: input.mimeType, path: input.localPath, sizeBytes });
-  return createStoredAsset(input, assetId, storageKey, input.mimeType, sizeBytes);
+  const r2Key = buildLocalStorageKey(input, assetId);
+  await r2Storage.uploadLocalFile({ key: r2Key, mimeType: input.mimeType, path: input.localPath, sizeBytes });
+  return createStoredAsset(input, assetId, r2Key, input.mimeType, sizeBytes);
 }
 
 export async function createAssetFromBuffer(input: BufferAssetInput) {
   const assetId = randomUUID();
-  const storageKey = buildLocalStorageKey(input, assetId);
-  await r2Storage.uploadBuffer({ buffer: input.buffer, key: storageKey, mimeType: input.mimeType });
-  return createStoredAsset(input, assetId, storageKey, input.mimeType, input.buffer.byteLength);
+  const r2Key = buildLocalStorageKey(input, assetId);
+  await r2Storage.uploadBuffer({ buffer: input.buffer, key: r2Key, mimeType: input.mimeType });
+  return createStoredAsset(input, assetId, r2Key, input.mimeType, input.buffer.byteLength);
 }
 
 export async function createAssetFromRemoteUrl(input: RemoteAssetInput) {
   const assetId = randomUUID();
-  const storageKey = buildLocalStorageKey(input, assetId);
-  const upload = await r2Storage.uploadRemoteUrl({ key: storageKey, mimeType: input.mimeType, url: input.remoteUrl });
-  return createStoredAsset(input, assetId, storageKey, upload.mimeType, input.sizeBytes ?? upload.sizeBytes);
+  const r2Key = buildLocalStorageKey(input, assetId);
+  const upload = await r2Storage.uploadRemoteUrl({ key: r2Key, mimeType: input.mimeType, url: input.remoteUrl });
+  return createStoredAsset(input, assetId, r2Key, upload.mimeType, input.sizeBytes ?? upload.sizeBytes);
 }
 
 export async function moveRemoteAssetToR2(asset: RemoteStoredAsset) {
   if (asset.origin === "R2") return asset;
-  const remoteUrl = asset.externalUrl ?? remoteStorageUrl(asset);
+  const remoteUrl = asset.externalUrl;
   if (!remoteUrl) throw new Error("Asset has no remote URL");
-  const storageKey = buildLocalStorageKey(asset, asset.id);
-  const upload = await r2Storage.uploadRemoteUrl({ key: storageKey, mimeType: asset.mimeType, url: remoteUrl });
-  return markAssetStored(asset.id, storageKey, upload.mimeType, asset.sizeBytes ?? upload.sizeBytes);
-}
-
-function remoteStorageUrl(asset: RemoteStoredAsset) {
-  return asset.storageKey.startsWith("http") ? asset.storageKey : null;
+  const r2Key = buildLocalStorageKey(asset, asset.id);
+  const upload = await r2Storage.uploadRemoteUrl({ key: r2Key, mimeType: asset.mimeType, url: remoteUrl });
+  return markAssetStored(asset.id, r2Key, upload.mimeType, asset.sizeBytes ?? upload.sizeBytes);
 }
 
 async function createStoredAsset(
   input: AssetFileInput,
   assetId: string,
-  storageKey: string,
+  r2Key: string,
   mimeType: string,
   sizeBytes?: number | null
 ) {
@@ -102,10 +97,7 @@ async function createStoredAsset(
         type: input.type,
         source: input.source,
         origin: "R2",
-        r2Key: storageKey,
-        storageProvider: "r2",
-        storageBucket: r2Storage.bucketName(),
-        storageKey,
+        r2Key,
         mimeType,
         sizeBytes,
         metadataJson: input.metadata ?? Prisma.JsonNull
@@ -121,13 +113,13 @@ async function createStoredAsset(
   });
 }
 
-function markAssetStored(assetId: string, storageKey: string, mimeType: string, sizeBytes?: number | null) {
+function markAssetStored(assetId: string, r2Key: string, mimeType: string, sizeBytes?: number | null) {
   return prisma.$transaction(async (tx) => {
     const previous = await tx.asset.findUniqueOrThrow({ where: { id: assetId }, select: { sizeBytes: true, userId: true } });
     const nextSize = sizeBytes ?? previous.sizeBytes;
     const asset = await tx.asset.update({
       where: { id: assetId },
-      data: storedAssetData(storageKey, mimeType, nextSize)
+      data: storedAssetData(r2Key, mimeType, nextSize)
     });
     const delta = (nextSize ?? 0) - (previous.sizeBytes ?? 0);
     if (delta !== 0) {
@@ -137,14 +129,11 @@ function markAssetStored(assetId: string, storageKey: string, mimeType: string, 
   });
 }
 
-function storedAssetData(storageKey: string, mimeType: string, sizeBytes?: number | null) {
+function storedAssetData(r2Key: string, mimeType: string, sizeBytes?: number | null) {
   return {
     origin: "R2" as const,
-    r2Key: storageKey,
+    r2Key,
     externalUrl: null,
-    storageProvider: "r2",
-    storageBucket: r2Storage.bucketName(),
-    storageKey,
     mimeType,
     sizeBytes
   };

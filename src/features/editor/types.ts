@@ -8,7 +8,6 @@ export type EditorScene = {
   model: string;
   modelId: string;
   prompt: string;
-  aiPrompt: string;
   startFrameAssetId?: string | null;
   generationJobId?: string | null;
   startFrameUrl?: string | null;
