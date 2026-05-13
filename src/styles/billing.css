@@ -117,3 +117,15 @@
     flex-direction: column;
   }
 }
+
+@media (max-width: 520px) {
+  .billing-balance,
+  .billing-top-up-card {
+    padding: 14px;
+  }
+
+  .billing-top-up-card .button,
+  .billing-owner-form .button {
+    width: 100%;
+  }
+}

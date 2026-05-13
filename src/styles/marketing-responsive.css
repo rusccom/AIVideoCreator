@@ -1,0 +1,135 @@
+@media (max-width: 980px) {
+  .marketing-nav-inner {
+    gap: 16px;
+  }
+
+  .hero {
+    min-height: auto;
+    padding: 34px 0 56px;
+  }
+
+  .hero-grid,
+  .feature-grid,
+  .process-grid,
+  .pricing-grid,
+  .use-case-grid,
+  .faq-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-grid {
+    gap: 28px;
+  }
+
+  .continuity-mockup {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .marketing-nav-inner {
+    min-height: 62px;
+  }
+
+  .marketing-shell .brand-mark {
+    max-width: 100%;
+  }
+
+  .marketing-shell .brand-mark span:last-child {
+    max-width: calc(100vw - 92px);
+  }
+
+  .marketing-links {
+    display: none;
+  }
+
+  .hero {
+    padding: 30px 0 48px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.35rem, 13vw, 4rem);
+    line-height: 1;
+  }
+
+  .hero-copy,
+  .section-copy {
+    font-size: 1rem;
+    line-height: 1.62;
+  }
+
+  .hero-actions .button {
+    width: 100%;
+  }
+
+  .continuity-mockup {
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+  }
+
+  .mockup-topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px;
+  }
+
+  .mockup-stage {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .mock-link {
+    display: none;
+  }
+
+  .mock-shot {
+    min-height: 128px;
+  }
+
+  .mock-shot.video {
+    min-height: 170px;
+  }
+
+  .mock-timeline {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0 14px 14px;
+  }
+
+  .feature-card,
+  .pricing-card,
+  .use-case-card,
+  .faq-card {
+    padding: 16px;
+  }
+
+  .use-case-media {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .marketing-footer-inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 460px) {
+  .hero {
+    padding-top: 24px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.1rem, 12vw, 3rem);
+  }
+
+  .mock-timeline,
+  .use-case-media {
+    grid-template-columns: 1fr;
+  }
+
+  .audience-pill {
+    width: 100%;
+    text-align: center;
+  }
+}

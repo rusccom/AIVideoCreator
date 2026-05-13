@@ -11,7 +11,7 @@
 
 .project-modal {
   width: min(1160px, 100%);
-  max-height: min(760px, calc(100vh - 48px));
+  max-height: min(760px, calc(100dvh - 48px));
   overflow: auto;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
@@ -28,6 +28,10 @@
   border-bottom: 1px solid var(--line);
   padding-bottom: 16px;
   margin-bottom: 18px;
+}
+
+.project-modal-header > div {
+  min-width: 0;
 }
 
 .project-modal-header h2 {
@@ -54,16 +58,24 @@
 
 @media (max-width: 760px) {
   .project-modal-backdrop {
+    align-items: start;
+    overflow: auto;
     padding: 12px;
   }
 
   .project-modal {
-    max-height: calc(100vh - 24px);
+    width: 100%;
+    max-height: calc(100dvh - 24px);
     padding: 16px;
   }
 
   .project-modal-header {
-    align-items: stretch;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .project-modal-close {
+    align-self: start;
   }
 }

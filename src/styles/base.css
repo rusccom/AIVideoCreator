@@ -24,6 +24,8 @@
 }
 
 html {
+  max-width: 100%;
+  overflow-x: hidden;
   scroll-behavior: smooth;
 }
 
@@ -33,6 +35,7 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 a {
@@ -45,6 +48,8 @@ input,
 select,
 textarea {
   font: inherit;
+  max-width: 100%;
+  min-width: 0;
 }
 
 button {
@@ -99,6 +104,32 @@ video {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.brand-symbol {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(34, 211, 238, 0.9), rgba(139, 92, 246, 0.86)),
+    #0e171f;
+  box-shadow: 0 12px 34px rgba(34, 211, 238, 0.18);
+}
+
+.brand-mark span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .button {
@@ -180,5 +211,15 @@ video {
 
   .container {
     width: min(100% - 24px, 1180px);
+  }
+
+  .button-row {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .button {
+    min-height: 44px;
   }
 }

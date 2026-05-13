@@ -109,4 +109,14 @@
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .owner-users-details summary {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .owner-users-details summary strong {
+    margin-left: 0;
+  }
 }

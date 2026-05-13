@@ -217,6 +217,10 @@
     justify-content: flex-start;
   }
 
+  .ai-model-actions .button {
+    width: 100%;
+  }
+
   .ai-model-info-grid,
   .ai-model-edit-grid,
   .model-form-grid {

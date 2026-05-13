@@ -122,3 +122,23 @@
   color: #fecaca;
   background: rgba(127, 29, 29, 0.38);
 }
+
+@media (max-width: 480px) {
+  .project-delete-dialog {
+    padding: 18px;
+  }
+
+  .project-delete-actions {
+    display: grid;
+  }
+
+  .project-delete-actions .button {
+    width: 100%;
+  }
+
+  .project-card-error {
+    left: 0;
+    bottom: -24px;
+    width: min(260px, calc(100vw - 48px));
+  }
+}

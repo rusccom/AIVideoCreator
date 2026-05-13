@@ -6,7 +6,16 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/app/", "/api/", "/admin/", "/owner/"]
+        disallow: [
+          "/admin/",
+          "/api/",
+          "/app/",
+          "/login",
+          "/owner/",
+          "/privacy",
+          "/register",
+          "/terms"
+        ]
       }
     ],
     sitemap: "https://aivideocreator.app/sitemap.xml",

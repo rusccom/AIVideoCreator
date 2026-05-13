@@ -175,3 +175,92 @@
   opacity: 0;
   pointer-events: none;
 }
+
+@media (hover: none) {
+  .preview-playback-overlay {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (max-width: 900px) {
+  .editor-shell {
+    grid-template-rows: auto auto auto auto;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+    padding: 0 10px 10px;
+  }
+
+  .editor-message,
+  .editor-workspace,
+  .timeline-panel {
+    grid-row: auto;
+  }
+
+  .editor-workspace {
+    gap: 10px;
+  }
+
+  .editor-workspace > .editor-panel:not(.preview-panel) {
+    max-height: min(40dvh, 360px);
+    min-height: 210px;
+  }
+
+  .preview-panel,
+  .preview-player-body {
+    min-height: min(58dvh, 520px);
+  }
+
+  .preview-stage {
+    min-height: 240px;
+  }
+
+  .scene-list,
+  .asset-list,
+  .photo-panel-body {
+    max-height: min(32dvh, 300px);
+  }
+}
+
+@media (max-width: 680px) {
+  .editor-shell {
+    gap: 8px;
+    padding: 0 8px 8px;
+  }
+
+  .editor-header {
+    margin: 0 -8px;
+    padding: 8px;
+  }
+
+  .editor-header .button,
+  .editor-account-actions .button {
+    width: 100%;
+  }
+
+  .editor-workspace > .editor-panel:not(.preview-panel) {
+    max-height: min(46dvh, 340px);
+  }
+
+  .preview-panel,
+  .preview-player-body {
+    min-height: min(52dvh, 420px);
+  }
+
+  .preview-stage {
+    min-height: 220px;
+  }
+
+  .timeline-panel .editor-panel-header,
+  .timeline-header-actions,
+  .timeline-zoom-controls {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .timeline-track {
+    height: 112px;
+  }
+}

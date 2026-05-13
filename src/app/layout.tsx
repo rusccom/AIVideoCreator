@@ -16,6 +16,10 @@ export const metadata: Metadata = {
     email: false,
     address: false,
     telephone: false
+  },
+  robots: {
+    index: false,
+    follow: false
   }
 };
 

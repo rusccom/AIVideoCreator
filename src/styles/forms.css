@@ -88,3 +88,22 @@
 .form-note a {
   color: var(--cyan);
 }
+
+@media (max-width: 480px) {
+  .auth-shell {
+    align-items: start;
+    padding: 18px 12px;
+  }
+
+  .auth-card {
+    padding: 20px;
+  }
+
+  .auth-card h1 {
+    font-size: 1.55rem;
+  }
+
+  .auth-form .button {
+    width: 100%;
+  }
+}
