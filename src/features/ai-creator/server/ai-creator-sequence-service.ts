@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import type { SceneStatus } from "@prisma/client";
 import { generateVideo } from "@/features/generation/server/generation-service";
 import type { GenerateVideoInput } from "@/features/generation/server/generation-schema";
-import { refreshGenerationJobForUser } from "@/features/generation/server/job-service";
 import { getModel } from "@/features/generation/server/model-registry";
 import { prisma } from "@/shared/server/prisma";
 
@@ -16,7 +15,6 @@ export async function getAiCreatorSequenceStatus(userId: string, sequenceId: str
   const scenes = await sequenceScenes(userId, sequenceId);
   if (!scenes.length) return emptySequenceStatus(sequenceId, 0);
   const total = scenes.length;
-  await refreshSequenceJobs(userId, scenes);
   if (!await hasSequenceScenes(userId, sequenceId)) return emptySequenceStatus(sequenceId, total);
   await advanceSequence(userId, sequenceId);
   const finalScenes = await sequenceScenes(userId, sequenceId);
@@ -65,15 +63,6 @@ async function sequenceScenes(userId: string, sequenceId: string) {
 async function hasSequenceScenes(userId: string, sequenceId: string) {
   const count = await prisma.scene.count({ where: { branchId: sequenceId, project: { userId } } });
   return count > 0;
-}
-
-async function refreshSequenceJobs(userId: string, scenes: SequenceScene[]) {
-  await Promise.all(scenes.map((scene) => refreshSequenceJob(userId, scene)));
-}
-
-async function refreshSequenceJob(userId: string, scene: SequenceScene) {
-  if (!scene.generationJobId || scene.status !== "GENERATING") return;
-  await refreshGenerationJobForUser(userId, scene.generationJobId);
 }
 
 async function advanceSequence(userId: string, sequenceId: string) {

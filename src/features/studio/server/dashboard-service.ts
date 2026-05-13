@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/shared/server/prisma";
 
 export type StudioProject = {
@@ -25,11 +26,19 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   };
 }
 
-export async function getTopbarData(userId: string) {
+export const getTopbarData = cache(async (userId: string) => {
   return {
     credits: await getCreditBalance(userId)
   };
-}
+});
+
+const getCreditBalance = cache(async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { creditBalance: true }
+  });
+  return user?.creditBalance ?? 0;
+});
 
 function dashboardQuery(userId: string) {
   return prisma.$transaction([
@@ -53,14 +62,6 @@ function getProjects(userId: string) {
       totalDurationSeconds: true
     }
   });
-}
-
-async function getCreditBalance(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { creditBalance: true }
-  });
-  return user?.creditBalance ?? 0;
 }
 
 function getUserCounters(userId: string) {

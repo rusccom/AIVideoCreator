@@ -14,8 +14,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const { projectId } = await params;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const topbar = await getTopbarData(user.id);
-  const project = await getEditorProject(user.id, projectId);
+  const [topbar, project] = await Promise.all([
+    getTopbarData(user.id),
+    getEditorProject(user.id, projectId)
+  ]);
 
   if (!project) redirect("/app/projects");
 

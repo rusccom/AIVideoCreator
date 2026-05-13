@@ -43,7 +43,7 @@ async function listModels<T>(type: string, mapper: ModelMapper<T>) {
 
 function toEditorScene(
   scene: Awaited<ReturnType<typeof getSceneType>>,
-  assets: Map<string, Awaited<ReturnType<typeof getAssetType>>>
+  assets: Map<string, ResolvedAssetRecord>
 ) {
   return {
     id: scene.id,
@@ -66,7 +66,7 @@ function toEditorScene(
   } satisfies EditorScene;
 }
 
-function toEditorAsset(asset: Awaited<ReturnType<typeof getAssetType>>) {
+function toEditorAsset(asset: ResolvedAssetRecord) {
   return {
     id: asset.id,
     label: `${asset.type.toLowerCase()} - ${asset.source.toLowerCase()}`,
@@ -77,7 +77,7 @@ function toEditorAsset(asset: Awaited<ReturnType<typeof getAssetType>>) {
 
 function toTimelineItem(
   item: Awaited<ReturnType<typeof getTimelineItemType>>,
-  assets: Map<string, Awaited<ReturnType<typeof getAssetType>>>
+  assets: Map<string, ResolvedAssetRecord>
 ) {
   return {
     id: item.id,
@@ -120,10 +120,8 @@ function toImageModel(model: Awaited<ReturnType<typeof prisma.aiModel.findMany>>
   } satisfies EditorImageModel;
 }
 
-function assetUrl(asset?: Awaited<ReturnType<typeof getAssetType>>) {
-  if (!asset) return null;
-  if (asset.storageProvider !== "r2" && !asset.storageKey.startsWith("http")) return null;
-  return `/api/assets/${asset.id}/signed-url`;
+function assetUrl(asset?: ResolvedAssetRecord) {
+  return asset?.resolvedUrl ?? null;
 }
 
 function titleCase(value: string) {
@@ -161,3 +159,4 @@ function isModel<T>(model: T | null): model is T {
 }
 
 type ModelMapper<T> = (model: Awaited<ReturnType<typeof prisma.aiModel.findMany>>[number]) => T | null;
+type ResolvedAssetRecord = Awaited<ReturnType<typeof getAssetType>> & { resolvedUrl?: string | null };
