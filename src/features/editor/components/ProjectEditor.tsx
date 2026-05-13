@@ -50,7 +50,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   const lastTimelineItemId = timeline.items[timeline.items.length - 1]?.id;
   const continueTarget = { sceneId: lastSceneId, timelineItemId: lastTimelineItemId };
   const closeMenu = useCallback(() => setMenu(null), []);
-  useGenerationPolling(selectedScene, router);
+  useProjectRealtime(project.id, router);
   useMenuListeners(menu, closeMenu);
 
   function openSceneMenu(scene: EditorScene, event: MouseEvent) {
@@ -160,24 +160,22 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   );
 }
 
-function useGenerationPolling(scene: EditorScene | undefined, router: ReturnType<typeof useRouter>) {
+function useProjectRealtime(projectId: string, router: ReturnType<typeof useRouter>) {
   useEffect(() => {
-    const jobId = scene?.generationJobId;
-    if (!jobId || scene?.statusValue !== "GENERATING") return;
-    const timer = window.setInterval(() => pollJob(jobId, router), 5000);
-    return () => window.clearInterval(timer);
-  }, [router, scene]);
+    const source = new EventSource(`/api/projects/${projectId}/events`);
+    const refresh = () => router.refresh();
+    projectEventTypes().forEach((type) => source.addEventListener(type, refresh));
+    source.onerror = () => undefined;
+    return () => source.close();
+  }, [projectId, router]);
 }
 
 function sceneGenerationActive(scene: EditorScene | undefined) {
   return scene?.statusValue === "GENERATING";
 }
 
-async function pollJob(jobId: string, router: ReturnType<typeof useRouter>) {
-  const response = await fetch(`/api/jobs/${jobId}`);
-  if (!response.ok) return;
-  const data = await response.json();
-  if (data.status === "READY" || data.status === "FAILED") router.refresh();
+function projectEventTypes() {
+  return ["scene.created", "scene.updated", "scene.deleted", "scene.ready", "scene.failed", "images.ready", "images.failed"];
 }
 
 function useMenuListeners(menu: EditorMenuState | null, close: () => void) {

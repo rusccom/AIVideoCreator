@@ -20,7 +20,7 @@ type AiCreatorButtonProps = {
 };
 
 export function AiCreatorButton(props: AiCreatorButtonProps) {
-  const launcher = useAiCreatorLauncher(props.projectAspectRatio);
+  const launcher = useAiCreatorLauncher(props.projectAspectRatio, props.projectId);
   return (
     <>
       <button className="button button-primary" onClick={() => launcher.setOpen(true)} type="button">
@@ -32,7 +32,7 @@ export function AiCreatorButton(props: AiCreatorButtonProps) {
   );
 }
 
-function useAiCreatorLauncher(projectAspectRatio?: string) {
+function useAiCreatorLauncher(projectAspectRatio?: string, projectId?: string) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
@@ -44,8 +44,8 @@ function useAiCreatorLauncher(projectAspectRatio?: string) {
   }, [router]);
   const startProgress = useCallback((video: StartedCreatorVideo) => {
     setOpen(false);
-    setProgressTarget(progressTargetFromVideo(video));
-  }, []);
+    setProgressTarget(progressTargetFromVideo(video, projectId));
+  }, [projectId]);
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -55,6 +55,7 @@ function useAiCreatorLauncher(projectAspectRatio?: string) {
 type AiCreatorLauncher = ReturnType<typeof useAiCreatorLauncher>;
 type ProgressTarget = {
   jobId: string;
+  projectId?: string;
   sequenceId?: string;
   total: number;
 };
@@ -80,9 +81,10 @@ function progressPortal(launcher: AiCreatorLauncher) {
   );
 }
 
-function progressTargetFromVideo(video: StartedCreatorVideo) {
+function progressTargetFromVideo(video: StartedCreatorVideo, projectId?: string) {
   return {
     jobId: video.job.id,
+    projectId,
     sequenceId: video.sequence?.id,
     total: video.sequence?.total ?? 1
   };

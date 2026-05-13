@@ -13,6 +13,7 @@ export type SceneCreateTarget = {
 
 export type SceneProgressTarget = {
   jobId: string;
+  projectId: string;
   sequenceId?: string;
   total: number;
 };
@@ -28,7 +29,7 @@ export function useSceneCreator(project: EditorProject) {
     openBlank: () => setTarget({ prompt: project.title }),
     openContinue: (scene: EditorScene) => openContinue(setTarget, scene),
     openFromPhoto: (assetId: string) => setTarget({ assetId, prompt: project.title }),
-    onStarted: (video: StartedCreatorVideo) => onStarted(setTarget, setProgressTarget, router, video),
+    onStarted: (video: StartedCreatorVideo) => onStarted(setTarget, setProgressTarget, router, project.id, video),
     progressTarget,
     target
   };
@@ -43,10 +44,11 @@ function onStarted(
   setTarget: SetTarget,
   setProgressTarget: SetProgressTarget,
   router: ReturnType<typeof useRouter>,
+  projectId: string,
   video: StartedCreatorVideo
 ) {
   setTarget(null);
-  setProgressTarget(progressTargetFromVideo(video));
+  setProgressTarget(progressTargetFromVideo(video, projectId));
   router.refresh();
 }
 
@@ -55,9 +57,10 @@ function finishProgress(setProgressTarget: SetProgressTarget, router: ReturnType
   router.refresh();
 }
 
-function progressTargetFromVideo(video: StartedCreatorVideo): SceneProgressTarget {
+function progressTargetFromVideo(video: StartedCreatorVideo, projectId: string): SceneProgressTarget {
   return {
     jobId: video.job.id,
+    projectId,
     sequenceId: video.sequence?.id,
     total: video.sequence?.total ?? 1
   };

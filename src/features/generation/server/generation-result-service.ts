@@ -5,6 +5,7 @@ import { completeProjectImageGeneration } from "@/features/image-generation/serv
 import { touchProjectInTransaction } from "@/features/projects/server/project-touch-service";
 import { incrementProjectReadyScenes, incrementProjectTimelineItems } from "@/shared/server/counters";
 import { recordOutboxEvent } from "@/shared/server/outbox";
+import { publishPendingOutboxEvents } from "@/shared/server/outbox-publisher";
 import { prisma } from "@/shared/server/prisma";
 import { commitCredits, refundCredits } from "./credit-service";
 import { providerErrorPayload } from "./provider-error";
@@ -13,8 +14,11 @@ export async function completeGenerationJob(jobId: string, data: unknown) {
   const claim = await claimGenerationCompletion(jobId);
   const job = claim.job;
   if (!claim.ready) return job;
-  if (job.type === "IMAGE_GENERATION") return completeProjectImageGeneration(job, data);
-  return completeVideoGenerationJob(job, data);
+  const result = job.type === "IMAGE_GENERATION"
+    ? await completeProjectImageGeneration(job, data)
+    : await completeVideoGenerationJob(job, data);
+  await publishPendingOutboxEvents();
+  return result;
 }
 
 export async function failGenerationJob(jobId: string, payload: unknown, reason: string) {
@@ -22,7 +26,9 @@ export async function failGenerationJob(jobId: string, payload: unknown, reason:
   await refundCredits(jobId, reason);
   await markSceneFailed(job.sceneId);
   await cleanupFailedAiCreatorSequence(job.sceneId);
-  return markJobFailed(jobId, payload);
+  const result = await markJobFailed(jobId, payload);
+  await publishPendingOutboxEvents();
+  return result;
 }
 
 async function createVideoAsset(job: JobRecord, data: unknown) {

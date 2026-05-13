@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { incrementProjectReadyScenes, incrementProjectScenes, incrementProjectTimelineItems } from "@/shared/server/counters";
 import { recordOutboxEvent } from "@/shared/server/outbox";
+import { publishPendingOutboxEvents } from "@/shared/server/outbox-publisher";
 import { prisma } from "@/shared/server/prisma";
 import { touchProjectInTransaction } from "@/features/projects/server/project-touch-service";
 import type { CreateSceneInput, PickFrameInput, UpdateSceneInput } from "./scene-schema";
@@ -9,7 +10,7 @@ const ORDER_OFFSET = 1000000;
 
 export async function createScene(projectId: string, input: CreateSceneInput) {
   const orderIndex = await nextSceneIndex(projectId);
-  return prisma.$transaction(async (tx) => {
+  const scene = await prisma.$transaction(async (tx) => {
     const scene = await tx.scene.create({ data: sceneCreateData(projectId, orderIndex, input) });
     const timeline = await tx.timelineItem.create({ data: await timelineCreateData(tx, scene) });
     await incrementProjectScenes(tx, projectId, 1);
@@ -18,6 +19,8 @@ export async function createScene(projectId: string, input: CreateSceneInput) {
     await touchProjectInTransaction(tx, projectId);
     return scene;
   });
+  await publishPendingOutboxEvents();
+  return scene;
 }
 
 export async function createSceneForUser(
@@ -30,7 +33,9 @@ export async function createSceneForUser(
 }
 
 export async function updateScene(sceneId: string, input: UpdateSceneInput) {
-  return prisma.$transaction((tx) => updateSceneInTransaction(tx, sceneId, input));
+  const scene = await prisma.$transaction((tx) => updateSceneInTransaction(tx, sceneId, input));
+  await publishPendingOutboxEvents();
+  return scene;
 }
 
 async function updateSceneInTransaction(
@@ -73,7 +78,7 @@ export async function updateSceneForUser(
 
 export async function deleteSceneForUser(userId: string, sceneId: string) {
   const scene = await sceneForDelete(userId, sceneId);
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const removedTimelines = await tx.timelineItem.findMany({
       where: { sceneId: scene.id },
       select: { durationSeconds: true, scene: { select: { durationSeconds: true } } }
@@ -89,6 +94,8 @@ export async function deleteSceneForUser(userId: string, sceneId: string) {
     await touchProjectInTransaction(tx, scene.projectId);
     return { id: scene.id };
   });
+  await publishPendingOutboxEvents();
+  return result;
 }
 
 export async function createNextScene(previousSceneId: string, prompt: string) {

@@ -10,6 +10,7 @@ import { AiCreatorPromptEditModal } from "./AiCreatorPromptEditModal";
 type AiCreatorProgressModalProps = {
   jobId: string;
   onDone: () => void;
+  projectId?: string;
   sequenceId?: string;
   total: number;
 };
@@ -28,6 +29,7 @@ type FailedScene = {
 
 type ProgressTarget = {
   jobId: string;
+  projectId?: string;
   sequenceId?: string;
   total: number;
 };
@@ -42,8 +44,6 @@ type ProgressStatus = {
   setState: Dispatch<SetStateAction<ProgressViewState>>;
   state: ProgressViewState;
 };
-
-const POLL_INTERVAL_MS = 4000;
 
 export function AiCreatorProgressModal(props: AiCreatorProgressModalProps) {
   const progressStatus = useProgressStatus(props);
@@ -81,33 +81,44 @@ export function AiCreatorProgressModal(props: AiCreatorProgressModalProps) {
 
 function useProgressStatus(props: AiCreatorProgressModalProps) {
   const [state, setState] = useState<ProgressViewState>(() => initialProgressView(props.total));
-  const [pollVersion, setPollVersion] = useState(0);
-  const restart = () => setPollVersion((version) => version + 1);
-  useEffect(() => runProgressPolling(props, setState), [props.jobId, props.onDone, props.sequenceId, props.total, pollVersion]);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const restart = () => setRefreshVersion((version) => version + 1);
+  useEffect(
+    () => runProgressSubscription(props, setState),
+    [props.jobId, props.onDone, props.projectId, props.sequenceId, props.total, refreshVersion]
+  );
   return { restart, setState, state };
 }
 
-function runProgressPolling(
+function runProgressSubscription(
   props: AiCreatorProgressModalProps,
   setState: Dispatch<SetStateAction<ProgressViewState>>
 ) {
   let active = true;
-  let timer: number | undefined;
+  let source: EventSource | undefined;
   const target = progressTarget(props);
   const refresh = async () => {
     setState(nextPulse);
     const progress = await safeFetchProgress(target);
     if (!active) return;
     setState((state) => applyProgress(state, progress));
-    if (progress?.status === "READY") return props.onDone();
-    if (progress && isStoppedStatus(progress.status)) return;
-    timer = window.setTimeout(refresh, POLL_INTERVAL_MS);
+    if (progress?.status === "READY") props.onDone();
+    if (progress?.status === "READY" || isStoppedProgress(progress)) source?.close();
   };
   void refresh();
+  source = subscribeProgressEvents(target, refresh);
   return () => {
     active = false;
-    if (timer) window.clearTimeout(timer);
+    source?.close();
   };
+}
+
+function subscribeProgressEvents(target: ProgressTarget, refresh: () => void) {
+  if (!target.projectId) return undefined;
+  const source = new EventSource(`/api/projects/${target.projectId}/events`);
+  progressEventTypes().forEach((type) => source.addEventListener(type, refresh));
+  source.onerror = () => undefined;
+  return source;
 }
 
 function applyProgress(state: ProgressViewState, progress: ProgressState | null) {
@@ -141,6 +152,14 @@ function normalizeSequenceProgress(progress: ProgressState, total: number) {
 
 function isStoppedStatus(status: string) {
   return status === "FAILED" || status === "CANCELED";
+}
+
+function isStoppedProgress(progress: ProgressState | null) {
+  return Boolean(progress && isStoppedStatus(progress.status));
+}
+
+function progressEventTypes() {
+  return ["scene.ready", "scene.failed", "images.ready", "images.failed"];
 }
 
 function progressActions(
@@ -182,7 +201,7 @@ function editModal(
 }
 
 function progressTarget(props: AiCreatorProgressModalProps) {
-  return { jobId: props.jobId, sequenceId: props.sequenceId, total: props.total };
+  return { jobId: props.jobId, projectId: props.projectId, sequenceId: props.sequenceId, total: props.total };
 }
 
 function progressText(progress: ProgressState) {

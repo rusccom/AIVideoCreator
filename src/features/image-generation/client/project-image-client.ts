@@ -16,7 +16,7 @@ export async function generateProjectImageAssets(
   request: ProjectImageGenerationRequest
 ) {
   const job = await startImageGeneration(projectId, request);
-  return waitForImageGeneration(job.id);
+  return waitForImageGeneration(projectId, job.id);
 }
 
 async function startImageGeneration(projectId: string, request: ProjectImageGenerationRequest) {
@@ -27,13 +27,15 @@ async function startImageGeneration(projectId: string, request: ProjectImageGene
   return { id: data.job.id };
 }
 
-async function waitForImageGeneration(jobId: string): Promise<GeneratedProjectImageAsset[]> {
-  while (true) {
-    const job = await refreshJob(jobId);
-    if (job.status === "READY") return job.assets;
-    if (job.status === "FAILED" || job.status === "CANCELED") throw new Error("Image generation failed.");
-    await sleep(1200);
-  }
+function waitForImageGeneration(projectId: string, jobId: string) {
+  return new Promise<GeneratedProjectImageAsset[]>((resolve, reject) => {
+    const source = new EventSource(`/api/projects/${projectId}/events`);
+    const check = () => void refreshImageJob(jobId, source, resolve, reject);
+    source.addEventListener("images.ready", check);
+    source.addEventListener("images.failed", check);
+    source.onerror = () => undefined;
+    check();
+  });
 }
 
 async function refreshJob(jobId: string) {
@@ -51,8 +53,26 @@ function requestOptions(request: ProjectImageGenerationRequest) {
   };
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+async function refreshImageJob(
+  jobId: string,
+  source: EventSource,
+  resolve: (assets: GeneratedProjectImageAsset[]) => void,
+  reject: (error: Error) => void
+) {
+  try {
+    const job = await refreshJob(jobId);
+    if (job.status === "READY") return finish(source, () => resolve(job.assets));
+    if (job.status === "FAILED" || job.status === "CANCELED") {
+      return finish(source, () => reject(new Error("Image generation failed.")));
+    }
+  } catch (error) {
+    finish(source, () => reject(error instanceof Error ? error : new Error("Image generation failed.")));
+  }
+}
+
+function finish(source: EventSource, callback: () => void) {
+  source.close();
+  callback();
 }
 
 type ImageGenerationJob = {

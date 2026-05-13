@@ -6,6 +6,7 @@ import { submitFalJob } from "@/features/generation/server/fal-client";
 import { providerErrorPayload } from "@/features/generation/server/provider-error";
 import { touchProject } from "@/features/projects/server/project-touch-service";
 import { recordOutboxEvent } from "@/shared/server/outbox";
+import { publishPendingOutboxEvents } from "@/shared/server/outbox-publisher";
 import { prisma } from "@/shared/server/prisma";
 import { recordImageModelUsage } from "./image-model-service";
 import type { GenerateProjectImageInput } from "./image-generation-schema";
@@ -22,7 +23,9 @@ export async function startProjectImageGeneration(
     const submitted = await submitFalJob({ ...falInput(model, input), webhookUrl: webhookUrl() });
     return setProviderRequest(job.id, submitted.request_id);
   } catch (error) {
-    return markJobFailed(job.id, error);
+    const failed = await markJobFailed(job.id, error, projectId);
+    await publishPendingOutboxEvents();
+    return failed;
   }
 }
 
@@ -33,11 +36,12 @@ export async function completeProjectImageGeneration(job: ImageGenerationJob, da
     if (images.length === 0) throw new Error("Image generation returned no images");
     const assets = await createImageAssets(job.userId, job.projectId!, images);
     await recordImageModelUsage(job.modelId, images.length);
-    const ready = await markJobReady(job.id, assets);
+    const ready = await markJobReady(job.id, job.projectId!, assets);
     await touchProject(job.projectId!).catch(() => undefined);
+    await publishPendingOutboxEvents();
     return ready;
   } catch (error) {
-    return markJobFailed(job.id, error);
+    return markJobFailed(job.id, error, job.projectId ?? undefined);
   }
 }
 
@@ -83,11 +87,12 @@ async function setProviderRequest(jobId: string, requestId: string) {
   });
 }
 
-async function markJobReady(jobId: string, assets: Asset[]) {
+async function markJobReady(jobId: string, projectId: string, assets: Asset[]) {
   const output = { assets: assets.map(toGeneratedAsset) };
   return prisma.$transaction(async (tx) => {
     await recordJobResult(tx, jobId, output);
     await recordJobEvent(tx, jobId, "job.completed");
+    await recordProjectEvent(tx, projectId, "images.ready", output);
     return tx.generationJob.update({
       where: { id: jobId },
       data: { status: "READY", outputJson: asJson(output), completedAt: new Date() }
@@ -95,16 +100,26 @@ async function markJobReady(jobId: string, assets: Asset[]) {
   });
 }
 
-async function markJobFailed(jobId: string, error: unknown) {
+async function markJobFailed(jobId: string, error: unknown, projectId?: string) {
   const payload = providerErrorPayload(error);
   return prisma.$transaction(async (tx) => {
     await recordJobError(tx, jobId, payload);
     await recordJobEvent(tx, jobId, "job.failed");
+    if (projectId) await recordProjectEvent(tx, projectId, "images.failed", { jobId });
     return tx.generationJob.update({
       where: { id: jobId },
       data: { status: "FAILED", errorJson: asJson(payload), completedAt: new Date() }
     });
   });
+}
+
+async function recordProjectEvent(
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  type: string,
+  payload: Prisma.InputJsonObject
+) {
+  await recordOutboxEvent(tx, { aggregateId: projectId, aggregateType: "project", type, payload });
 }
 
 function imageInput(input: GenerateProjectImageInput) {
