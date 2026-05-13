@@ -1,7 +1,7 @@
 "use client";
 
 import { useDraggable } from "@dnd-kit/core";
-import type { MouseEvent } from "react";
+import { memo, type MouseEvent } from "react";
 import type { EditorScene } from "../types";
 import { StatusBadge } from "./StatusBadge";
 
@@ -12,7 +12,7 @@ type SceneRailItemProps = {
   selected: boolean;
 };
 
-export function SceneRailItem(props: SceneRailItemProps) {
+export const SceneRailItem = memo(function SceneRailItem(props: SceneRailItemProps) {
   const drag = useDraggable({ id: `clip:${props.scene.id}`, data: dragData(props.scene.id) });
   return (
     <button
@@ -32,7 +32,7 @@ export function SceneRailItem(props: SceneRailItemProps) {
       </div>
     </button>
   );
-}
+});
 
 function dragData(sceneId: string) {
   return { sceneId, type: "clip" };

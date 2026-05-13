@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import type { MouseEvent } from "react";
+import { memo, type MouseEvent } from "react";
 import type { PhotoLibraryAsset } from "../types";
 import { PhotoLibraryImage } from "./PhotoLibraryImage";
 
@@ -12,7 +12,7 @@ type PhotoLibraryCardProps = {
   selected: boolean;
 };
 
-export function PhotoLibraryCard(props: PhotoLibraryCardProps) {
+export const PhotoLibraryCard = memo(function PhotoLibraryCard(props: PhotoLibraryCardProps) {
   return (
     <button
       aria-label={props.asset.label}
@@ -27,7 +27,7 @@ export function PhotoLibraryCard(props: PhotoLibraryCardProps) {
       {props.selected ? <Check className="photo-library-check" size={18} /> : null}
     </button>
   );
-}
+});
 
 function cardClass(selected: boolean) {
   return selected ? "photo-library-card selected" : "photo-library-card";
