@@ -1,4 +1,6 @@
 import { Prisma } from "@prisma/client";
+import { incrementProjectReadyScenes, incrementProjectScenes, incrementProjectTimelineItems } from "@/shared/server/counters";
+import { recordOutboxEvent } from "@/shared/server/outbox";
 import { prisma } from "@/shared/server/prisma";
 import { touchProjectInTransaction } from "@/features/projects/server/project-touch-service";
 import type { CreateSceneInput, PickFrameInput, UpdateSceneInput } from "./scene-schema";
@@ -9,7 +11,10 @@ export async function createScene(projectId: string, input: CreateSceneInput) {
   const orderIndex = await nextSceneIndex(projectId);
   return prisma.$transaction(async (tx) => {
     const scene = await tx.scene.create({ data: sceneCreateData(projectId, orderIndex, input) });
-    await tx.timelineItem.create({ data: await timelineCreateData(tx, scene) });
+    const timeline = await tx.timelineItem.create({ data: await timelineCreateData(tx, scene) });
+    await incrementProjectScenes(tx, projectId, 1);
+    await incrementProjectTimelineItems(tx, projectId, 1, timeline.durationSeconds ?? scene.durationSeconds);
+    await recordSceneEvent(tx, projectId, "scene.created", scene.id);
     await touchProjectInTransaction(tx, projectId);
     return scene;
   });
@@ -25,14 +30,36 @@ export async function createSceneForUser(
 }
 
 export async function updateScene(sceneId: string, input: UpdateSceneInput) {
-  const scene = await prisma.scene.update({
-    where: { id: sceneId },
-    data: input
-  });
-  if (input.status === "READY") {
-    await markFollowingScenesStale(scene.projectId, scene.orderIndex);
-  }
+  return prisma.$transaction((tx) => updateSceneInTransaction(tx, sceneId, input));
+}
+
+async function updateSceneInTransaction(
+  tx: Prisma.TransactionClient,
+  sceneId: string,
+  input: UpdateSceneInput
+) {
+  const previous = await sceneForUpdate(tx, sceneId);
+  const scene = await tx.scene.update({ where: { id: sceneId }, data: input });
+  await applyReadyCountDelta(tx, previous, scene);
+  if (input.status === "READY") await markFollowingScenesStale(tx, scene.projectId, scene.orderIndex);
+  await recordSceneEvent(tx, scene.projectId, "scene.updated", scene.id);
   return scene;
+}
+
+async function applyReadyCountDelta(
+  tx: Prisma.TransactionClient,
+  previous: { status: string; projectId: string },
+  next: { status: string; projectId: string }
+) {
+  const delta = readyDelta(previous.status, next.status);
+  if (delta === 0) return;
+  await incrementProjectReadyScenes(tx, next.projectId, delta);
+}
+
+function readyDelta(previous: string, next: string) {
+  const wasReady = previous === "READY" ? 1 : 0;
+  const isReady = next === "READY" ? 1 : 0;
+  return isReady - wasReady;
 }
 
 export async function updateSceneForUser(
@@ -47,9 +74,18 @@ export async function updateSceneForUser(
 export async function deleteSceneForUser(userId: string, sceneId: string) {
   const scene = await sceneForDelete(userId, sceneId);
   return prisma.$transaction(async (tx) => {
+    const removedTimelines = await tx.timelineItem.findMany({
+      where: { sceneId: scene.id },
+      select: { durationSeconds: true, scene: { select: { durationSeconds: true } } }
+    });
     await tx.scene.delete({ where: { id: scene.id } });
     await compactSceneOrder(tx, scene.projectId);
     await compactTimelineOrder(tx, scene.projectId);
+    await incrementProjectScenes(tx, scene.projectId, -1);
+    if (scene.status === "READY") await incrementProjectReadyScenes(tx, scene.projectId, -1);
+    const durationDelta = removedTimelines.reduce((sum, item) => sum + (item.durationSeconds ?? item.scene.durationSeconds), 0);
+    await incrementProjectTimelineItems(tx, scene.projectId, -removedTimelines.length, -durationDelta);
+    await recordSceneEvent(tx, scene.projectId, "scene.deleted", scene.id);
     await touchProjectInTransaction(tx, scene.projectId);
     return { id: scene.id };
   });
@@ -125,23 +161,72 @@ async function nextTimelineIndex(tx: Prisma.TransactionClient, projectId: string
   return tx.timelineItem.count({ where: { projectId } });
 }
 
-async function markFollowingScenesStale(projectId: string, orderIndex: number) {
-  await prisma.scene.updateMany({
-    where: { projectId, orderIndex: { gt: orderIndex } },
-    data: { status: "STALE", isStale: true }
+async function sceneForUpdate(tx: Prisma.TransactionClient, sceneId: string) {
+  return tx.scene.findUniqueOrThrow({
+    where: { id: sceneId },
+    select: { status: true, projectId: true, orderIndex: true }
   });
 }
 
+async function markFollowingScenesStale(
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  orderIndex: number
+) {
+  const readyCount = await followingReadySceneCount(tx, projectId, orderIndex);
+  await tx.scene.updateMany({
+    where: { projectId, orderIndex: { gt: orderIndex } },
+    data: { status: "STALE", isStale: true }
+  });
+  if (readyCount > 0) await incrementProjectReadyScenes(tx, projectId, -readyCount);
+}
+
+function followingReadySceneCount(
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  orderIndex: number
+) {
+  return tx.scene.count({ where: { projectId, orderIndex: { gt: orderIndex }, status: "READY" } });
+}
+
 async function compactSceneOrder(tx: Prisma.TransactionClient, projectId: string) {
-  const scenes = await orderedScenes(tx, projectId);
-  await moveScenesToTemporaryOrder(tx, projectId);
-  await Promise.all(scenes.map((scene, index) => setSceneOrder(tx, scene.id, index)));
+  await moveSceneOrderToTemporary(tx, projectId);
+  await tx.$executeRaw`
+    UPDATE "Scene" s SET "orderIndex" = ordered.row_index
+    FROM (
+      SELECT id, row_number() OVER (ORDER BY "orderIndex" ASC) - 1 AS row_index
+      FROM "Scene"
+      WHERE "projectId" = ${projectId}
+    ) ordered
+    WHERE s.id = ordered.id AND s."orderIndex" <> ordered.row_index
+  `;
 }
 
 async function compactTimelineOrder(tx: Prisma.TransactionClient, projectId: string) {
-  const items = await orderedTimelineItems(tx, projectId);
-  await moveTimelineToTemporaryOrder(tx, projectId);
-  await Promise.all(items.map((item, index) => setTimelineOrder(tx, item.id, index)));
+  await moveTimelineOrderToTemporary(tx, projectId);
+  await tx.$executeRaw`
+    UPDATE "TimelineItem" t SET "orderIndex" = ordered.row_index
+    FROM (
+      SELECT id, row_number() OVER (ORDER BY "orderIndex" ASC) - 1 AS row_index
+      FROM "TimelineItem"
+      WHERE "projectId" = ${projectId}
+    ) ordered
+    WHERE t.id = ordered.id AND t."orderIndex" <> ordered.row_index
+  `;
+}
+
+function moveSceneOrderToTemporary(tx: Prisma.TransactionClient, projectId: string) {
+  return tx.scene.updateMany({
+    where: { projectId },
+    data: { orderIndex: { increment: ORDER_OFFSET } }
+  });
+}
+
+function moveTimelineOrderToTemporary(tx: Prisma.TransactionClient, projectId: string) {
+  return tx.timelineItem.updateMany({
+    where: { projectId },
+    data: { orderIndex: { increment: ORDER_OFFSET } }
+  });
 }
 
 async function sceneOwner(sceneId: string) {
@@ -174,48 +259,24 @@ async function assertSceneOwner(userId: string, sceneId: string) {
 async function sceneForDelete(userId: string, sceneId: string) {
   const scene = await prisma.scene.findFirst({
     where: { id: sceneId, project: { userId } },
-    select: { id: true, projectId: true }
+    select: { id: true, projectId: true, status: true }
   });
   if (!scene) throw new Error("Scene not found");
   return scene;
 }
 
-async function orderedScenes(tx: Prisma.TransactionClient, projectId: string) {
-  return tx.scene.findMany({
-    where: { projectId },
-    orderBy: { orderIndex: "asc" },
-    select: { id: true }
+async function recordSceneEvent(
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  type: string,
+  sceneId: string
+) {
+  await recordOutboxEvent(tx, {
+    aggregateId: projectId,
+    aggregateType: "project",
+    type,
+    payload: { sceneId }
   });
-}
-
-async function orderedTimelineItems(tx: Prisma.TransactionClient, projectId: string) {
-  return tx.timelineItem.findMany({
-    where: { projectId },
-    orderBy: { orderIndex: "asc" },
-    select: { id: true }
-  });
-}
-
-function moveScenesToTemporaryOrder(tx: Prisma.TransactionClient, projectId: string) {
-  return tx.scene.updateMany({
-    where: { projectId },
-    data: { orderIndex: { increment: ORDER_OFFSET } }
-  });
-}
-
-function moveTimelineToTemporaryOrder(tx: Prisma.TransactionClient, projectId: string) {
-  return tx.timelineItem.updateMany({
-    where: { projectId },
-    data: { orderIndex: { increment: ORDER_OFFSET } }
-  });
-}
-
-function setSceneOrder(tx: Prisma.TransactionClient, id: string, orderIndex: number) {
-  return tx.scene.update({ where: { id }, data: { orderIndex } });
-}
-
-function setTimelineOrder(tx: Prisma.TransactionClient, id: string, orderIndex: number) {
-  return tx.timelineItem.update({ where: { id }, data: { orderIndex } });
 }
 
 type CreatedScene = Prisma.SceneGetPayload<{}>;

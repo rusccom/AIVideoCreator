@@ -1,5 +1,6 @@
 import { PaymentStatus, Prisma, type Payment } from "@prisma/client";
 import type Stripe from "stripe";
+import { incrementUserCredits } from "@/shared/server/counters";
 import { prisma } from "@/shared/server/prisma";
 import { topUpPackages, type TopUpPackage } from "../data/top-up-packages";
 import { calculateCredits, getBillingSettings } from "./billing-settings-service";
@@ -71,15 +72,13 @@ async function completePayment(
   if (!payment || payment.status === PaymentStatus.PAID) return { ignored: true };
   await tx.payment.update({ where: { id: paymentId }, data: paidData(session) });
   await tx.creditLedger.create({ data: ledgerData(payment, eventId) });
+  await incrementUserCredits(tx, payment.userId, payment.credits);
   return { paid: true };
 }
 
 async function getCreditBalance(userId: string) {
-  const result = await prisma.creditLedger.aggregate({
-    where: { userId },
-    _sum: { amount: true }
-  });
-  return result._sum.amount ?? 0;
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { creditBalance: true } });
+  return user?.creditBalance ?? 0;
 }
 
 function listPaymentHistory(userId: string) {

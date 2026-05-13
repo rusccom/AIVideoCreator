@@ -5,6 +5,7 @@ import { getSupportedModel } from "@/features/generation/models/catalog";
 import { submitFalJob } from "@/features/generation/server/fal-client";
 import { providerErrorPayload } from "@/features/generation/server/provider-error";
 import { touchProject } from "@/features/projects/server/project-touch-service";
+import { recordOutboxEvent } from "@/shared/server/outbox";
 import { prisma } from "@/shared/server/prisma";
 import { recordImageModelUsage } from "./image-model-service";
 import type { GenerateProjectImageInput } from "./image-generation-schema";
@@ -83,16 +84,26 @@ async function setProviderRequest(jobId: string, requestId: string) {
 }
 
 async function markJobReady(jobId: string, assets: Asset[]) {
-  return prisma.generationJob.update({
-    where: { id: jobId },
-    data: { status: "READY", outputJson: asJson({ assets: assets.map(toGeneratedAsset) }), completedAt: new Date() }
+  const output = { assets: assets.map(toGeneratedAsset) };
+  return prisma.$transaction(async (tx) => {
+    await recordJobResult(tx, jobId, output);
+    await recordJobEvent(tx, jobId, "job.completed");
+    return tx.generationJob.update({
+      where: { id: jobId },
+      data: { status: "READY", outputJson: asJson(output), completedAt: new Date() }
+    });
   });
 }
 
 async function markJobFailed(jobId: string, error: unknown) {
-  return prisma.generationJob.update({
-    where: { id: jobId },
-    data: { status: "FAILED", errorJson: asJson(providerErrorPayload(error)), completedAt: new Date() }
+  const payload = providerErrorPayload(error);
+  return prisma.$transaction(async (tx) => {
+    await recordJobError(tx, jobId, payload);
+    await recordJobEvent(tx, jobId, "job.failed");
+    return tx.generationJob.update({
+      where: { id: jobId },
+      data: { status: "FAILED", errorJson: asJson(payload), completedAt: new Date() }
+    });
   });
 }
 
@@ -106,11 +117,7 @@ function imageInput(input: GenerateProjectImageInput) {
 }
 
 async function createImageAssets(userId: string, projectId: string, images: ImagePayload[]) {
-  const assets: Asset[] = [];
-  for (const image of images) {
-    assets.push(await createAssetFromRemoteUrl(assetData(userId, projectId, image)));
-  }
-  return assets;
+  return Promise.all(images.map((image) => createAssetFromRemoteUrl(assetData(userId, projectId, image))));
 }
 
 function assetData(userId: string, projectId: string, image: ImagePayload) {
@@ -171,6 +178,52 @@ function asJson(value: unknown) {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
+async function recordJobResult(
+  tx: Prisma.TransactionClient,
+  jobId: string,
+  output: { assets: GeneratedAsset[] }
+) {
+  await tx.jobResult.upsert({
+    where: { jobId },
+    create: { jobId, assets: asJson(output.assets), rawResponse: asJson(output) },
+    update: { assets: asJson(output.assets), rawResponse: asJson(output) }
+  });
+}
+
+async function recordJobError(
+  tx: Prisma.TransactionClient,
+  jobId: string,
+  payload: ReturnType<typeof providerErrorPayload>
+) {
+  await tx.jobError.upsert({
+    where: { jobId },
+    create: errorRecord(jobId, payload),
+    update: errorUpdate(payload)
+  });
+}
+
+function errorRecord(jobId: string, payload: ReturnType<typeof providerErrorPayload>) {
+  return { jobId, ...errorUpdate(payload) };
+}
+
+function errorUpdate(payload: ReturnType<typeof providerErrorPayload>) {
+  const source = record(payload);
+  return {
+    code: typeof source.code === "string" ? source.code : null,
+    message: typeof source.message === "string" ? source.message : "Image generation failed",
+    rawError: asJson(payload)
+  };
+}
+
+async function recordJobEvent(tx: Prisma.TransactionClient, jobId: string, type: string) {
+  await recordOutboxEvent(tx, {
+    aggregateId: jobId,
+    aggregateType: "generationJob",
+    type,
+    payload: { jobId }
+  });
+}
+
 function isImagePayload(value: ImagePayload | null): value is ImagePayload {
   return Boolean(value);
 }
@@ -184,3 +237,4 @@ type ImagePayload = {
 };
 
 type ImageGenerationJob = Awaited<ReturnType<typeof prisma.generationJob.findUniqueOrThrow>>;
+type GeneratedAsset = ReturnType<typeof toGeneratedAsset>;

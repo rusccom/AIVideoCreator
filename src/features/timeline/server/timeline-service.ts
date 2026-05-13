@@ -1,9 +1,8 @@
 import { Prisma } from "@prisma/client";
+import { incrementProjectTimelineItems } from "@/shared/server/counters";
 import { prisma } from "@/shared/server/prisma";
 import { touchProjectInTransaction } from "@/features/projects/server/project-touch-service";
 import type { CreateTimelineItemInput, ReorderTimelineInput } from "./timeline-schema";
-
-const ORDER_OFFSET = 1000000;
 
 export async function createTimelineItemForUser(
   userId: string,
@@ -27,8 +26,10 @@ export async function reorderTimelineForUser(
 export async function deleteTimelineItemForUser(userId: string, itemId: string) {
   const item = await timelineItemForUser(userId, itemId);
   return prisma.$transaction(async (tx) => {
+    const duration = await itemDuration(tx, item.id);
     await tx.timelineItem.delete({ where: { id: item.id } });
     await compactOrder(tx, item.projectId);
+    await incrementProjectTimelineItems(tx, item.projectId, -1, -duration);
     await touchProjectInTransaction(tx, item.projectId);
     return { id: item.id };
   });
@@ -41,14 +42,11 @@ async function insertTimelineItem(
 ) {
   const index = await insertIndex(tx, projectId, input.index);
   await shiftFromIndex(tx, projectId, index);
+  const duration = await sceneDuration(tx, input.sceneId);
   const item = await tx.timelineItem.create({
-    data: {
-      projectId,
-      sceneId: input.sceneId,
-      orderIndex: index,
-      durationSeconds: await sceneDuration(tx, input.sceneId)
-    }
+    data: { projectId, sceneId: input.sceneId, orderIndex: index, durationSeconds: duration }
   });
+  await incrementProjectTimelineItems(tx, projectId, 1, duration);
   await touchProjectInTransaction(tx, projectId);
   return item;
 }
@@ -59,26 +57,50 @@ async function reorderTimeline(
   itemIds: string[]
 ) {
   await assertFullTimeline(tx, projectId, itemIds);
-  await moveToTemporaryOrder(tx, projectId);
-  await Promise.all(itemIds.map((id, index) => setOrder(tx, id, index)));
+  await applyOrder(tx, projectId, itemIds);
   await touchProjectInTransaction(tx, projectId);
   return tx.timelineItem.findMany({ where: { projectId }, orderBy: { orderIndex: "asc" } });
 }
 
-async function compactOrder(tx: Prisma.TransactionClient, projectId: string) {
-  const items = await orderedItems(tx, projectId);
+const ORDER_OFFSET = 1000000;
+
+async function applyOrder(tx: Prisma.TransactionClient, projectId: string, itemIds: string[]) {
+  if (!itemIds.length) return;
   await moveToTemporaryOrder(tx, projectId);
-  await Promise.all(items.map((item, index) => setOrder(tx, item.id, index)));
+  await tx.$executeRaw`
+    UPDATE "TimelineItem" t SET "orderIndex" = ordered.position - 1
+    FROM unnest(${itemIds}::text[]) WITH ORDINALITY AS ordered(id, position)
+    WHERE t.id = ordered.id AND t."projectId" = ${projectId}
+  `;
+}
+
+async function compactOrder(tx: Prisma.TransactionClient, projectId: string) {
+  await moveToTemporaryOrder(tx, projectId);
+  await tx.$executeRaw`
+    UPDATE "TimelineItem" t SET "orderIndex" = ordered.row_index
+    FROM (
+      SELECT id, row_number() OVER (ORDER BY "orderIndex" ASC) - 1 AS row_index
+      FROM "TimelineItem"
+      WHERE "projectId" = ${projectId}
+    ) ordered
+    WHERE t.id = ordered.id
+  `;
 }
 
 async function shiftFromIndex(tx: Prisma.TransactionClient, projectId: string, index: number) {
-  const items = await tx.timelineItem.findMany({
-    where: { projectId, orderIndex: { gte: index } },
-    orderBy: { orderIndex: "asc" },
-    select: { id: true, orderIndex: true }
+  await moveToTemporaryOrder(tx, projectId, index);
+  await tx.$executeRaw`
+    UPDATE "TimelineItem"
+    SET "orderIndex" = "orderIndex" - ${ORDER_OFFSET} + 1
+    WHERE "projectId" = ${projectId} AND "orderIndex" >= ${ORDER_OFFSET}
+  `;
+}
+
+async function moveToTemporaryOrder(tx: Prisma.TransactionClient, projectId: string, minIndex = 0) {
+  await tx.timelineItem.updateMany({
+    where: { projectId, orderIndex: { gte: minIndex } },
+    data: { orderIndex: { increment: ORDER_OFFSET } }
   });
-  await Promise.all(items.map((item) => setOrder(tx, item.id, item.orderIndex + ORDER_OFFSET)));
-  await Promise.all(items.map((item) => setOrder(tx, item.id, item.orderIndex + 1)));
 }
 
 async function assertFullTimeline(
@@ -107,6 +129,14 @@ async function sceneDuration(tx: Prisma.TransactionClient, sceneId: string) {
     select: { durationSeconds: true }
   });
   return scene.durationSeconds;
+}
+
+async function itemDuration(tx: Prisma.TransactionClient, itemId: string) {
+  const item = await tx.timelineItem.findUniqueOrThrow({
+    where: { id: itemId },
+    select: { durationSeconds: true, scene: { select: { durationSeconds: true } } }
+  });
+  return item.durationSeconds ?? item.scene.durationSeconds;
 }
 
 async function assertProjectOwner(userId: string, projectId: string) {
@@ -140,15 +170,4 @@ async function orderedItems(tx: Prisma.TransactionClient, projectId: string) {
     orderBy: { orderIndex: "asc" },
     select: { id: true }
   });
-}
-
-function moveToTemporaryOrder(tx: Prisma.TransactionClient, projectId: string) {
-  return tx.timelineItem.updateMany({
-    where: { projectId },
-    data: { orderIndex: { increment: ORDER_OFFSET } }
-  });
-}
-
-function setOrder(tx: Prisma.TransactionClient, id: string, orderIndex: number) {
-  return tx.timelineItem.update({ where: { id }, data: { orderIndex } });
 }

@@ -6,19 +6,34 @@ export async function listProjects(userId: string) {
   return prisma.project.findMany({
     where: { userId, archivedAt: null },
     orderBy: { updatedAt: "desc" },
-    include: { scenes: true }
+    select: projectListSelect()
   });
 }
 
 export async function createProject(userId: string, input: CreateProjectInput) {
-  return prisma.project.create({
-    data: {
-      userId,
-      title: input.title,
-      aspectRatio: input.aspectRatio,
-      status: "DRAFT"
-    }
+  return prisma.$transaction(async (tx) => {
+    const project = await tx.project.create({
+      data: { userId, title: input.title, aspectRatio: input.aspectRatio, status: "DRAFT" }
+    });
+    await tx.user.update({ where: { id: userId }, data: { projectCount: { increment: 1 } } });
+    return project;
   });
+}
+
+function projectListSelect() {
+  return {
+    id: true,
+    title: true,
+    aspectRatio: true,
+    status: true,
+    createdAt: true,
+    updatedAt: true,
+    archivedAt: true,
+    sceneCount: true,
+    readySceneCount: true,
+    timelineItemCount: true,
+    totalDurationSeconds: true
+  } as const;
 }
 
 export async function getProject(userId: string, projectId: string) {
@@ -45,12 +60,20 @@ export async function updateProject(
 
 export async function deleteProject(userId: string, projectId: string) {
   const project = await projectDeleteData(userId, projectId);
+  const totalAssetBytes = project.assets.reduce((sum, asset) => sum + (asset.sizeBytes ?? 0), 0);
   await prisma.$transaction([
     prisma.creditLedger.updateMany({
       where: { generationJobId: { in: project.jobs.map((job) => job.id) } },
       data: { generationJobId: null }
     }),
-    prisma.project.delete({ where: { id: project.id } })
+    prisma.project.delete({ where: { id: project.id } }),
+    prisma.user.update({
+      where: { id: userId },
+      data: {
+        projectCount: { decrement: 1 },
+        storageBytesUsed: { decrement: BigInt(totalAssetBytes) }
+      }
+    })
   ]);
   await deleteProjectStorage(project);
   return { id: project.id };
@@ -72,7 +95,7 @@ async function projectDeleteData(userId: string, projectId: string) {
     where: { id: projectId, userId },
     select: {
       id: true,
-      assets: { select: { storageKey: true, storageProvider: true } },
+      assets: { select: { origin: true, r2Key: true, storageKey: true, storageProvider: true, sizeBytes: true } },
       exports: { select: { storageKey: true } },
       jobs: { select: { id: true } }
     }
@@ -91,8 +114,8 @@ function storageKeys(project: ProjectDeleteData) {
 }
 
 function assetKey(asset: ProjectDeleteData["assets"][number]) {
-  if (asset.storageProvider !== "r2" || asset.storageKey.startsWith("http")) return null;
-  return asset.storageKey;
+  if (asset.storageProvider !== "r2" || asset.origin !== "R2") return null;
+  return asset.r2Key ?? asset.storageKey;
 }
 
 function exportKey(item: ProjectDeleteData["exports"][number]) {

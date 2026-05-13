@@ -35,9 +35,21 @@ async function ownedJob(userId: string, jobId: string) {
 async function jobSummary(jobId: string) {
   const job = await prisma.generationJob.findUniqueOrThrow({
     where: { id: jobId },
-    select: { id: true, outputJson: true, sceneId: true, status: true, type: true }
+    select: {
+      id: true,
+      outputJson: true,
+      result: { select: { assets: true } },
+      sceneId: true,
+      status: true,
+      type: true
+    }
   });
-  return { ...job, assets: generatedAssets(job.outputJson), outputJson: undefined };
+  return {
+    ...job,
+    assets: generatedAssets(job.result?.assets ?? job.outputJson),
+    outputJson: undefined,
+    result: undefined
+  };
 }
 
 function shouldRefresh(job: Awaited<ReturnType<typeof ownedJob>>) {

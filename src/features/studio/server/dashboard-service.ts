@@ -17,10 +17,10 @@ export type DashboardData = {
 };
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
-  const [projects, balance, jobs, storage] = await dashboardQuery(userId);
+  const [projects, user, jobs] = await dashboardQuery(userId);
   return {
     projects: projects.map(toStudioProject),
-    metrics: buildMetrics(creditSum(balance), jobs.length, storageSum(storage)),
+    metrics: buildMetrics(user?.creditBalance ?? 0, jobs.length, Number(user?.storageBytesUsed ?? 0n)),
     activity: jobs.map(toActivityItem)
   };
 }
@@ -34,9 +34,8 @@ export async function getTopbarData(userId: string) {
 function dashboardQuery(userId: string) {
   return prisma.$transaction([
     getProjects(userId),
-    getCreditBalanceQuery(userId),
-    getRecentJobs(userId),
-    getStorageBytesQuery(userId)
+    getUserCounters(userId),
+    getRecentJobs(userId)
   ]);
 }
 
@@ -50,25 +49,24 @@ function getProjects(userId: string) {
       aspectRatio: true,
       status: true,
       updatedAt: true,
-      timelineItems: {
-        select: {
-          durationSeconds: true,
-          scene: { select: { durationSeconds: true } }
-        }
-      }
+      timelineItemCount: true,
+      totalDurationSeconds: true
     }
   });
 }
 
 async function getCreditBalance(userId: string) {
-  const result = await getCreditBalanceQuery(userId);
-  return creditSum(result);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { creditBalance: true }
+  });
+  return user?.creditBalance ?? 0;
 }
 
-function getCreditBalanceQuery(userId: string) {
-  return prisma.creditLedger.aggregate({
-    where: { userId },
-    _sum: { amount: true }
+function getUserCounters(userId: string) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: { creditBalance: true, storageBytesUsed: true }
   });
 }
 
@@ -81,39 +79,16 @@ function getRecentJobs(userId: string) {
   });
 }
 
-function getStorageBytesQuery(userId: string) {
-  return prisma.asset.aggregate({
-    where: { userId },
-    _sum: { sizeBytes: true }
-  });
-}
-
-function creditSum(result: Awaited<ReturnType<typeof getCreditBalanceQuery>>) {
-  return result._sum.amount ?? 0;
-}
-
-function storageSum(result: Awaited<ReturnType<typeof getStorageBytesQuery>>) {
-  return result._sum.sizeBytes ?? 0;
-}
-
 function toStudioProject(project: Awaited<ReturnType<typeof getProjects>>[number]) {
   return {
     id: project.id,
     title: project.title,
     aspectRatio: project.aspectRatio,
-    clips: project.timelineItems.length,
-    duration: `${totalTimelineSeconds(project.timelineItems)}s`,
+    clips: project.timelineItemCount,
+    duration: `${project.totalDurationSeconds}s`,
     status: project.status.toLowerCase(),
     updatedAt: project.updatedAt.toLocaleDateString("en-US")
   };
-}
-
-function totalTimelineSeconds(items: TimelineDurationItem[]) {
-  return items.reduce((total, item) => total + itemDuration(item), 0);
-}
-
-function itemDuration(item: TimelineDurationItem) {
-  return item.durationSeconds ?? item.scene.durationSeconds;
 }
 
 function buildMetrics(
@@ -141,8 +116,3 @@ function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024 * 1024) return `${Math.round(bytes / 1024 / 1024)} MB`;
   return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
-
-type TimelineDurationItem = {
-  durationSeconds: number | null;
-  scene: { durationSeconds: number };
-};
