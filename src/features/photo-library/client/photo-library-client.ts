@@ -8,31 +8,22 @@ export async function fetchProjectPhotos(projectId: string) {
 }
 
 export async function uploadProjectPhoto(projectId: string, file: File) {
-  const data = await requestUpload(projectId, file);
-  const uploaded = await fetch(data.uploadUrl, { method: "PUT", body: file });
-  if (!uploaded.ok) throw new Error("Photo upload failed.");
-  return data.assetId;
+  const response = await fetch(`/api/projects/${projectId}/photos`, uploadOptions(file));
+  if (!response.ok) throw new Error("Photo upload failed.");
+  const data = await response.json() as { asset?: PhotoLibraryAsset };
+  if (!data.asset) throw new Error("Photo upload failed.");
+  return data.asset.id;
 }
 
-async function requestUpload(projectId: string, file: File) {
-  const response = await fetch("/api/assets/upload-url", requestOptions(projectId, file));
-  if (!response.ok) throw new Error("Upload URL could not be created.");
-  return response.json() as Promise<{ assetId: string; uploadUrl: string }>;
-}
-
-function requestOptions(projectId: string, file: File) {
+function uploadOptions(file: File) {
   return {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(uploadBody(projectId, file))
+    body: uploadBody(file)
   };
 }
 
-function uploadBody(projectId: string, file: File) {
-  return {
-    fileName: file.name,
-    mimeType: file.type || "image/png",
-    projectId,
-    type: "IMAGE"
-  };
+function uploadBody(file: File) {
+  const form = new FormData();
+  form.set("file", file);
+  return form;
 }

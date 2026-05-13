@@ -29,6 +29,10 @@ export type LocalAssetInput = AssetFileInput & {
   localPath: string;
 };
 
+export type BufferAssetInput = AssetFileInput & {
+  buffer: Buffer;
+};
+
 export type RemoteAssetInput = AssetFileInput & {
   remoteUrl: string;
 };
@@ -49,6 +53,13 @@ export async function createAssetFromLocalFile(input: LocalAssetInput) {
   const storageKey = buildLocalStorageKey(input, assetId);
   await r2Storage.uploadLocalFile({ key: storageKey, mimeType: input.mimeType, path: input.localPath, sizeBytes });
   return createStoredAsset(input, assetId, storageKey, input.mimeType, sizeBytes);
+}
+
+export async function createAssetFromBuffer(input: BufferAssetInput) {
+  const assetId = randomUUID();
+  const storageKey = buildLocalStorageKey(input, assetId);
+  await r2Storage.uploadBuffer({ buffer: input.buffer, key: storageKey, mimeType: input.mimeType });
+  return createStoredAsset(input, assetId, storageKey, input.mimeType, input.buffer.byteLength);
 }
 
 export async function createAssetFromRemoteUrl(input: RemoteAssetInput) {

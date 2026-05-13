@@ -46,6 +46,15 @@ export const r2Storage = {
     });
   },
 
+  async uploadBuffer(input: R2BufferUploadInput) {
+    await putObject({
+      body: input.buffer,
+      key: input.key,
+      mimeType: input.mimeType,
+      sizeBytes: input.buffer.byteLength
+    });
+  },
+
   async uploadRemoteUrl(input: R2RemoteUploadInput) {
     const response = await fetch(input.url);
     if (!response.ok || !response.body) throw new Error(`R2 remote upload failed: ${response.status}`);
@@ -127,6 +136,12 @@ type R2LocalUploadInput = {
   mimeType: string;
   path: string;
   sizeBytes: number;
+};
+
+type R2BufferUploadInput = {
+  buffer: Buffer;
+  key: string;
+  mimeType: string;
 };
 
 type R2RemoteUploadInput = {
