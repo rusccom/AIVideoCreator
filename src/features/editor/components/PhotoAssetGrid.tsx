@@ -23,7 +23,12 @@ export function PhotoAssetGrid(props: PhotoAssetGridProps) {
           title={asset.label}
           type="button"
         >
-          <ResolvedAssetImage alt={asset.label} className="photo-card-image" source={asset.url} />
+          <ResolvedAssetImage
+            alt={asset.label}
+            className="photo-card-image"
+            fallback="Select photo"
+            source={asset.url}
+          />
         </button>
       ))}
     </div>

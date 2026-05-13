@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useResolvedAssetUrl } from "../hooks/use-resolved-asset-url";
 
 type ResolvedAssetImageProps = {
@@ -11,6 +12,12 @@ type ResolvedAssetImageProps = {
 
 export function ResolvedAssetImage(props: ResolvedAssetImageProps) {
   const url = useResolvedAssetUrl(props.source);
-  if (!url) return <span className={props.className}>{props.fallback}</span>;
-  return <img alt={props.alt} className={props.className} src={url} />;
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+
+  if (!url || failedUrl === url) return <span className={props.className}>{fallbackText(props.fallback)}</span>;
+  return <img alt={props.alt} className={props.className} onError={() => setFailedUrl(url)} src={url} />;
+}
+
+function fallbackText(fallback?: string) {
+  return fallback ?? "No preview";
 }

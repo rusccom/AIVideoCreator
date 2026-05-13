@@ -28,7 +28,12 @@ export function ScenePhotoSelector(props: ScenePhotoSelectorProps) {
         type="button"
       >
         {previewAsset ? (
-          <ResolvedAssetImage alt={previewAsset.label} className="scene-photo-image" source={previewAsset.url} />
+          <ResolvedAssetImage
+            alt={previewAsset.label}
+            className="scene-photo-image"
+            fallback="Choose photo"
+            source={previewAsset.url}
+          />
         ) : (
           <span className="scene-photo-empty">No photo selected</span>
         )}

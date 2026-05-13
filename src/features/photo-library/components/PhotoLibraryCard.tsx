@@ -23,7 +23,7 @@ export function PhotoLibraryCard(props: PhotoLibraryCardProps) {
       title={props.asset.label}
       type="button"
     >
-      <PhotoLibraryImage alt={props.asset.label} source={props.asset.url} />
+      <PhotoLibraryImage alt={props.asset.label} fallback="Select photo" source={props.asset.url} />
       {props.selected ? <Check className="photo-library-check" size={18} /> : null}
     </button>
   );
