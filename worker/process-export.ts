@@ -2,6 +2,8 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Prisma } from "@prisma/client";
 import { createAssetFromLocalFile } from "../src/features/assets/server/asset-storage-service";
+import { recordOutboxEvent } from "../src/shared/server/outbox";
+import { publishPendingOutboxEvents } from "../src/shared/server/outbox-publisher";
 import { prisma } from "../src/shared/server/prisma";
 import { probeHasAudioStream, runFfmpeg } from "./ffmpeg";
 import { createJobWorkspace, removeJobWorkspace } from "./job-workspace";
@@ -103,10 +105,16 @@ async function createExportAsset(job: ExportJob, localPath: string, duration: nu
 }
 
 async function markReady(jobId: string, r2Key: string, duration: number) {
-  return prisma.exportJob.update({
-    where: { id: jobId },
-    data: { status: "READY", r2Key, durationSeconds: duration, completedAt: new Date() }
+  const job = await prisma.$transaction(async (tx) => {
+    const job = await tx.exportJob.update({
+      where: { id: jobId },
+      data: { status: "READY", r2Key, durationSeconds: duration, completedAt: new Date() }
+    });
+    await recordExportEvent(tx, job.projectId, "export.ready", job.id);
+    return job;
   });
+  await publishPendingOutboxEvents();
+  return job;
 }
 
 async function markProcessing(jobId: string) {
@@ -114,11 +122,29 @@ async function markProcessing(jobId: string) {
 }
 
 async function failExportJob(jobId: string, error: unknown) {
-  await prisma.exportJob.update({
-    where: { id: jobId },
-    data: { status: "FAILED", errorMessage: errorMessage(error), completedAt: new Date() }
+  await prisma.$transaction(async (tx) => {
+    const job = await tx.exportJob.update({
+      where: { id: jobId },
+      data: { status: "FAILED", errorMessage: errorMessage(error), completedAt: new Date() }
+    });
+    await recordExportEvent(tx, job.projectId, "export.failed", job.id);
   });
+  await publishPendingOutboxEvents();
   return { error: errorMessage(error), jobId };
+}
+
+async function recordExportEvent(
+  tx: Prisma.TransactionClient,
+  projectId: string,
+  type: string,
+  jobId: string
+) {
+  await recordOutboxEvent(tx, {
+    aggregateId: projectId,
+    aggregateType: "project",
+    type,
+    payload: { jobId }
+  });
 }
 
 function requiredR2Key(r2Key?: string | null) {

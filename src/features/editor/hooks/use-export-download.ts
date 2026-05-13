@@ -13,42 +13,39 @@ type ExportJobResponse = {
   };
 };
 
-const POLL_INTERVAL_MS = 3000;
-
 export function useExportDownload(projectId: string, projectTitle: string) {
   const [status, setStatus] = useState<ExportDownloadStatus>("idle");
   const [error, setError] = useState<string>();
-  const intervalRef = useRef<number | null>(null);
+  const sourceRef = useRef<EventSource | null>(null);
 
-  const stopPolling = useCallback(() => {
-    if (intervalRef.current === null) return;
-    window.clearInterval(intervalRef.current);
-    intervalRef.current = null;
+  const stopSubscription = useCallback(() => {
+    sourceRef.current?.close();
+    sourceRef.current = null;
   }, []);
 
-  useEffect(() => () => stopPolling(), [stopPolling]);
+  useEffect(() => () => stopSubscription(), [stopSubscription]);
 
   const handleReady = useCallback((url: string) => {
-    stopPolling();
+    stopSubscription();
     triggerDownload(url, `${projectTitle || "export"}.mp4`);
     setStatus("ready");
     window.setTimeout(() => setStatus("idle"), 2000);
-  }, [projectTitle, stopPolling]);
+  }, [projectTitle, stopSubscription]);
 
   const handleFailed = useCallback((message: string) => {
-    stopPolling();
+    stopSubscription();
     setError(message);
     setStatus("error");
-  }, [stopPolling]);
+  }, [stopSubscription]);
 
-  const tick = useCallback(async (jobId: string) => {
-    const polled = await pollExportJob(jobId);
-    if (polled.status === "READY" && polled.url) handleReady(polled.url);
-    else if (polled.status === "FAILED") handleFailed(polled.error ?? "Export failed");
+  const refresh = useCallback(async (jobId: string) => {
+    const job = await fetchExportJob(jobId);
+    if (job.status === "READY" && job.url) handleReady(job.url);
+    else if (job.status === "FAILED") handleFailed(job.error ?? "Export failed");
   }, [handleFailed, handleReady]);
 
   const start = useCallback(async () => {
-    stopPolling();
+    stopSubscription();
     setError(undefined);
     setStatus("creating");
     const created = await createExportJob(projectId);
@@ -58,8 +55,9 @@ export function useExportDownload(projectId: string, projectTitle: string) {
       return;
     }
     setStatus("processing");
-    intervalRef.current = window.setInterval(() => void tick(created.jobId), POLL_INTERVAL_MS);
-  }, [projectId, stopPolling, tick]);
+    sourceRef.current = subscribeExportEvents(projectId, created.jobId, refresh);
+    void refresh(created.jobId);
+  }, [projectId, refresh, stopSubscription]);
 
   return { error, start, status };
 }
@@ -75,15 +73,35 @@ async function createExportJob(projectId: string) {
   return { ok: true as const, jobId: data.job.id };
 }
 
-async function pollExportJob(jobId: string) {
+function subscribeExportEvents(projectId: string, jobId: string, refresh: (jobId: string) => void) {
+  const source = new EventSource(`/api/projects/${projectId}/events`);
+  const listener = (event: Event) => {
+    if (eventJobId(event) === jobId) refresh(jobId);
+  };
+  source.addEventListener("export.ready", listener);
+  source.addEventListener("export.failed", listener);
+  source.onerror = () => undefined;
+  return source;
+}
+
+async function fetchExportJob(jobId: string) {
   const response = await fetch(`/api/exports/${jobId}`, { cache: "no-store" });
-  if (!response.ok) return { status: "FAILED" as const, error: "Failed to poll", url: undefined };
+  if (!response.ok) return { status: "FAILED" as const, error: "Export refresh failed", url: undefined };
   const data = await response.json() as ExportJobResponse;
   return {
     error: data.job.errorMessage ?? undefined,
     status: data.job.status,
     url: data.job.url ?? undefined
   };
+}
+
+function eventJobId(event: Event) {
+  try {
+    const payload = JSON.parse((event as MessageEvent<string>).data) as { jobId?: string };
+    return payload.jobId;
+  } catch {
+    return undefined;
+  }
 }
 
 function triggerDownload(url: string, fileName: string) {

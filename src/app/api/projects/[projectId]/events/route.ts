@@ -54,6 +54,7 @@ function startProjectStream(
   const send = (event: ProjectRealtimeEvent) => enqueue(controller, encoder, event);
   const unsubscribe = subscribeProjectEvents(projectId, send);
   const heartbeat = windowlessInterval(() => enqueueComment(controller, encoder), 25000);
+  const outbox = windowlessInterval(() => void publishPendingOutboxEvents(), 2500);
   enqueueComment(controller, encoder);
   request.signal.addEventListener("abort", cleanup);
   return cleanup;
@@ -62,6 +63,7 @@ function startProjectStream(
     active = false;
     request.signal.removeEventListener("abort", cleanup);
     clearInterval(heartbeat);
+    clearInterval(outbox);
     unsubscribe();
     controller.close();
   }
