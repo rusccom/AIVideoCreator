@@ -1,9 +1,11 @@
 "use client";
 
-import { X } from "lucide-react";
-import type { CSSProperties } from "react";
+import { Pencil, RotateCcw, X } from "lucide-react";
+import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { useEffect, useState } from "react";
+import { useAiCreatorProgressRecovery, type AiCreatorProgressRecovery } from "../use-ai-creator-progress-recovery";
 import { AiCreatorPollingPulse } from "./AiCreatorPollingPulse";
+import { AiCreatorPromptEditModal } from "./AiCreatorPromptEditModal";
 
 type AiCreatorProgressModalProps = {
   jobId: string;
@@ -13,9 +15,15 @@ type AiCreatorProgressModalProps = {
 };
 
 type ProgressState = {
+  failedScene?: FailedScene | null;
   readyCount: number;
   status: string;
   total: number;
+};
+
+type FailedScene = {
+  id: string;
+  prompt: string;
 };
 
 type ProgressTarget = {
@@ -29,10 +37,18 @@ type ProgressViewState = {
   pulse: number;
 };
 
+type ProgressStatus = {
+  restart: () => void;
+  setState: Dispatch<SetStateAction<ProgressViewState>>;
+  state: ProgressViewState;
+};
+
 const POLL_INTERVAL_MS = 4000;
 
 export function AiCreatorProgressModal(props: AiCreatorProgressModalProps) {
-  const state = useProgressStatus(props);
+  const progressStatus = useProgressStatus(props);
+  const recovery = useAiCreatorProgressRecovery(props, progressStatus);
+  const state = progressStatus.state;
   const progress = state.progress;
 
   return (
@@ -53,27 +69,27 @@ export function AiCreatorProgressModal(props: AiCreatorProgressModalProps) {
             <div aria-label="Clip generation progress" {...progressBarProps(state)}>
               <span />
             </div>
-            {isStoppedStatus(progress.status) ? (
-              <button className="button button-secondary" onClick={props.onDone} type="button">
-                <X size={16} /> Close
-              </button>
-            ) : null}
+            {progressActions(props, progress, recovery)}
+            {recovery.action.error ? <div className="form-error ai-creator-progress-error">{recovery.action.error}</div> : null}
           </div>
         </div>
+        {editModal(props, progress, recovery)}
       </div>
     </div>
   );
 }
 
 function useProgressStatus(props: AiCreatorProgressModalProps) {
-  const [state, setState] = useState(initialProgressView(props.total));
-  useEffect(() => runProgressPolling(props, setState), [props.jobId, props.onDone, props.sequenceId, props.total]);
-  return state;
+  const [state, setState] = useState<ProgressViewState>(() => initialProgressView(props.total));
+  const [pollVersion, setPollVersion] = useState(0);
+  const restart = () => setPollVersion((version) => version + 1);
+  useEffect(() => runProgressPolling(props, setState), [props.jobId, props.onDone, props.sequenceId, props.total, pollVersion]);
+  return { restart, setState, state };
 }
 
 function runProgressPolling(
   props: AiCreatorProgressModalProps,
-  setState: (updater: (state: ProgressViewState) => ProgressViewState) => void
+  setState: Dispatch<SetStateAction<ProgressViewState>>
 ) {
   let active = true;
   let timer: number | undefined;
@@ -110,7 +126,7 @@ async function fetchJob(jobId: string, total: number) {
   const response = await fetch(`/api/jobs/${jobId}`, { cache: "no-store" });
   if (!response.ok) throw new Error("Job refresh failed");
   const job = await response.json() as { status: string };
-  return { readyCount: job.status === "READY" ? total : 0, status: job.status, total };
+  return { failedScene: null, readyCount: job.status === "READY" ? total : 0, status: job.status, total };
 }
 
 async function fetchSequence(sequenceId: string, total: number) {
@@ -125,6 +141,44 @@ function normalizeSequenceProgress(progress: ProgressState, total: number) {
 
 function isStoppedStatus(status: string) {
   return status === "FAILED" || status === "CANCELED";
+}
+
+function progressActions(
+  props: AiCreatorProgressModalProps,
+  progress: ProgressState,
+  recovery: AiCreatorProgressRecovery
+) {
+  if (!isStoppedStatus(progress.status)) return null;
+  return (
+    <div className="ai-creator-progress-actions">
+      <button className="button button-primary" disabled={retryDisabled(props, progress, recovery)} onClick={recovery.retry} type="button">
+        <RotateCcw size={16} /> {retryText(recovery.action.status)}
+      </button>
+      <button className="button button-secondary" disabled={!progress.failedScene} onClick={() => recovery.setEditing(true)} type="button">
+        <Pencil size={16} /> Изменить запрос
+      </button>
+      <button className="button button-secondary" onClick={props.onDone} type="button">
+        <X size={16} /> Close
+      </button>
+    </div>
+  );
+}
+
+function editModal(
+  props: AiCreatorProgressModalProps,
+  progress: ProgressState,
+  recovery: AiCreatorProgressRecovery
+) {
+  if (!recovery.editing || !props.sequenceId || !progress.failedScene) return null;
+  return (
+    <AiCreatorPromptEditModal
+      initialPrompt={progress.failedScene.prompt}
+      key={progress.failedScene.id}
+      onCancel={() => recovery.setEditing(false)}
+      onRepair={recovery.repairPrompt}
+      onSave={recovery.savePrompt}
+    />
+  );
 }
 
 function progressTarget(props: AiCreatorProgressModalProps) {
@@ -168,11 +222,11 @@ function progressPercent(progress: ProgressState) {
   return Math.round((progress.readyCount / Math.max(1, progress.total)) * 100);
 }
 
-function initialProgress(total: number) {
-  return { readyCount: 0, status: "GENERATING", total };
+function initialProgress(total: number): ProgressState {
+  return { failedScene: null, readyCount: 0, status: "GENERATING", total };
 }
 
-function initialProgressView(total: number) {
+function initialProgressView(total: number): ProgressViewState {
   return { progress: initialProgress(total), pulse: 0 };
 }
 
@@ -195,4 +249,12 @@ function readyText(total: number) {
 function stoppedText(progress: ProgressState) {
   if (progress.readyCount > 0) return `${progress.readyCount} of ${progress.total} clips were saved.`;
   return "No clips were saved.";
+}
+
+function retryDisabled(props: AiCreatorProgressModalProps, progress: ProgressState, recovery: AiCreatorProgressRecovery) {
+  return !props.sequenceId || !progress.failedScene || recovery.action.status === "retrying";
+}
+
+function retryText(status: AiCreatorProgressRecovery["action"]["status"]) {
+  return status === "retrying" ? "Запуск..." : "Попробовать ещё раз";
 }

@@ -29,6 +29,35 @@ export async function generateCreatorVideo(input: GenerateCreatorVideoInput) {
   return response.json() as Promise<StartedCreatorVideo>;
 }
 
+export type StartClipGenerationInput = {
+  assetId: string;
+  aspectRatio: string;
+  duration: number;
+  modelId: string;
+  parentSceneId?: string;
+  projectId: string;
+  prompt: string;
+  resolution: string;
+};
+
+export async function startClipGeneration(input: StartClipGenerationInput) {
+  const response = await fetch(`/api/projects/${input.projectId}/ai-creator/video`, postJson(clipBody(input)));
+  if (!response.ok) throw new Error(await responseError(response, "Video generation could not start."));
+  return response.json() as Promise<StartedCreatorVideo>;
+}
+
+function clipBody(input: StartClipGenerationInput) {
+  return {
+    assetId: input.assetId,
+    aspectRatio: input.aspectRatio,
+    duration: input.duration,
+    modelId: input.modelId,
+    parentSceneId: input.parentSceneId,
+    prompt: input.prompt,
+    resolution: input.resolution
+  };
+}
+
 export function estimateCreatorVideoCredits(input: Pick<GenerateCreatorVideoInput, "scenes" | "videoModel">) {
   return input.scenes.reduce((total, scene) => total + sceneCredits(input.videoModel, scene), 0);
 }

@@ -10,6 +10,7 @@ export const aiCreatorVideoSchema = z.object({
   aspectRatio: z.string().min(1).max(24).optional(),
   duration: z.number().int().positive(),
   modelId: z.string().min(2).max(120),
+  parentSceneId: z.string().optional(),
   prompt: z.string().min(1).max(2000),
   resolution: z.string().min(1).max(32).optional(),
   scenes: z.array(aiCreatorVideoSceneSchema).min(1).max(60).optional()

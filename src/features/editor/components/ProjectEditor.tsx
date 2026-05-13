@@ -4,8 +4,10 @@ import { useEffect, useState, type MouseEvent } from "react";
 import { DndContext, DragOverlay, pointerWithin } from "@dnd-kit/core";
 import { Trash2, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { AiCreatorProgressModal } from "@/features/ai-creator/components/AiCreatorProgressModal";
 import type { EditorProject, EditorScene, EditorTimelineItem } from "../types";
 import { usePlayback } from "../hooks/use-playback";
+import { useSceneCreator } from "../hooks/use-scene-creator";
 import { useTimelineDrag } from "../hooks/use-timeline-drag";
 import { useTimelineItems } from "../hooks/use-timeline-items";
 import { EditorHeader } from "./EditorHeader";
@@ -35,12 +37,9 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   const timeline = useTimelineItems(project);
   const playback = usePlayback(timeline.items);
   const drag = useTimelineDrag({ ...timeline, project });
+  const creator = useSceneCreator(project);
   const selectedScene = playback.currentPosition?.scene;
   const selectedTimelineItem = playback.currentPosition?.item;
-  const [showCreate, setShowCreate] = useState(false);
-  const [sceneAssetId, setSceneAssetId] = useState<string>();
-  const [sceneParentId, setSceneParentId] = useState<string>();
-  const [scenePrompt, setScenePrompt] = useState(project.title);
   const [menu, setMenu] = useState<EditorMenuState | null>(null);
   const generationActive = sceneGenerationActive(selectedScene);
   const lastSceneId = project.scenes[project.scenes.length - 1]?.id;
@@ -48,31 +47,6 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   const continueTarget = { sceneId: lastSceneId, timelineItemId: lastTimelineItemId };
   useGenerationPolling(selectedScene, router);
   useMenuListeners(menu, () => setMenu(null));
-
-  function openSceneCreate() {
-    setSceneAssetId(undefined);
-    setSceneParentId(undefined);
-    setScenePrompt(project.title);
-    setShowCreate(true);
-  }
-
-  function openSceneFromPhoto(assetId: string) {
-    setSceneAssetId(assetId);
-    setSceneParentId(undefined);
-    setScenePrompt(project.title);
-    setShowCreate(true);
-  }
-
-  function closeSceneCreate() {
-    setShowCreate(false);
-    setSceneAssetId(undefined);
-    setSceneParentId(undefined);
-  }
-
-  function finishSceneCreate() {
-    closeSceneCreate();
-    router.refresh();
-  }
 
   function openSceneMenu(scene: EditorScene, event: MouseEvent) {
     openMenu(event);
@@ -99,11 +73,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
 
   function continueFromScene(scene: EditorScene) {
     setMenu(null);
-    if (!scene.endFrameAssetId) return;
-    setSceneAssetId(scene.endFrameAssetId);
-    setSceneParentId(scene.id);
-    setScenePrompt(scene.prompt);
-    setShowCreate(true);
+    creator.openContinue(scene);
   }
 
   return (
@@ -129,7 +99,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
         <div className="editor-workspace">
           <SceneRail
             onContextMenu={openSceneMenu}
-            onCreate={openSceneCreate}
+            onCreate={creator.openBlank}
             onSelect={playback.seekToScene}
             scenes={project.scenes}
             selectedSceneId={selectedScene?.id}
@@ -142,7 +112,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
           <PhotoPanel
             assets={project.assets}
             imageModels={project.imageModels}
-            onCreateVideoFromPhoto={openSceneFromPhoto}
+            onCreateVideoFromPhoto={creator.openFromPhoto}
             projectAspectRatio={project.aspectRatio}
             projectId={project.id}
           />
@@ -164,17 +134,21 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
           y={menu.y}
         />
       ) : null}
-      {showCreate ? (
+      {creator.target ? (
         <SceneCreateModal
           assets={project.assets}
-          defaultPrompt={scenePrompt}
-          initialAssetId={sceneAssetId}
+          defaultPrompt={creator.target.prompt}
+          initialAssetId={creator.target.assetId}
           models={project.videoModels}
-          onClose={closeSceneCreate}
-          onCreated={finishSceneCreate}
-          parentSceneId={sceneParentId}
+          onClose={creator.closeCreate}
+          onStarted={creator.onStarted}
+          parentSceneId={creator.target.parentSceneId}
+          projectAspectRatio={project.aspectRatio}
           projectId={project.id}
         />
+      ) : null}
+      {creator.progressTarget ? (
+        <AiCreatorProgressModal {...creator.progressTarget} onDone={creator.finishProgress} />
       ) : null}
     </div>
   );

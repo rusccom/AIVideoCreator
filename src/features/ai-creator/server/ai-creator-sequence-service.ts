@@ -37,11 +37,28 @@ export async function startNextAiCreatorScene(userId: string, parentSceneId: str
   }
 }
 
+export async function retryFailedAiCreatorScene(userId: string, sequenceId: string) {
+  const scene = await failedSequenceScene(userId, sequenceId);
+  if (!scene) throw new Error("Failed scene not found");
+  await ensureRetryStartFrame(userId, scene);
+  return generateVideo(userId, scene.id, await linkedVideoInput(scene));
+}
+
+export async function updateFailedAiCreatorPrompt(userId: string, sequenceId: string, prompt: string) {
+  const scene = await failedSequenceScene(userId, sequenceId);
+  if (!scene) throw new Error("Failed scene not found");
+  return prisma.scene.update({
+    where: { id: scene.id },
+    data: { userPrompt: prompt },
+    select: { id: true, userPrompt: true }
+  });
+}
+
 async function sequenceScenes(userId: string, sequenceId: string) {
   return prisma.scene.findMany({
     where: { branchId: sequenceId, project: { userId } },
     orderBy: { orderIndex: "asc" },
-    select: { id: true, status: true, generationJobId: true }
+    select: { id: true, status: true, generationJobId: true, userPrompt: true }
   });
 }
 
@@ -80,9 +97,10 @@ async function sequenceFrameScenes(userId: string, sequenceId: string) {
 function sequenceStatus(sequenceId: string, scenes: SequenceScene[], total = scenes.length) {
   const readyCount = scenes.filter((scene) => scene.status === "READY").length;
   return {
+    failedScene: failedSceneStatus(scenes),
     id: sequenceId,
     readyCount,
-    scenes,
+    scenes: scenes.map(sequenceSceneStatus),
     status: finalStatus(scenes, readyCount),
     total
   };
@@ -95,9 +113,10 @@ function finalStatus(scenes: SequenceScene[], readyCount: number) {
 
 function emptySequenceStatus(sequenceId: string, total: number) {
   return {
+    failedScene: null,
     id: sequenceId,
     readyCount: 0,
-    scenes: [] as SequenceScene[],
+    scenes: [] as SequenceSceneStatus[],
     status: "FAILED",
     total
   };
@@ -116,6 +135,22 @@ async function nextSequenceScene(userId: string, parentSceneId: string) {
   });
 }
 
+async function failedSequenceScene(userId: string, sequenceId: string) {
+  return prisma.scene.findFirst({
+    where: { branchId: sequenceId, project: { userId }, status: "FAILED" },
+    orderBy: { orderIndex: "asc" },
+    select: {
+      durationSeconds: true,
+      id: true,
+      modelId: true,
+      parentSceneId: true,
+      project: { select: { aspectRatio: true } },
+      startFrameAssetId: true,
+      userPrompt: true
+    }
+  });
+}
+
 function nextSceneWhere(userId: string, parentSceneId: string) {
   return {
     branchId: { startsWith: SEQUENCE_PREFIX },
@@ -126,7 +161,7 @@ function nextSceneWhere(userId: string, parentSceneId: string) {
   };
 }
 
-async function linkedVideoInput(scene: NonNullable<Awaited<ReturnType<typeof nextSequenceScene>>>) {
+async function linkedVideoInput(scene: LinkedVideoScene) {
   const model = await getModel(scene.modelId);
   return {
     aspectRatio: videoAspectRatio(model, scene.project.aspectRatio),
@@ -135,6 +170,21 @@ async function linkedVideoInput(scene: NonNullable<Awaited<ReturnType<typeof nex
     prompt: scene.userPrompt,
     resolution: model.defaultResolution
   } satisfies GenerateVideoInput;
+}
+
+async function ensureRetryStartFrame(userId: string, scene: RetryScene) {
+  if (scene.startFrameAssetId) return;
+  const assetId = scene.parentSceneId ? await parentEndFrameAssetId(userId, scene.parentSceneId) : null;
+  if (!assetId) throw new Error("Start frame is not ready");
+  await prisma.scene.update({ where: { id: scene.id }, data: { startFrameAssetId: assetId } });
+}
+
+async function parentEndFrameAssetId(userId: string, sceneId: string) {
+  const parent = await prisma.scene.findFirst({
+    where: { id: sceneId, project: { userId } },
+    select: { endFrameAssetId: true }
+  });
+  return parent?.endFrameAssetId;
 }
 
 function videoAspectRatio(model: Awaited<ReturnType<typeof getModel>>, aspectRatio: string) {
@@ -188,5 +238,21 @@ function followingDraftWhere(userId: string, branchId: string, orderIndex: numbe
   };
 }
 
+function sequenceSceneStatus(scene: SequenceScene) {
+  return {
+    generationJobId: scene.generationJobId,
+    id: scene.id,
+    status: scene.status
+  };
+}
+
+function failedSceneStatus(scenes: SequenceScene[]) {
+  const scene = scenes.find((item) => item.status === "FAILED");
+  return scene ? { id: scene.id, prompt: scene.userPrompt } : null;
+}
+
 type SequenceScene = Awaited<ReturnType<typeof sequenceScenes>>[number];
 type SequenceFrameScene = Awaited<ReturnType<typeof sequenceFrameScenes>>[number];
+type SequenceSceneStatus = ReturnType<typeof sequenceSceneStatus>;
+type RetryScene = NonNullable<Awaited<ReturnType<typeof failedSequenceScene>>>;
+type LinkedVideoScene = Pick<RetryScene, "durationSeconds" | "modelId" | "project" | "userPrompt">;

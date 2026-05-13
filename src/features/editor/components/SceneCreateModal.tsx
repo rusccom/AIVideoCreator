@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
+import {
+  startClipGeneration,
+  type StartedCreatorVideo,
+  type StartClipGenerationInput
+} from "@/features/ai-creator/ai-creator-video-generation";
 import type { EditorAsset, EditorVideoModel } from "../types";
 
 type SceneCreateModalProps = {
@@ -9,8 +14,9 @@ type SceneCreateModalProps = {
   initialAssetId?: string;
   models: EditorVideoModel[];
   onClose: () => void;
-  onCreated: () => void;
+  onStarted: (video: StartedCreatorVideo) => void;
   parentSceneId?: string;
+  projectAspectRatio: string;
   projectId: string;
 };
 
@@ -35,8 +41,8 @@ export function SceneCreateModal(props: SceneCreateModalProps) {
     setSaving(true);
     setError("");
     try {
-      await createScene(props.projectId, form, file, props.parentSceneId);
-      props.onCreated();
+      const started = await startClip(props, form, file, model);
+      props.onStarted(started);
     } catch (nextError) {
       setError(errorMessage(nextError));
     } finally {
@@ -96,7 +102,7 @@ export function SceneCreateModal(props: SceneCreateModalProps) {
         <div className="button-row">
           <button className="button button-secondary" onClick={props.onClose} type="button">Cancel</button>
           <button className="button button-primary" disabled={saving || props.models.length === 0} type="submit">
-            {saving ? "Creating..." : "Create clip"}
+            {saving ? "Starting..." : "Generate clip"}
           </button>
         </div>
       </form>
@@ -104,22 +110,41 @@ export function SceneCreateModal(props: SceneCreateModalProps) {
   );
 }
 
-async function createScene(
-  projectId: string,
+async function startClip(
+  props: SceneCreateModalProps,
   form: SceneFormState,
   file: File | null,
-  parentSceneId?: string
+  model: EditorVideoModel | undefined
 ) {
-  const startFrameAssetId = await startFrameAsset(projectId, form, file);
-  const response = await fetch(`/api/projects/${projectId}/scenes`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(sceneBody(form, startFrameAssetId, parentSceneId))
-  });
-  if (!response.ok) throw new Error("Clip could not be created.");
+  if (!model) throw new Error("Video model is not available.");
+  const assetId = await resolveStartFrame(props.projectId, form, file);
+  return startClipGeneration(clipInput(props, form, model, assetId));
 }
 
-async function startFrameAsset(projectId: string, form: SceneFormState, file: File | null) {
+function clipInput(
+  props: SceneCreateModalProps,
+  form: SceneFormState,
+  model: EditorVideoModel,
+  assetId: string
+): StartClipGenerationInput {
+  return {
+    assetId,
+    aspectRatio: videoAspectRatio(model, props.projectAspectRatio),
+    duration: form.durationSeconds,
+    modelId: form.modelId,
+    parentSceneId: props.parentSceneId,
+    projectId: props.projectId,
+    prompt: form.prompt,
+    resolution: form.resolution
+  };
+}
+
+function videoAspectRatio(model: EditorVideoModel, aspectRatio: string) {
+  if (model.supportedAspectRatios.includes(aspectRatio)) return aspectRatio;
+  return model.supportedAspectRatios.includes("auto") ? "auto" : model.defaultAspectRatio;
+}
+
+async function resolveStartFrame(projectId: string, form: SceneFormState, file: File | null) {
   if (file) return uploadAsset(projectId, file);
   if (form.selectedAssetId) return form.selectedAssetId;
   throw new Error("Start frame is required.");
@@ -182,10 +207,6 @@ function update(setForm: SetForm, key: keyof SceneFormState, value: string) {
 
 function updateNumber(setForm: SetForm, key: keyof SceneFormState, value: string) {
   setForm((current) => ({ ...current, [key]: Number(value) }));
-}
-
-function sceneBody(form: SceneFormState, startFrameAssetId: string, parentSceneId?: string) {
-  return { parentSceneId, prompt: form.prompt, modelId: form.modelId, durationSeconds: form.durationSeconds, startFrameAssetId };
 }
 
 function uploadBody(projectId: string, file: File) {

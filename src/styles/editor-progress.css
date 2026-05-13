@@ -23,6 +23,7 @@
 }
 
 .ai-creator-progress-modal {
+  position: relative;
   max-width: 650px;
 }
 
@@ -46,6 +47,30 @@
 
 .generation-progress-modal {
   margin-top: 18px;
+}
+
+.ai-creator-progress-actions,
+.ai-creator-prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.ai-creator-progress-actions {
+  flex-wrap: wrap;
+}
+
+.ai-creator-progress-error {
+  margin-top: 12px;
+}
+
+.ai-creator-prompt-actions span {
+  flex: 1;
+}
+
+.ai-creator-prompt-modal textarea {
+  min-height: 220px;
 }
 
 .ai-creator-polling-pulse {

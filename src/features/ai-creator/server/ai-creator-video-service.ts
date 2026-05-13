@@ -9,7 +9,9 @@ import type { AiCreatorVideoInput, AiCreatorVideoSceneInput } from "./ai-creator
 export async function startAiCreatorVideo(userId: string, projectId: string, input: AiCreatorVideoInput) {
   const drafts = videoScenes(input);
   await preflightSequence(userId, projectId, input, drafts);
-  await selectStartImage(userId, projectId, { assetId: input.assetId });
+  if (!input.parentSceneId) {
+    await selectStartImage(userId, projectId, { assetId: input.assetId });
+  }
   const sequence = await createAiCreatorSequence(userId, projectId, input, drafts);
   try {
     const job = await generateVideo(userId, sequence.scenes[0].id, videoInput(input, drafts[0]));
@@ -39,9 +41,10 @@ async function createAiCreatorSequence(
 ) {
   const branchId = createAiCreatorSequenceId();
   const scenes: CreatedScene[] = [];
-  let parentSceneId: string | undefined;
+  let parentSceneId: string | undefined = input.parentSceneId;
   for (const draft of drafts) {
-    const scene = await createAiCreatorScene({ branchId, draft, input, parentSceneId, projectId, userId });
+    const isFirstScene = scenes.length === 0;
+    const scene = await createAiCreatorScene({ branchId, draft, input, isFirstScene, parentSceneId, projectId, userId });
     scenes.push(scene);
     parentSceneId = scene.id;
   }
@@ -55,7 +58,7 @@ async function createAiCreatorScene(args: CreateAiCreatorSceneInput) {
     modelId: args.input.modelId,
     parentSceneId: args.parentSceneId,
     prompt: args.draft.prompt,
-    startFrameAssetId: args.parentSceneId ? undefined : args.input.assetId
+    startFrameAssetId: args.isFirstScene ? args.input.assetId : undefined
   });
 }
 
@@ -105,6 +108,7 @@ type CreateAiCreatorSceneInput = {
   branchId: string;
   draft: AiCreatorVideoSceneInput;
   input: AiCreatorVideoInput;
+  isFirstScene: boolean;
   parentSceneId?: string;
   projectId: string;
   userId: string;
