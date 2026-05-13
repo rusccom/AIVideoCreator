@@ -11,8 +11,23 @@ export function providerErrorPayload(error: unknown) {
     requestId: stringValue(source.requestId),
     timeoutType: stringValue(source.timeoutType),
     body: asJsonValue(source.body),
+    details: providerErrorDetails(error),
+    detailText: providerErrorDetailText(error),
     cause: errorCause(source.cause)
   });
+}
+
+export function providerErrorDetails(error: unknown) {
+  const source = record(error);
+  const bodyDetail = record(source.body).detail;
+  const detail = bodyDetail ?? source.details ?? source.fieldErrors;
+  return detail === undefined ? null : asJsonValue(detail);
+}
+
+export function providerErrorDetailText(error: unknown) {
+  const detail = providerErrorDetails(error);
+  if (detail === null) return undefined;
+  return safeStringify(detail);
 }
 
 export function providerErrorMessage(error: unknown, fallback: string) {
@@ -26,6 +41,14 @@ export function providerErrorMessage(error: unknown, fallback: string) {
 function asJsonValue(value: unknown) {
   if (value === undefined) return null;
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function safeStringify(value: unknown) {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
 }
 
 function record(value: unknown) {

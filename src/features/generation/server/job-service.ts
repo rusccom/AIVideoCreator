@@ -2,6 +2,7 @@ import { prisma } from "@/shared/server/prisma";
 import { getSupportedModel } from "../models/catalog";
 import { getFalResult, getFalStatus } from "./fal-client";
 import { completeGenerationJob, failGenerationJob } from "./generation-result-service";
+import { providerErrorPayload } from "./provider-error";
 
 export async function refreshGenerationJobForUser(userId: string, jobId: string) {
   const job = await ownedJob(userId, jobId);
@@ -17,8 +18,12 @@ async function applyStatus(jobId: string, modelId: string, requestId: string, st
 }
 
 async function completeFromFal(jobId: string, modelId: string, requestId: string) {
-  const result = await getFalResult(providerModelId(modelId), requestId);
-  return completeGenerationJob(jobId, result.data);
+  try {
+    const result = await getFalResult(providerModelId(modelId), requestId);
+    return completeGenerationJob(jobId, result.data);
+  } catch (error) {
+    return failGenerationJob(jobId, providerErrorPayload(error), "fal result failed");
+  }
 }
 
 async function ownedJob(userId: string, jobId: string) {

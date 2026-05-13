@@ -3,7 +3,8 @@ import { prisma } from "@/shared/server/prisma";
 import { getSupportedModel } from "../models/catalog";
 import { getFalResult } from "./fal-client";
 import { completeGenerationJob, failGenerationJob } from "./generation-result-service";
-import { logProviderEvent } from "./provider-log";
+import { logProviderError, logProviderEvent } from "./provider-log";
+import { providerErrorPayload } from "./provider-error";
 
 type FalWebhookPayload = {
   request_id?: string;
@@ -65,7 +66,21 @@ async function failJob(jobId: string, payload: FalWebhookPayload) {
 
 async function processJob(job: Awaited<ReturnType<typeof findJob>>) {
   if (!job?.providerRequestId) throw new Error("Missing fal request id");
+  if (job.status !== "GENERATING") {
+    logProviderEvent("warn", "fal.webhook.job_already_closed", { jobId: job.id, status: job.status });
+    return job;
+  }
   logProviderEvent("info", "fal.webhook.processing_job", { jobId: job.id, requestId: job.providerRequestId });
+  try {
+    return await completeWebhookJob(job);
+  } catch (error) {
+    logProviderError("fal.webhook.result_failed", { jobId: job.id, requestId: job.providerRequestId }, error);
+    return failGenerationJob(job.id, providerErrorPayload(error), "fal result failed");
+  }
+}
+
+async function completeWebhookJob(job: NonNullable<Awaited<ReturnType<typeof findJob>>>) {
+  if (!job.providerRequestId) throw new Error("Missing fal request id");
   const result = await getFalResult(providerModelId(job.modelId), job.providerRequestId);
   return completeGenerationJob(job.id, result.data);
 }

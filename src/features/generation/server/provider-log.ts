@@ -1,4 +1,4 @@
-import { providerErrorPayload } from "./provider-error";
+import { providerErrorDetailText, providerErrorDetails, providerErrorPayload } from "./provider-error";
 
 type LogLevel = "error" | "info" | "warn";
 
@@ -15,15 +15,18 @@ export function logProviderError(event: string, data: Record<string, unknown>, e
   logProviderEvent("error", event, {
     ...data,
     error: providerErrorPayload(error),
+    errorDetails: providerErrorDetails(error),
+    errorDetailText: providerErrorDetailText(error),
     failureKind: failureKind(error),
     stack: errorStack(error)
   });
 }
 
 function writeLog(level: LogLevel, payload: Record<string, unknown>) {
-  if (level === "error") return console.error(payload);
-  if (level === "warn") return console.warn(payload);
-  return console.info(payload);
+  const line = safeJson(payload);
+  if (level === "error") return console.error(line);
+  if (level === "warn") return console.warn(line);
+  return console.info(line);
 }
 
 function sanitizeObject(data: Record<string, unknown>) {
@@ -31,7 +34,7 @@ function sanitizeObject(data: Record<string, unknown>) {
 }
 
 function sanitizeValue(key: string, value: unknown, depth: number): unknown {
-  if (depth > 3) return valueType(value);
+  if (depth > 8) return valueType(value);
   if (typeof value === "string") return sanitizeString(key, value);
   if (Array.isArray(value)) return value.slice(0, 8).map((item) => sanitizeValue(key, item, depth + 1));
   if (isRecord(value)) return sanitizeNested(value, depth);
@@ -69,6 +72,14 @@ function networkErrorName(name: unknown) {
 
 function errorStack(error: unknown) {
   return error instanceof Error ? error.stack?.slice(0, 2000) : undefined;
+}
+
+function safeJson(value: unknown) {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
 }
 
 function valueType(value: unknown) {
