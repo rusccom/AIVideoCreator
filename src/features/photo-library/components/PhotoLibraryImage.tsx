@@ -14,7 +14,16 @@ export function PhotoLibraryImage(props: PhotoLibraryImageProps) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
 
   if (!url || failedUrl === url) return <span className="photo-library-image">{fallbackText(props.fallback)}</span>;
-  return <img alt={props.alt} className="photo-library-image" onError={() => setFailedUrl(url)} src={url} />;
+  return (
+    <img
+      alt={props.alt}
+      className="photo-library-image"
+      decoding="async"
+      loading="lazy"
+      onError={() => setFailedUrl(url)}
+      src={url}
+    />
+  );
 }
 
 function fallbackText(fallback?: string) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, type MutableRefObject } from "react";
 import {
   PointerSensor,
   type DragEndEvent,
@@ -23,6 +23,7 @@ export function useTimelineDrag(input: UseTimelineDragInput) {
   const [activeLabel, setActiveLabel] = useState("");
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null);
+  const centersRef = useRef<number[]>([]);
   const sceneNames = useMemo(() => sceneNameMap(input.project), [input.project]);
   const setters = { setActiveItemId, setActiveLabel, setInsertionIndex };
   return {
@@ -30,9 +31,9 @@ export function useTimelineDrag(input: UseTimelineDragInput) {
     activeLabel,
     insertionIndex,
     onDragCancel: () => resetDrag(setters),
-    onDragEnd: (event: DragEndEvent) => handleDragEnd(input, event, setters),
-    onDragMove: (event: DragMoveEvent) => handleDragMove(input, event, setInsertionIndex),
-    onDragStart: (event: DragStartEvent) => handleDragStart(event, sceneNames, input.items, setters),
+    onDragEnd: (event: DragEndEvent) => handleDragEnd(input, event, setters, centersRef.current),
+    onDragMove: (event: DragMoveEvent) => handleDragMove(input, event, setInsertionIndex, centersRef.current),
+    onDragStart: (event: DragStartEvent) => handleDragStart(event, sceneNames, input.items, setters, centersRef),
     sensors
   };
 }
@@ -40,13 +41,14 @@ export function useTimelineDrag(input: UseTimelineDragInput) {
 function handleDragEnd(
   input: UseTimelineDragInput,
   event: DragEndEvent,
-  setters: DragStateSetters
+  setters: DragStateSetters,
+  centers: readonly number[]
 ) {
   resetDrag(setters);
   const active = dragData(event.active.data.current);
   if (!active || !isTimelineDrop(event.over?.data.current)) return;
   const movingId = active.type === "timeline-item" ? active.itemId : undefined;
-  const index = dropIndex(event, input.items, movingId);
+  const index = dropIndex(event, input.items, movingId, centers);
   if (index === null) return;
   if (active.type === "clip") input.addScene(active.sceneId, index);
   if (active.type === "timeline-item") input.moveItem(active.itemId, index);
@@ -55,28 +57,37 @@ function handleDragEnd(
 function handleDragMove(
   input: UseTimelineDragInput,
   event: DragMoveEvent,
-  setInsertionIndex: (value: number | null) => void
+  setInsertionIndex: (value: number | null) => void,
+  centers: readonly number[]
 ) {
   const active = dragData(event.active.data.current);
   if (!active || !isTimelineDrop(event.over?.data.current)) return setInsertionIndex(null);
   const movingId = active.type === "timeline-item" ? active.itemId : undefined;
-  setInsertionIndex(dropIndex(event, input.items, movingId));
+  setInsertionIndex(dropIndex(event, input.items, movingId, centers));
 }
 
 function handleDragStart(
   event: DragStartEvent,
   sceneNames: Map<string, string>,
   items: EditorTimelineItem[],
-  setters: DragStateSetters
+  setters: DragStateSetters,
+  centersRef: MutableRefObject<number[]>
 ) {
   const active = dragData(event.active.data.current);
+  const movingId = active?.type === "timeline-item" ? active.itemId : undefined;
+  centersRef.current = timelineCenters(items, movingId);
   setters.setActiveItemId(active?.type === "timeline-item" ? active.itemId : null);
   setters.setInsertionIndex(null);
   setters.setActiveLabel(labelForDrag(event, sceneNames, items));
 }
 
-function dropIndex(event: TimelineDragEvent, items: EditorTimelineItem[], movingId?: string) {
-  const pointerIndex = timelinePointerIndex(event, items, movingId);
+function dropIndex(
+  event: TimelineDragEvent,
+  items: EditorTimelineItem[],
+  movingId: string | undefined,
+  centers: readonly number[]
+) {
+  const pointerIndex = timelinePointerIndex(event, items, movingId, centers);
   if (pointerIndex !== null) return pointerIndex;
   const drop = dropData(event.over?.data.current);
   if (!drop) return null;
@@ -84,12 +95,17 @@ function dropIndex(event: TimelineDragEvent, items: EditorTimelineItem[], moving
   return itemIndex(items, drop.itemId);
 }
 
-function timelinePointerIndex(event: TimelineDragEvent, items: EditorTimelineItem[], movingId?: string) {
+function timelinePointerIndex(
+  event: TimelineDragEvent,
+  items: EditorTimelineItem[],
+  movingId: string | undefined,
+  centers: readonly number[]
+) {
   const pointerX = pointerClientX(event);
   if (pointerX === null) return null;
-  const centers = timelineCenters(items, movingId);
-  const index = centers.findIndex((center) => pointerX < center);
-  return index < 0 ? items.length : index;
+  const points = centers.length ? centers : timelineCenters(items, movingId);
+  const index = points.findIndex((center) => pointerX < center);
+  return index < 0 ? points.length : index;
 }
 
 function timelineCenters(items: EditorTimelineItem[], movingId?: string) {

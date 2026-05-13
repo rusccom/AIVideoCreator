@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/features/auth/server/current-user";
 import { DashboardHeader } from "@/features/studio/components/DashboardHeader";
 import { EmptyState } from "@/features/studio/components/EmptyState";
@@ -6,7 +7,8 @@ import { getDashboardData } from "@/features/studio/server/dashboard-service";
 
 export default async function ProjectsPage() {
   const user = await getCurrentUser();
-  const data = await getDashboardData(user!.id);
+  if (!user) redirect("/login");
+  const data = await getDashboardData(user.id);
 
   return (
     <>

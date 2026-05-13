@@ -20,7 +20,7 @@ export function AiCreatorMediaTile(props: AiCreatorMediaTileProps) {
       onClick={() => props.onSelect(props.slot)}
       type="button"
     >
-      {url ? <img alt={props.slot.label} src={url} /> : tileFallback(props.slot)}
+      {url ? <img alt={props.slot.label} decoding="async" loading="lazy" src={url} /> : tileFallback(props.slot)}
       {props.selected ? <span className="ai-creator-media-check"><Check size={15} /></span> : null}
       {props.slot.status === "failed" ? <span className="ai-creator-media-error">Failed</span> : null}
     </button>

@@ -84,6 +84,7 @@ function FallbackFrame({ position }: { position: ScenePosition | null }) {
       alt="Start frame"
       className="preview-image"
       fallback={fallback}
+      loading="eager"
       source={position?.scene.startFrameUrl}
     />
   );

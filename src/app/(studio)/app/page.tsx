@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/features/auth/server/current-user";
 import { ActivityPanel } from "@/features/studio/components/ActivityPanel";
 import { DashboardHeader } from "@/features/studio/components/DashboardHeader";
@@ -8,7 +9,8 @@ import { getDashboardData } from "@/features/studio/server/dashboard-service";
 
 export default async function StudioHomePage() {
   const user = await getCurrentUser();
-  const data = await getDashboardData(user!.id);
+  if (!user) redirect("/login");
+  const data = await getDashboardData(user.id);
 
   return (
     <>

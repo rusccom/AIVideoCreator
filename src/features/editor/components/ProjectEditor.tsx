@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, type MouseEvent } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { DndContext, DragOverlay, pointerWithin } from "@dnd-kit/core";
 import { Trash2, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { AiCreatorProgressModal } from "@/features/ai-creator/components/AiCreatorProgressModal";
 import type { EditorProject, EditorScene, EditorTimelineItem } from "../types";
 import { usePlayback } from "../hooks/use-playback";
 import { useSceneCreator } from "../hooks/use-scene-creator";
@@ -14,9 +14,13 @@ import { EditorHeader } from "./EditorHeader";
 import { EditorContextMenu, type EditorContextMenuItem } from "./EditorContextMenu";
 import { PhotoPanel } from "./PhotoPanel";
 import { PreviewPlayer } from "./PreviewPlayer";
-import { SceneCreateModal } from "./SceneCreateModal";
 import { SceneRail } from "./SceneRail";
 import { StoryboardTimeline } from "./StoryboardTimeline";
+
+const AiCreatorProgressModal = dynamic(() =>
+  import("@/features/ai-creator/components/AiCreatorProgressModal").then((mod) => mod.AiCreatorProgressModal)
+);
+const SceneCreateModal = dynamic(() => import("./SceneCreateModal").then((mod) => mod.SceneCreateModal));
 
 type ProjectEditorProps = {
   credits: number;
@@ -45,8 +49,9 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
   const lastSceneId = project.scenes[project.scenes.length - 1]?.id;
   const lastTimelineItemId = timeline.items[timeline.items.length - 1]?.id;
   const continueTarget = { sceneId: lastSceneId, timelineItemId: lastTimelineItemId };
+  const closeMenu = useCallback(() => setMenu(null), []);
   useGenerationPolling(selectedScene, router);
-  useMenuListeners(menu, () => setMenu(null));
+  useMenuListeners(menu, closeMenu);
 
   function openSceneMenu(scene: EditorScene, event: MouseEvent) {
     openMenu(event);

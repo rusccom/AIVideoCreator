@@ -25,8 +25,7 @@ export class PlaybackTimeline {
   positionAtTime(time: number): ScenePosition | null {
     if (this.positions.length === 0) return null;
     const clamped = clamp(time, 0, this.totalDuration);
-    const found = this.positions.find((position) => clamped < position.endTime);
-    return found ?? this.positions[this.positions.length - 1];
+    return this.positions[positionIndex(this.positions, clamped)];
   }
 
   positionForScene(sceneId: string): ScenePosition | null {
@@ -53,6 +52,17 @@ function buildPositions(items: readonly EditorTimelineItem[]): ScenePosition[] {
     cursor += item.durationSeconds;
     return { item, scene: item.scene, index, startTime, endTime: cursor };
   });
+}
+
+function positionIndex(positions: readonly ScenePosition[], time: number) {
+  let low = 0;
+  let high = positions.length - 1;
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
+    if (time < positions[mid].endTime) high = mid;
+    else low = mid + 1;
+  }
+  return low;
 }
 
 function clamp(value: number, min: number, max: number) {

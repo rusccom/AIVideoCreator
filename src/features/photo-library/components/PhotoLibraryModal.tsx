@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState, type MouseEvent } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { X } from "lucide-react";
 import { usePhotoLibrary } from "../hooks/use-photo-library";
 import type { PhotoLibraryAsset, PhotoLibraryImageModel, PhotoLibraryMode } from "../types";
 import { PhotoLibraryContextMenu } from "./PhotoLibraryContextMenu";
 import { PhotoLibraryFooter } from "./PhotoLibraryFooter";
-import { PhotoGenerationModal } from "./PhotoGenerationModal";
 import { PhotoLibraryGrid } from "./PhotoLibraryGrid";
 import { PhotoLibraryToolbar } from "./PhotoLibraryToolbar";
+
+const PhotoGenerationModal = dynamic(() => import("./PhotoGenerationModal").then((mod) => mod.PhotoGenerationModal));
 
 type PhotoLibraryModalProps = {
   assets?: PhotoLibraryAsset[];
@@ -34,16 +36,16 @@ export function PhotoLibraryModal(props: PhotoLibraryModalProps) {
   const [menu, setMenu] = useState<PhotoMenuState | null>(null);
   const [showGeneration, setShowGeneration] = useState(false);
   const selectedAsset = library.assets.find((asset) => asset.id === selectedId);
+  const closeMenu = useCallback(() => setMenu(null), []);
 
   useEffect(() => {
     if (!menu) return;
-    const close = () => setMenu(null);
-    const timer = window.setTimeout(() => addMenuListeners(close));
+    const timer = window.setTimeout(() => addMenuListeners(closeMenu));
     return () => {
       window.clearTimeout(timer);
-      removeMenuListeners(close);
+      removeMenuListeners(closeMenu);
     };
-  }, [menu]);
+  }, [closeMenu, menu]);
 
   async function upload(file: File) {
     const assetId = await library.upload(file);

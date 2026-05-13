@@ -7,6 +7,7 @@ type ResolvedAssetImageProps = {
   alt: string;
   className: string;
   fallback?: string;
+  loading?: "eager" | "lazy";
   source?: string | null;
 };
 
@@ -15,7 +16,16 @@ export function ResolvedAssetImage(props: ResolvedAssetImageProps) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
 
   if (!url || failedUrl === url) return <span className={props.className}>{fallbackText(props.fallback)}</span>;
-  return <img alt={props.alt} className={props.className} onError={() => setFailedUrl(url)} src={url} />;
+  return (
+    <img
+      alt={props.alt}
+      className={props.className}
+      decoding="async"
+      loading={props.loading ?? "lazy"}
+      onError={() => setFailedUrl(url)}
+      src={url}
+    />
+  );
 }
 
 function fallbackText(fallback?: string) {

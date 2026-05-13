@@ -1,12 +1,16 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
-import { useEffect, useState, type MouseEvent } from "react";
-import { PhotoLibraryModal } from "@/features/photo-library/components/PhotoLibraryModal";
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import type { EditorAsset, EditorImageModel } from "../types";
 import { PhotoAssetGrid } from "./PhotoAssetGrid";
 import { PhotoContextMenu } from "./PhotoContextMenu";
+
+const PhotoLibraryModal = dynamic(() =>
+  import("@/features/photo-library/components/PhotoLibraryModal").then((mod) => mod.PhotoLibraryModal)
+);
 
 type PhotoPanelProps = {
   assets: EditorAsset[];
@@ -27,17 +31,17 @@ export function PhotoPanel(props: PhotoPanelProps) {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedAssetId, setSelectedAssetId] = useState<string>();
   const [menu, setMenu] = useState<PhotoMenuState | null>(null);
-  const photos = props.assets.filter(isPhotoAsset);
+  const photos = useMemo(() => props.assets.filter(isPhotoAsset), [props.assets]);
+  const closeMenu = useCallback(() => setMenu(null), []);
 
   useEffect(() => {
     if (!menu) return;
-    const close = () => setMenu(null);
-    const timer = window.setTimeout(() => addMenuListeners(close));
+    const timer = window.setTimeout(() => addMenuListeners(closeMenu));
     return () => {
       window.clearTimeout(timer);
-      removeMenuListeners(close);
+      removeMenuListeners(closeMenu);
     };
-  }, [menu]);
+  }, [closeMenu, menu]);
 
   function openMenu(asset: EditorAsset, event: MouseEvent) {
     event.preventDefault();

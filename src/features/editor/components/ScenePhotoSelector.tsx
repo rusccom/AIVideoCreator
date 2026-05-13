@@ -1,9 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import { PhotoLibraryModal } from "@/features/photo-library/components/PhotoLibraryModal";
 import type { EditorAsset, EditorImageModel } from "../types";
 import { ResolvedAssetImage } from "./ResolvedAssetImage";
+
+const PhotoLibraryModal = dynamic(() =>
+  import("@/features/photo-library/components/PhotoLibraryModal").then((mod) => mod.PhotoLibraryModal)
+);
 
 type ScenePhotoSelectorProps = {
   assets: EditorAsset[];
