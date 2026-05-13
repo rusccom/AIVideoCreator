@@ -4,7 +4,7 @@ import { Pencil, RotateCcw, X } from "lucide-react";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { useEffect, useState } from "react";
 import { useAiCreatorProgressRecovery, type AiCreatorProgressRecovery } from "../use-ai-creator-progress-recovery";
-import { AiCreatorPollingPulse } from "./AiCreatorPollingPulse";
+import { AiCreatorProgressPulse } from "./AiCreatorProgressPulse";
 import { AiCreatorPromptEditModal } from "./AiCreatorPromptEditModal";
 
 type AiCreatorProgressModalProps = {
@@ -55,7 +55,7 @@ export function AiCreatorProgressModal(props: AiCreatorProgressModalProps) {
     <div aria-modal="true" className="project-modal-backdrop" role="dialog">
       <div className="project-modal ai-creator-progress-modal">
         <div className="ai-creator-progress-layout">
-          <AiCreatorPollingPulse
+          <AiCreatorProgressPulse
             pulse={state.pulse}
             readyCount={progress.readyCount}
             status={progress.status}

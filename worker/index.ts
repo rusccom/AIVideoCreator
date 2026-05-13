@@ -2,7 +2,7 @@ import { processNextExportJob } from "./process-export";
 import { processNextGenerationJob } from "./process-generation";
 
 async function main() {
-  console.log({ worker: "started", pollMs: pollMs() });
+  console.log({ idleMs: idleMs(), worker: "started" });
   while (true) {
     await tick();
   }
@@ -15,11 +15,11 @@ async function tick() {
     console.log({ exportJob, generation });
     return;
   }
-  await sleep(pollMs());
+  await sleep(idleMs());
 }
 
-function pollMs() {
-  return Number(process.env.WORKER_POLL_MS ?? 5000);
+function idleMs() {
+  return Number(process.env.WORKER_IDLE_MS ?? 5000);
 }
 
 function sleep(ms: number) {
