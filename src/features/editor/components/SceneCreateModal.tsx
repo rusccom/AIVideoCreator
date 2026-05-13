@@ -71,13 +71,13 @@ export function SceneCreateModal(props: SceneCreateModalProps) {
           Prompt
           <textarea value={form.prompt} onChange={(event) => update(setForm, "prompt", event.target.value)} />
         </label>
-        <label>
-          Video model
-          <select value={form.modelId} onChange={(event) => changeModel(event.target.value)}>
-            {props.models.map((item) => <option key={item.id} value={item.id}>{item.displayName}</option>)}
-          </select>
-        </label>
         <div className="scene-modal-options">
+          <label>
+            Video model
+            <select value={form.modelId} onChange={(event) => changeModel(event.target.value)}>
+              {props.models.map((item) => <option key={item.id} value={item.id}>{item.displayName}</option>)}
+            </select>
+          </label>
           <label>
             Duration, sec
             <input max={model?.maxDurationSeconds} min={model?.minDurationSeconds} type="number" value={form.durationSeconds} onChange={(event) => updateNumber(setForm, "durationSeconds", event.target.value)} />

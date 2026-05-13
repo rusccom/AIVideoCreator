@@ -173,8 +173,12 @@
 
 .scene-modal-options {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: minmax(240px, 2fr) minmax(140px, 1fr) minmax(140px, 1fr);
   gap: 10px;
+}
+
+.scene-modal-options label {
+  margin-bottom: 0;
 }
 
 .scene-photo-selector {
