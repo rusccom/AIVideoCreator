@@ -3,10 +3,10 @@
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { useEffect, useState, type MouseEvent } from "react";
+import { PhotoLibraryModal } from "@/features/photo-library/components/PhotoLibraryModal";
 import type { EditorAsset, EditorImageModel } from "../types";
 import { PhotoAssetGrid } from "./PhotoAssetGrid";
 import { PhotoContextMenu } from "./PhotoContextMenu";
-import { PhotoCreateModal } from "./PhotoCreateModal";
 
 type PhotoPanelProps = {
   assets: EditorAsset[];
@@ -86,10 +86,12 @@ export function PhotoPanel(props: PhotoPanelProps) {
         />
       ) : null}
       {showCreate ? (
-        <PhotoCreateModal
+        <PhotoLibraryModal
+          assets={photos}
           imageModels={props.imageModels}
+          mode="manage"
+          onChanged={router.refresh}
           onClose={() => setShowCreate(false)}
-          onReady={() => finishCreate(setShowCreate, router.refresh)}
           projectAspectRatio={props.projectAspectRatio}
           projectId={props.projectId}
         />
@@ -100,11 +102,6 @@ export function PhotoPanel(props: PhotoPanelProps) {
 
 function isPhotoAsset(asset: EditorAsset) {
   return asset.type === "IMAGE" || asset.type === "FRAME" || asset.type === "THUMBNAIL";
-}
-
-function finishCreate(setShowCreate: (value: boolean) => void, refresh: () => void) {
-  setShowCreate(false);
-  refresh();
 }
 
 function clearSelectedAsset(

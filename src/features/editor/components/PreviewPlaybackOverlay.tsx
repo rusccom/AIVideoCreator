@@ -13,7 +13,7 @@ export function PreviewPlaybackOverlay({ playback }: PreviewPlaybackOverlayProps
     <div className="preview-playback-overlay" aria-label="Preview playback controls">
       <button
         aria-label="Pause"
-        className={playback.isPlaying ? "active" : undefined}
+        className={!playback.isPlaying ? "active" : undefined}
         disabled={empty}
         onClick={playback.pause}
         type="button"
@@ -22,7 +22,7 @@ export function PreviewPlaybackOverlay({ playback }: PreviewPlaybackOverlayProps
       </button>
       <button
         aria-label="Play"
-        className={!playback.isPlaying ? "active" : undefined}
+        className={playback.isPlaying ? "active" : undefined}
         disabled={empty}
         onClick={playback.play}
         type="button"

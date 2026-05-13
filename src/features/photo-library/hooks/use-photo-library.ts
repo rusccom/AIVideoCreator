@@ -1,0 +1,75 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { fetchProjectPhotos, uploadProjectPhoto } from "../client/photo-library-client";
+import type { PhotoLibraryAsset } from "../types";
+
+type UsePhotoLibraryInput = {
+  initialAssets?: PhotoLibraryAsset[];
+  projectId: string;
+};
+
+export function usePhotoLibrary(input: UsePhotoLibraryInput) {
+  const [assets, setAssets] = useState(input.initialAssets ?? []);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const refresh = useCallback(() => refreshAssets(input.projectId, setAssets, setError, setLoading), [input.projectId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  async function upload(file: File) {
+    return uploadAsset(input.projectId, file, refresh, setError, setUploading);
+  }
+
+  return { assets, error, loading, refresh, upload, uploading };
+}
+
+async function refreshAssets(
+  projectId: string,
+  setAssets: SetAssets,
+  setError: SetError,
+  setLoading: SetBoolean
+) {
+  setLoading(true);
+  setError("");
+  try {
+    setAssets(await fetchProjectPhotos(projectId));
+  } catch (error) {
+    setError(errorMessage(error));
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function uploadAsset(
+  projectId: string,
+  file: File,
+  refresh: () => Promise<void>,
+  setError: SetError,
+  setUploading: SetBoolean
+) {
+  setUploading(true);
+  setError("");
+  try {
+    const assetId = await uploadProjectPhoto(projectId, file);
+    await refresh();
+    return assetId;
+  } catch (error) {
+    setError(errorMessage(error));
+    return null;
+  } finally {
+    setUploading(false);
+  }
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Photo library action failed.";
+}
+
+type SetAssets = (assets: PhotoLibraryAsset[]) => void;
+type SetBoolean = (value: boolean) => void;
+type SetError = (value: string) => void;

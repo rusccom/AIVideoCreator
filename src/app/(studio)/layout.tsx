@@ -7,6 +7,7 @@ import "@/styles/editor-timeline.css";
 import "@/styles/editor-photo.css";
 import "@/styles/editor-progress.css";
 import "@/styles/editor-download.css";
+import "@/styles/photo-library.css";
 import "@/styles/forms.css";
 import "@/styles/studio-wizard.css";
 import "@/styles/project-modal.css";

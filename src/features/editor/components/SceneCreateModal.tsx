@@ -6,11 +6,13 @@ import {
   type StartedCreatorVideo,
   type StartClipGenerationInput
 } from "@/features/ai-creator/ai-creator-video-generation";
-import type { EditorAsset, EditorVideoModel } from "../types";
+import type { EditorAsset, EditorImageModel, EditorVideoModel } from "../types";
+import { ScenePhotoSelector } from "./ScenePhotoSelector";
 
 type SceneCreateModalProps = {
   assets: EditorAsset[];
   defaultPrompt: string;
+  imageModels: EditorImageModel[];
   initialAssetId?: string;
   models: EditorVideoModel[];
   onClose: () => void;
@@ -31,7 +33,6 @@ type SceneFormState = {
 export function SceneCreateModal(props: SceneCreateModalProps) {
   const initial = initialState(props.models, props.assets, props.defaultPrompt, props.initialAssetId);
   const [form, setForm] = useState(initial);
-  const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const model = selectedModel(props.models, form.modelId);
@@ -41,7 +42,7 @@ export function SceneCreateModal(props: SceneCreateModalProps) {
     setSaving(true);
     setError("");
     try {
-      const started = await startClip(props, form, file, model);
+      const started = await startClip(props, form, model);
       props.onStarted(started);
     } catch (nextError) {
       setError(errorMessage(nextError));
@@ -61,7 +62,7 @@ export function SceneCreateModal(props: SceneCreateModalProps) {
         <div className="project-modal-header">
           <div>
             <h2>Create clip</h2>
-            <p>Upload a start frame, choose a video model, then generate the clip.</p>
+            <p>Choose a start frame and video model, then generate the clip.</p>
           </div>
           <button className="project-modal-close" onClick={props.onClose} type="button">x</button>
         </div>
@@ -76,7 +77,7 @@ export function SceneCreateModal(props: SceneCreateModalProps) {
             {props.models.map((item) => <option key={item.id} value={item.id}>{item.displayName}</option>)}
           </select>
         </label>
-        <div className="scene-modal-grid">
+        <div className="scene-modal-options">
           <label>
             Duration, sec
             <input max={model?.maxDurationSeconds} min={model?.minDurationSeconds} type="number" value={form.durationSeconds} onChange={(event) => updateNumber(setForm, "durationSeconds", event.target.value)} />
@@ -88,17 +89,17 @@ export function SceneCreateModal(props: SceneCreateModalProps) {
             </select>
           </label>
         </div>
-        <label>
-          Start frame upload
-          <input accept="image/*" onChange={(event) => setFile(event.target.files?.[0] ?? null)} type="file" />
-        </label>
-        <label>
-          Or use existing asset
-          <select disabled={Boolean(file)} value={form.selectedAssetId} onChange={(event) => update(setForm, "selectedAssetId", event.target.value)}>
-            <option value="">Select asset</option>
-            {props.assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.label}</option>)}
-          </select>
-        </label>
+        <div className="scene-modal-section">
+          <span className="scene-modal-label">Start frame</span>
+          <ScenePhotoSelector
+            assets={props.assets}
+            imageModels={props.imageModels}
+            onChange={(assetId) => update(setForm, "selectedAssetId", assetId)}
+            projectAspectRatio={props.projectAspectRatio}
+            projectId={props.projectId}
+            selectedAssetId={form.selectedAssetId}
+          />
+        </div>
         <div className="button-row">
           <button className="button button-secondary" onClick={props.onClose} type="button">Cancel</button>
           <button className="button button-primary" disabled={saving || props.models.length === 0} type="submit">
@@ -113,11 +114,10 @@ export function SceneCreateModal(props: SceneCreateModalProps) {
 async function startClip(
   props: SceneCreateModalProps,
   form: SceneFormState,
-  file: File | null,
   model: EditorVideoModel | undefined
 ) {
   if (!model) throw new Error("Video model is not available.");
-  const assetId = await resolveStartFrame(props.projectId, form, file);
+  const assetId = resolveStartFrame(form);
   return startClipGeneration(clipInput(props, form, model, assetId));
 }
 
@@ -144,27 +144,9 @@ function videoAspectRatio(model: EditorVideoModel, aspectRatio: string) {
   return model.supportedAspectRatios.includes("auto") ? "auto" : model.defaultAspectRatio;
 }
 
-async function resolveStartFrame(projectId: string, form: SceneFormState, file: File | null) {
-  if (file) return uploadAsset(projectId, file);
+function resolveStartFrame(form: SceneFormState) {
   if (form.selectedAssetId) return form.selectedAssetId;
   throw new Error("Start frame is required.");
-}
-
-async function uploadAsset(projectId: string, file: File) {
-  const data = await requestUpload(projectId, file);
-  const uploaded = await fetch(data.uploadUrl, { method: "PUT", body: file });
-  if (!uploaded.ok) throw new Error("Start frame upload failed.");
-  return data.assetId;
-}
-
-async function requestUpload(projectId: string, file: File) {
-  const response = await fetch("/api/assets/upload-url", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(uploadBody(projectId, file))
-  });
-  if (!response.ok) throw new Error("Upload URL could not be created.");
-  return response.json() as Promise<{ assetId: string; uploadUrl: string }>;
 }
 
 function initialState(
@@ -207,10 +189,6 @@ function update(setForm: SetForm, key: keyof SceneFormState, value: string) {
 
 function updateNumber(setForm: SetForm, key: keyof SceneFormState, value: string) {
   setForm((current) => ({ ...current, [key]: Number(value) }));
-}
-
-function uploadBody(projectId: string, file: File) {
-  return { projectId, fileName: file.name, mimeType: file.type || "image/png", type: "IMAGE" };
 }
 
 function errorMessage(error: unknown) {

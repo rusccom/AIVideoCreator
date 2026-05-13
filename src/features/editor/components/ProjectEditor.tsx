@@ -138,6 +138,7 @@ export function ProjectEditor({ credits, project }: ProjectEditorProps) {
         <SceneCreateModal
           assets={project.assets}
           defaultPrompt={creator.target.prompt}
+          imageModels={project.imageModels}
           initialAssetId={creator.target.assetId}
           models={project.videoModels}
           onClose={creator.closeCreate}
