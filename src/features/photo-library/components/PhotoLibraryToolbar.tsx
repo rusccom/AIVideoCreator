@@ -24,14 +24,11 @@ export function PhotoLibraryToolbar(props: PhotoLibraryToolbarProps) {
       <button className="button button-secondary" disabled={!props.canGenerate} onClick={props.onGenerate} type="button">
         <Sparkles size={16} /> Generate
       </button>
-      <button
-        className="button button-danger"
-        disabled={!props.canDelete || props.deleting}
-        onClick={props.onDelete}
-        type="button"
-      >
-        <Trash2 size={16} /> Delete
-      </button>
+      {props.canDelete ? (
+        <button className="button button-danger" disabled={props.deleting} onClick={props.onDelete} type="button">
+          <Trash2 size={16} /> Delete
+        </button>
+      ) : null}
       <button className="button button-quiet" disabled={props.loading} onClick={props.onRefresh} type="button">
         <RefreshCw size={16} /> Refresh
       </button>
