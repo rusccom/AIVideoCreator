@@ -15,6 +15,11 @@ export async function uploadProjectPhoto(projectId: string, file: File) {
   return data.asset.id;
 }
 
+export async function deleteProjectPhoto(assetId: string) {
+  const response = await fetch(`/api/assets/${assetId}`, { method: "DELETE" });
+  if (!response.ok) throw new Error("Photo delete failed.");
+}
+
 function uploadOptions(file: File) {
   return {
     method: "POST",

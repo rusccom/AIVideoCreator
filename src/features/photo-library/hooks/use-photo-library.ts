@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { fetchProjectPhotos, uploadProjectPhoto } from "../client/photo-library-client";
+import { deleteProjectPhoto, fetchProjectPhotos, uploadProjectPhoto } from "../client/photo-library-client";
 import type { PhotoLibraryAsset } from "../types";
 
 type UsePhotoLibraryInput = {
@@ -12,6 +12,7 @@ type UsePhotoLibraryInput = {
 export function usePhotoLibrary(input: UsePhotoLibraryInput) {
   const [assets, setAssets] = useState(input.initialAssets ?? []);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -25,7 +26,11 @@ export function usePhotoLibrary(input: UsePhotoLibraryInput) {
     return uploadAsset(input.projectId, file, refresh, setError, setUploading);
   }
 
-  return { assets, error, loading, refresh, upload, uploading };
+  async function deleteAsset(assetId: string) {
+    return removeAsset(assetId, refresh, setError, setDeletingId);
+  }
+
+  return { assets, deleteAsset, deletingId, error, loading, refresh, upload, uploading };
 }
 
 async function refreshAssets(
@@ -66,6 +71,26 @@ async function uploadAsset(
   }
 }
 
+async function removeAsset(
+  assetId: string,
+  refresh: () => Promise<void>,
+  setError: SetError,
+  setDeletingId: SetOptionalString
+) {
+  setDeletingId(assetId);
+  setError("");
+  try {
+    await deleteProjectPhoto(assetId);
+    await refresh();
+    return true;
+  } catch (error) {
+    setError(errorMessage(error));
+    return false;
+  } finally {
+    setDeletingId(undefined);
+  }
+}
+
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Photo library action failed.";
 }
@@ -73,3 +98,4 @@ function errorMessage(error: unknown) {
 type SetAssets = (assets: PhotoLibraryAsset[]) => void;
 type SetBoolean = (value: boolean) => void;
 type SetError = (value: string) => void;
+type SetOptionalString = (value?: string) => void;

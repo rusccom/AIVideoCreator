@@ -1,12 +1,13 @@
 "use client";
 
-import { Check } from "lucide-react";
+import type { MouseEvent } from "react";
 import type { PhotoLibraryAsset } from "../types";
-import { PhotoLibraryImage } from "./PhotoLibraryImage";
+import { PhotoLibraryCard } from "./PhotoLibraryCard";
 
 type PhotoLibraryGridProps = {
   assets: PhotoLibraryAsset[];
   loading: boolean;
+  onContextMenu?: (asset: PhotoLibraryAsset, event: MouseEvent) => void;
   onSelect: (asset: PhotoLibraryAsset) => void;
   selectedAssetId?: string;
 };
@@ -17,23 +18,14 @@ export function PhotoLibraryGrid(props: PhotoLibraryGridProps) {
   return (
     <div className="photo-library-grid">
       {props.assets.map((asset) => (
-        <button
-          aria-pressed={asset.id === props.selectedAssetId}
-          className={cardClass(asset.id, props.selectedAssetId)}
+        <PhotoLibraryCard
+          asset={asset}
           key={asset.id}
-          onClick={() => props.onSelect(asset)}
-          title={asset.label}
-          type="button"
-        >
-          <PhotoLibraryImage alt={asset.label} source={asset.url} />
-          <span>{asset.label}</span>
-          {asset.id === props.selectedAssetId ? <Check className="photo-library-check" size={18} /> : null}
-        </button>
+          onContextMenu={props.onContextMenu}
+          onSelect={props.onSelect}
+          selected={asset.id === props.selectedAssetId}
+        />
       ))}
     </div>
   );
-}
-
-function cardClass(assetId: string, selectedAssetId?: string) {
-  return assetId === selectedAssetId ? "photo-library-card selected" : "photo-library-card";
 }
