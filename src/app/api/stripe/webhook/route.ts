@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { handleStripeEvent } from "@/features/billing/server/billing-service";
 import { getStripe } from "@/features/billing/server/stripe-client";
+import { handleStripeEvent } from "@/features/billing/server/stripe-webhook-service";
 
 export const runtime = "nodejs";
 
@@ -11,7 +11,18 @@ export async function POST(request: Request) {
   if (!signature || !secret) {
     return NextResponse.json({ error: "Webhook is not configured" }, { status: 400 });
   }
-  const event = getStripe().webhooks.constructEvent(body, signature, secret);
+  const event = constructStripeEvent(body, signature, secret);
+  if (!event) {
+    return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 });
+  }
   const result = await handleStripeEvent(event);
   return NextResponse.json({ received: true, result });
+}
+
+function constructStripeEvent(body: string, signature: string, secret: string) {
+  try {
+    return getStripe().webhooks.constructEvent(body, signature, secret);
+  } catch {
+    return null;
+  }
 }

@@ -20,14 +20,6 @@ export async function registerUser(input: RegisterInput) {
       email: input.email,
       name: input.name,
       passwordHash,
-      subscriptions: {
-        create: {
-          planKey: "starter",
-          status: "trialing",
-          monthlyCreditLimit: 100,
-          creditsBalance: 100
-        }
-      },
       ledgerEntries: {
         create: {
           amount: 100,

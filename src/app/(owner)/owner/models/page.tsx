@@ -23,6 +23,7 @@ export default async function OwnerModelsPage() {
           <OwnerSectionLink href="/owner/video-models" label="Video generation models" value={`${videoCount(models)}`} />
           <OwnerSectionLink href="/owner/image-models" label="Image generation models" value={`${imageCount(models)}`} />
           <OwnerSectionLink href="/owner/intelligence-models" label="Intelligence models" value={`${reasoningModels.length}`} />
+          <OwnerSectionLink href="/owner/billing" label="Billing settings" value="rate" />
           <OwnerSectionLink href="/owner/users" label="Registered users" value={`${registeredUsers}`} />
         </section>
       </div>

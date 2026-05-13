@@ -1,3 +1,47 @@
+.model-list,
+.model-form {
+  display: grid;
+  gap: 14px;
+}
+
+.model-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.model-form-grid input,
+.model-form-grid select {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--text);
+  background: rgba(8, 9, 13, 0.68);
+}
+
+.model-input {
+  display: grid;
+  gap: 6px;
+  color: var(--soft);
+  font-size: 0.78rem;
+}
+
+.model-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--soft);
+  font-size: 0.82rem;
+}
+
+.model-row-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .ai-model-card {
   gap: 18px;
 }
@@ -174,7 +218,8 @@
   }
 
   .ai-model-info-grid,
-  .ai-model-edit-grid {
+  .ai-model-edit-grid,
+  .model-form-grid {
     grid-template-columns: 1fr;
   }
 }

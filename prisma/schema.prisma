@@ -1,24 +1,20 @@
 generator client {
   provider = "prisma-client-js"
 }
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 enum UserRole {
   USER
   ADMIN
 }
-
 enum ProjectStatus {
   DRAFT
   ACTIVE
   ARCHIVED
   EXPORTING
 }
-
 enum SceneStatus {
   DRAFT
   QUEUED
@@ -28,7 +24,6 @@ enum SceneStatus {
   STALE
   EXPORTING
 }
-
 enum AssetType {
   IMAGE
   VIDEO
@@ -36,14 +31,12 @@ enum AssetType {
   THUMBNAIL
   EXPORT
 }
-
 enum AssetSource {
   UPLOAD
   FAL_GENERATION
   FRAME_EXTRACT
   EXPORT
 }
-
 enum JobStatus {
   QUEUED
   GENERATING
@@ -52,14 +45,18 @@ enum JobStatus {
   FAILED
   CANCELED
 }
-
 enum JobType {
   VIDEO_GENERATION
   IMAGE_GENERATION
   FRAME_EXTRACT
   EXPORT
 }
-
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELED
+}
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -69,15 +66,13 @@ model User {
   role         UserRole @default(USER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
   projects      Project[]
   assets        Asset[]
   jobs          GenerationJob[]
   ledgerEntries CreditLedger[]
-  subscriptions Subscription[]
+  payments      Payment[]
   exportJobs    ExportJob[]
 }
-
 model Project {
   id                   String        @id @default(cuid())
   userId               String
@@ -90,17 +85,14 @@ model Project {
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
   archivedAt           DateTime?
-
-  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  scenes  Scene[]
-  assets  Asset[]
-  jobs    GenerationJob[]
-  exports ExportJob[]
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scenes        Scene[]
+  assets        Asset[]
+  jobs          GenerationJob[]
+  exports       ExportJob[]
   timelineItems TimelineItem[]
-
   @@index([userId, updatedAt])
 }
-
 model Scene {
   id                String      @id @default(cuid())
   projectId         String
@@ -119,15 +111,12 @@ model Scene {
   isStale           Boolean     @default(false)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
-
-  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  jobs    GenerationJob[]
+  project       Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  jobs          GenerationJob[]
   timelineItems TimelineItem[]
-
   @@unique([projectId, orderIndex, branchId])
   @@index([projectId, orderIndex])
 }
-
 model TimelineItem {
   id               String   @id @default(cuid())
   projectId        String
@@ -138,14 +127,11 @@ model TimelineItem {
   durationSeconds  Int?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   scene   Scene   @relation(fields: [sceneId], references: [id], onDelete: Cascade)
-
   @@unique([projectId, orderIndex])
   @@index([projectId, sceneId])
 }
-
 model Asset {
   id               String      @id @default(cuid())
   userId           String
@@ -163,13 +149,10 @@ model Asset {
   thumbnailAssetId String?
   metadataJson     Json?
   createdAt        DateTime    @default(now())
-
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
   @@index([userId, projectId, type])
 }
-
 model GenerationJob {
   id                   String    @id @default(cuid())
   userId               String
@@ -189,16 +172,13 @@ model GenerationJob {
   startedAt            DateTime?
   completedAt          DateTime?
   createdAt            DateTime  @default(now())
-
   user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   project Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   scene   Scene?         @relation(fields: [sceneId], references: [id], onDelete: SetNull)
   ledger  CreditLedger[]
-
   @@index([providerRequestId])
   @@index([userId, status])
 }
-
 model CreditLedger {
   id              String   @id @default(cuid())
   userId          String
@@ -208,34 +188,33 @@ model CreditLedger {
   generationJobId String?
   stripeEventId   String?
   createdAt       DateTime @default(now())
-
   user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   job  GenerationJob? @relation(fields: [generationJobId], references: [id])
-
   @@index([userId, createdAt])
 }
-
-model Subscription {
-  id                   String    @id @default(cuid())
-  userId               String
-  stripeCustomerId     String?
-  stripeSubscriptionId String?
-  stripePriceId        String?
-  planKey              String
-  status               String
-  currentPeriodStart   DateTime?
-  currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean   @default(false)
-  monthlyCreditLimit   Int       @default(0)
-  creditsBalance       Int       @default(0)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, status])
+model BillingSettings {
+  id            String   @id
+  creditsPerUsd Int      @default(100)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
-
+model Payment {
+  id                      String        @id @default(cuid())
+  userId                  String
+  packageKey              String
+  amountCents             Int
+  currency                String        @default("usd")
+  credits                 Int
+  status                  PaymentStatus @default(PENDING)
+  stripeCheckoutSessionId String?       @unique
+  stripePaymentIntentId   String?
+  createdAt               DateTime      @default(now())
+  paidAt                  DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([stripePaymentIntentId])
+}
 model ExportJob {
   id              String    @id @default(cuid())
   projectId       String
@@ -248,11 +227,9 @@ model ExportJob {
   errorJson       Json?
   createdAt       DateTime  @default(now())
   completedAt     DateTime?
-
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
 model WebhookEvent {
   id          String    @id @default(cuid())
   provider    String
@@ -260,10 +237,8 @@ model WebhookEvent {
   payloadJson Json
   processedAt DateTime?
   createdAt   DateTime  @default(now())
-
   @@unique([provider, eventId])
 }
-
 model AiModel {
   id                         String    @id @default(cuid())
   key                        String    @unique
@@ -288,10 +263,8 @@ model AiModel {
   active                     Boolean   @default(true)
   createdAt                  DateTime  @default(now())
   updatedAt                  DateTime  @updatedAt
-
   @@index([provider, type, active])
 }
-
 model ReasoningModel {
   id                            String   @id @default(cuid())
   key                           String   @unique
@@ -313,7 +286,6 @@ model ReasoningModel {
   active                        Boolean  @default(true)
   createdAt                     DateTime @default(now())
   updatedAt                     DateTime @updatedAt
-
   @@index([provider, active])
   @@index([selected, active])
 }

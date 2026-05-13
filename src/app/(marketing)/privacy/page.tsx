@@ -17,7 +17,7 @@ const sections = [
   },
   {
     heading: "Billing",
-    text: "Subscription and payment events are handled through Stripe Billing and webhook verification."
+    text: "Credit top-up payments are handled through Stripe Checkout and webhook verification."
   }
 ];
 

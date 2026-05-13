@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Download, UserCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 type StudioTopbarProps = {
   credits: number;
@@ -15,12 +15,6 @@ export function StudioTopbar({ credits, editorMode = false }: StudioTopbarProps)
           <strong>Creator workspace</strong>
           <span className="badge">{credits} credits</span>
         </div>
-      </div>
-      <div className="studio-topbar-actions">
-        <button className="button button-quiet" type="button">
-          <Download size={16} /> Export
-        </button>
-        <UserCircle aria-label="Profile" size={28} />
       </div>
     </header>
   );

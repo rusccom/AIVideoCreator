@@ -17,10 +17,10 @@ export type DashboardData = {
 };
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
-  const [projects, subscription, balance, jobs, storage] = await dashboardQuery(userId);
+  const [projects, balance, jobs, storage] = await dashboardQuery(userId);
   return {
     projects: projects.map(toStudioProject),
-    metrics: buildMetrics(subscription, creditSum(balance), jobs.length, storageSum(storage)),
+    metrics: buildMetrics(creditSum(balance), jobs.length, storageSum(storage)),
     activity: jobs.map(toActivityItem)
   };
 }
@@ -34,7 +34,6 @@ export async function getTopbarData(userId: string) {
 function dashboardQuery(userId: string) {
   return prisma.$transaction([
     getProjects(userId),
-    getSubscription(userId),
     getCreditBalanceQuery(userId),
     getRecentJobs(userId),
     getStorageBytesQuery(userId)
@@ -53,13 +52,6 @@ function getProjects(userId: string) {
       updatedAt: true,
       scenes: { select: { durationSeconds: true } }
     }
-  });
-}
-
-function getSubscription(userId: string) {
-  return prisma.subscription.findFirst({
-    where: { userId },
-    orderBy: { createdAt: "desc" }
   });
 }
 
@@ -116,13 +108,11 @@ function totalSceneSeconds(scenes: Array<{ durationSeconds: number }>) {
 }
 
 function buildMetrics(
-  subscription: Awaited<ReturnType<typeof getSubscription>>,
   balance: number,
   queuedJobs: number,
   storage: number
 ) {
   return [
-    { label: "Current plan", value: subscription?.planKey ?? "starter" },
     { label: "Credits", value: `${balance}` },
     { label: "Queued jobs", value: `${queuedJobs}` },
     { label: "Storage", value: formatBytes(storage) }

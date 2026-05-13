@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BrainCircuit, Images, LayoutDashboard, Users, Video } from "lucide-react";
+import { BrainCircuit, CreditCard, Images, LayoutDashboard, Users, Video } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 const items = [
@@ -9,6 +9,7 @@ const items = [
   { href: "/owner/video-models", label: "Video models", icon: Video },
   { href: "/owner/image-models", label: "Image models", icon: Images },
   { href: "/owner/intelligence-models", label: "Intelligence", icon: BrainCircuit },
+  { href: "/owner/billing", label: "Billing", icon: CreditCard },
   { href: "/owner/users", label: "Users", icon: Users }
 ];
 

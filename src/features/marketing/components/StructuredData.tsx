@@ -1,5 +1,5 @@
 import { faqs } from "../data/marketing-content";
-import { plans } from "@/features/billing/data/plans";
+import { marketingPlans } from "../data/pricing-plans";
 
 const baseUrl = "https://aivideocreator.app";
 const siteName = "AI Sequential Video Studio";
@@ -34,7 +34,7 @@ const softwareApplication = {
   operatingSystem: "Web",
   description:
     "Generate long AI video scenes from linked 10-second clips that continue from the previous end frame.",
-  offers: plans.map((plan) => ({
+  offers: marketingPlans.map((plan) => ({
     "@type": "Offer",
     name: plan.name,
     price: plan.price.replace(/[^0-9]/g, "") || "0",

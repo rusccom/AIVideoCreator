@@ -1,8 +1,8 @@
 import Link from "next/link";
-import type { Plan } from "@/features/billing/data/plans";
+import type { MarketingPlan } from "../data/pricing-plans";
 
 type PricingCardProps = {
-  plan: Plan;
+  plan: MarketingPlan;
 };
 
 export function PricingCard({ plan }: PricingCardProps) {

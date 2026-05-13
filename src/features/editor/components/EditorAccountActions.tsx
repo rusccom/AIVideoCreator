@@ -1,4 +1,3 @@
-import { UserCircle } from "lucide-react";
 import { AiCreatorButton } from "@/features/ai-creator/components/AiCreatorButton";
 import type { EditorImageModel, EditorScene, EditorVideoModel } from "../types";
 import { DownloadClipButton } from "./DownloadClipButton";
@@ -26,7 +25,6 @@ export function EditorAccountActions(props: EditorAccountActionsProps) {
         projectId={props.projectId}
         projectTitle={props.projectTitle}
       />
-      <UserCircle aria-label="Profile" size={28} />
     </div>
   );
 }
