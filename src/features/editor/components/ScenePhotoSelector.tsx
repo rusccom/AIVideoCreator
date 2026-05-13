@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { ImagePlus } from "lucide-react";
 import { PhotoLibraryModal } from "@/features/photo-library/components/PhotoLibraryModal";
 import type { EditorAsset, EditorImageModel } from "../types";
 import { ResolvedAssetImage } from "./ResolvedAssetImage";
@@ -22,15 +21,17 @@ export function ScenePhotoSelector(props: ScenePhotoSelectorProps) {
 
   return (
     <div className="scene-photo-selector">
-      <div className="scene-photo-preview">
+      <button
+        aria-label="Choose start frame photo"
+        className="scene-photo-preview"
+        onClick={() => setOpen(true)}
+        type="button"
+      >
         {previewAsset ? (
           <ResolvedAssetImage alt={previewAsset.label} className="scene-photo-image" source={previewAsset.url} />
         ) : (
           <span className="scene-photo-empty">No photo selected</span>
         )}
-      </div>
-      <button className="button button-secondary" onClick={() => setOpen(true)} type="button">
-        <ImagePlus size={16} /> Choose photo
       </button>
       {open ? (
         <PhotoLibraryModal
