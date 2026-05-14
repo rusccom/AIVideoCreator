@@ -10,6 +10,7 @@ export type ProjectImageGenerationRequest = {
   modelId: string;
   numImages: number;
   prompt: string;
+  referenceAssetId?: string;
   resolution?: string;
 };
 

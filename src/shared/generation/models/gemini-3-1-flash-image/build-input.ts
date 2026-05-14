@@ -1,5 +1,5 @@
 import type { FalImageInput, FalInputContext } from "../types";
-import { falImageAspectInput } from "../image-aspect-ratio";
+import { falImageAspectInput, falReferenceImageInput } from "../image-aspect-ratio";
 
 export function buildGemini31FlashImageInput(context: FalInputContext) {
   if (!context.image) throw new Error("Image generation input is required");
@@ -15,6 +15,7 @@ function imageInput(input: FalImageInput) {
     safety_tolerance: input.safetyTolerance ?? "4",
     resolution: input.resolution ?? "1K",
     limit_generations: input.limitGenerations ?? true,
+    ...falReferenceImageInput(input),
     ...optionalInput(input)
   };
 }

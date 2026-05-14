@@ -39,6 +39,7 @@ export type EditorImageModel = {
   defaultAspectRatio: string;
   defaultResolution: string;
   maxImagesPerRequest: number;
+  supportsReferenceImage: boolean;
   supportedAspectRatios: string[];
   supportedResolutions: string[];
 };

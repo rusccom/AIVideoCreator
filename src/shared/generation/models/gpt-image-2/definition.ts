@@ -4,6 +4,7 @@ export const gptImage2Definition = {
   id: "gpt-image-2",
   provider: "fal",
   providerModelId: "openai/gpt-image-2",
+  referenceProviderModelId: "openai/gpt-image-2/edit",
   type: "text-to-image",
   displayName: "GPT Image 2",
   qualityTier: "premium",

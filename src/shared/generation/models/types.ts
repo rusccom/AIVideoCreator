@@ -4,6 +4,7 @@ export type SupportedModelDefinition = Omit<ModelDefinition, "pricePerSecondByRe
   defaultPricePerSecondByResolution: ResolutionPriceMap;
   inputAdapter: string;
   imageDefaults?: ImageModelDefaults;
+  referenceProviderModelId?: string;
 };
 
 export type ImageModelDefaults = {
@@ -49,4 +50,5 @@ export type FalImageInput = {
   limitGenerations?: boolean;
   enableWebSearch?: boolean;
   thinkingLevel?: string;
+  referenceImageUrls?: string[];
 };

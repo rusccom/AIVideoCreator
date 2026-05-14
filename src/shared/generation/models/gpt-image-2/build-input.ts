@@ -1,5 +1,5 @@
 import type { FalImageInput, FalInputContext } from "../types";
-import { falImageAspectInput } from "../image-aspect-ratio";
+import { falImageAspectInput, falReferenceImageInput } from "../image-aspect-ratio";
 
 export function buildGptImage2Input(context: FalInputContext) {
   if (!context.image) throw new Error("Image generation input is required");
@@ -12,6 +12,7 @@ function imageInput(input: FalImageInput) {
     ...falImageAspectInput(input),
     quality: input.quality ?? "high",
     num_images: input.numImages ?? 1,
-    output_format: input.outputFormat ?? "png"
+    output_format: input.outputFormat ?? "png",
+    ...falReferenceImageInput(input)
   };
 }

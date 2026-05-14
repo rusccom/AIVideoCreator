@@ -10,6 +10,7 @@ export type PhotoLibraryImageModel = {
   displayName: string;
   defaultAspectRatio: string;
   defaultResolution: string;
+  supportsReferenceImage?: boolean;
   supportedAspectRatios: string[];
   supportedResolutions: string[];
 };

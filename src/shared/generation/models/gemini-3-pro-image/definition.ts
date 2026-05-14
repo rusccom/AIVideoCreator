@@ -4,6 +4,7 @@ export const gemini3ProImageDefinition = {
   id: "gemini-3-pro-image",
   provider: "fal",
   providerModelId: "fal-ai/nano-banana-pro",
+  referenceProviderModelId: "fal-ai/nano-banana-pro/edit",
   type: "text-to-image",
   displayName: "Gemini 3 Pro Image",
   qualityTier: "premium",

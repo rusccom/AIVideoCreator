@@ -100,7 +100,7 @@ function modalFooter(props: PhotoLibraryModalProps, state: PhotoLibraryState) {
 
 function generationModal(props: PhotoLibraryModalProps, state: PhotoLibraryState) {
   if (!state.showGeneration) return null;
-  return <PhotoGenerationModal models={props.imageModels} onClose={() => state.setShowGeneration(false)} onGenerated={state.generated} projectAspectRatio={props.projectAspectRatio} projectId={props.projectId} />;
+  return <PhotoGenerationModal assets={state.library.assets} initialReferenceAssetId={state.selectedId} models={props.imageModels} onClose={() => state.setShowGeneration(false)} onGenerated={state.generated} projectAspectRatio={props.projectAspectRatio} projectId={props.projectId} />;
 }
 
 function clearSelectedAsset(

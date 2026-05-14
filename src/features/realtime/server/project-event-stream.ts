@@ -87,7 +87,6 @@ function enqueueComment(controller: ReadableStreamDefaultController<Uint8Array>,
 function streamHeaders() {
   return {
     "Cache-Control": "no-store, no-transform",
-    Connection: "keep-alive",
     "Content-Type": "text/event-stream; charset=utf-8",
     "X-Accel-Buffering": "no",
     "X-Content-Type-Options": "nosniff"

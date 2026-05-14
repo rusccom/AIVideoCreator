@@ -33,6 +33,11 @@ export function falImageAspectInput(input: FalImageInput) {
   return { aspect_ratio: input.aspectRatio ?? "auto" };
 }
 
+export function falReferenceImageInput(input: FalImageInput) {
+  if (!input.referenceImageUrls?.length) return {};
+  return { image_urls: input.referenceImageUrls };
+}
+
 function normalizedAspectRatio(value: string | undefined, fallback: string) {
   const ratio = value || fallback;
   return RATIO_BY_IMAGE_SIZE[ratio] ?? ratio;

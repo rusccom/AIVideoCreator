@@ -4,6 +4,7 @@ export const gemini31FlashImageDefinition = {
   id: "gemini-3-1-flash-image",
   provider: "fal",
   providerModelId: "fal-ai/nano-banana-2",
+  referenceProviderModelId: "fal-ai/nano-banana-2/edit",
   type: "text-to-image",
   displayName: "Gemini 3.1 Flash Image",
   qualityTier: "fast",

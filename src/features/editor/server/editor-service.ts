@@ -113,6 +113,7 @@ function toImageModel(model: SupportedModelDefinition, stats?: ModelStats) {
     defaultAspectRatio: model.defaultAspectRatio,
     defaultResolution: model.defaultResolution,
     maxImagesPerRequest: model.imageDefaults?.maxImagesPerRequest ?? 4,
+    supportsReferenceImage: Boolean(model.referenceProviderModelId),
     supportedAspectRatios: model.supportedAspectRatios,
     supportedResolutions: model.supportedResolutions
   } satisfies EditorImageModel;

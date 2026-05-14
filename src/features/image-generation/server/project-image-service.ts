@@ -9,6 +9,7 @@ import { touchProject } from "@/shared/server/project-touch";
 import { recordOutboxEvent } from "@/shared/server/outbox";
 import { publishPendingOutboxEvents } from "@/shared/server/outbox-publisher";
 import { prisma } from "@/shared/server/prisma";
+import { resolveReferenceImageUrl } from "./image-reference-service";
 import { recordImageModelUsage } from "./image-model-service";
 import type { GenerateProjectImageInput } from "./image-generation-schema";
 
@@ -20,9 +21,10 @@ export async function startProjectImageGeneration(
 ) {
   await assertProjectOwner(userId, projectId);
   const model = await imageModel(input.modelId);
-  const job = await createImageJob(userId, projectId, model.id, input);
+  const request = await falInput(userId, projectId, model, input);
+  const job = await createImageJob(userId, projectId, model.id, input, request.providerModelId);
   try {
-    const submitted = await submitFalJob({ ...falInput(model, input), webhookUrl: webhookUrl() });
+    const submitted = await submitFalJob({ ...request, webhookUrl: webhookUrl() });
     const updated = await setProviderRequest(job.id, submitted.request_id);
     await processDeferredWebhook?.(submitted.request_id);
     return updated;
@@ -58,10 +60,16 @@ async function imageModel(modelId: string) {
   return supported;
 }
 
-function falInput(model: NonNullable<ReturnType<typeof getSupportedModel>>, input: GenerateProjectImageInput) {
+async function falInput(
+  userId: string,
+  projectId: string,
+  model: NonNullable<ReturnType<typeof getSupportedModel>>,
+  input: GenerateProjectImageInput
+) {
+  const referenceUrl = await resolveReferenceImageUrl(userId, projectId, input.referenceAssetId);
   return {
-    providerModelId: model.providerModelId,
-    input: buildFalInput(model.id, { image: imageInput(input) })
+    providerModelId: providerModelId(model, Boolean(referenceUrl)),
+    input: buildFalInput(model.id, { image: imageInput(input, referenceUrl) })
   };
 }
 
@@ -69,7 +77,8 @@ async function createImageJob(
   userId: string,
   projectId: string,
   modelId: string,
-  input: GenerateProjectImageInput
+  input: GenerateProjectImageInput,
+  providerModelId: string
 ) {
   return prisma.generationJob.create({
     data: {
@@ -78,7 +87,7 @@ async function createImageJob(
       provider: "fal",
       modelId,
       type: "IMAGE_GENERATION",
-      input: asJson(input)
+      input: asJson(jobInput(input, providerModelId))
     }
   });
 }
@@ -126,12 +135,26 @@ async function recordProjectEvent(
   await recordOutboxEvent(tx, { aggregateId: projectId, aggregateType: "project", type, payload });
 }
 
-function imageInput(input: GenerateProjectImageInput) {
+function providerModelId(model: NonNullable<ReturnType<typeof getSupportedModel>>, hasReference: boolean) {
+  if (!hasReference) return model.providerModelId;
+  if (!model.referenceProviderModelId) throw new Error("Image model does not support reference photos");
+  return model.referenceProviderModelId;
+}
+
+function imageInput(input: GenerateProjectImageInput, referenceUrl: string | null) {
   return {
     aspectRatio: input.aspectRatio,
     numImages: input.numImages,
     prompt: input.prompt,
+    ...(referenceUrl ? { referenceImageUrls: [referenceUrl] } : {}),
     resolution: input.resolution
+  };
+}
+
+function jobInput(input: GenerateProjectImageInput, providerModelId: string) {
+  return {
+    ...input,
+    providerModelId
   };
 }
 

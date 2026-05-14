@@ -92,7 +92,7 @@ async function processJob(job: Awaited<ReturnType<typeof findJob>>, payload: Fal
 
 async function completeWebhookJob(job: NonNullable<Awaited<ReturnType<typeof findJob>>>, payload: FalWebhookPayload) {
   if (!job.providerRequestId) throw new Error("Missing fal request id");
-  const result = payload.data ? { data: payload.data } : await getFalResult(providerModelId(job.modelId), job.providerRequestId);
+  const result = payload.data ? { data: payload.data } : await getFalResult(providerModelId(job), job.providerRequestId);
   return completeGenerationJob(job.id, result.data);
 }
 
@@ -103,10 +103,17 @@ function markWebhookProcessed(eventId: string) {
   });
 }
 
-function providerModelId(modelId: string) {
-  const model = getSupportedModel(modelId);
+function providerModelId(job: NonNullable<Awaited<ReturnType<typeof findJob>>>) {
+  const providerId = record(job.input).providerModelId;
+  if (typeof providerId === "string") return providerId;
+  const model = getSupportedModel(job.modelId);
   if (!model) throw new Error("Generation model is not supported");
   return model.providerModelId;
+}
+
+function record(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
 }
 
 function asJson(value: unknown) {
