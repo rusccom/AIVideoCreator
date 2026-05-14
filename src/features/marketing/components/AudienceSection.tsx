@@ -1,4 +1,4 @@
-import { audiences } from "../data/marketing-content";
+import { AudienceList } from "./AudienceList";
 
 export function AudienceSection() {
   return (
@@ -10,13 +10,7 @@ export function AudienceSection() {
           Plan concepts, generate storyboard shots, extend scenes, and export a
           single video for short-form campaigns or production previews.
         </p>
-        <div className="audience-list">
-          {audiences.map((item) => (
-            <span className="audience-pill" key={item}>
-              {item}
-            </span>
-          ))}
-        </div>
+        <AudienceList />
       </div>
     </section>
   );

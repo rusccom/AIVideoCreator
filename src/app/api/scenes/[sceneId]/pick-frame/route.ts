@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { pickFrameSchema } from "@/features/generation/server/scene-schema";
-import { pickFrameForUser } from "@/features/generation/server/scene-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { pickFrameSchema } from "@/application/generation/server";
+import { pickFrameForUser } from "@/application/generation/server";
 import { parseJson, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

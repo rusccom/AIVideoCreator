@@ -1,19 +1,30 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
-import { createSceneForUser } from "@/features/generation/server/scene-service";
-import { generateVideo, preflightVideoGeneration, selectStartImage } from "@/features/generation/server/generation-service";
-import { getCreditBalance } from "@/features/generation/server/credit-service";
+import type { GenerateVideoInput } from "@/shared/generation/types";
 import type { AiCreatorVideoInput, AiCreatorVideoSceneInput } from "./ai-creator-video-schema";
 
-export async function startAiCreatorVideo(userId: string, projectId: string, input: AiCreatorVideoInput) {
+export type AiCreatorVideoGeneration = {
+  createSceneForUser: (userId: string, projectId: string, input: CreateSceneInput) => Promise<CreatedScene>;
+  generateVideo: (userId: string, sceneId: string, input: GenerateVideoInput) => Promise<GeneratedVideoJob>;
+  getCreditBalance: (userId: string) => Promise<number>;
+  preflightVideoGeneration: (userId: string, projectId: string, input: GenerateVideoInput) => Promise<{ credits: number }>;
+  selectStartImage: (userId: string, projectId: string, input: { assetId: string }) => Promise<unknown>;
+};
+
+export async function startAiCreatorVideo(
+  userId: string,
+  projectId: string,
+  input: AiCreatorVideoInput,
+  generation: AiCreatorVideoGeneration
+) {
   const drafts = videoScenes(input);
-  await preflightSequence(userId, projectId, input, drafts);
+  await preflightSequence(userId, projectId, input, drafts, generation);
   if (!input.parentSceneId) {
-    await selectStartImage(userId, projectId, { assetId: input.assetId });
+    await generation.selectStartImage(userId, projectId, { assetId: input.assetId });
   }
-  const sequence = await createAiCreatorSequence(userId, projectId, input, drafts);
+  const sequence = await createAiCreatorSequence(userId, projectId, input, drafts, generation);
   try {
-    const job = await generateVideo(userId, sequence.scenes[0].id, videoInput(input, drafts[0]));
+    const job = await generation.generateVideo(userId, sequence.scenes[0].id, videoInput(input, drafts[0]));
     return startedSequence(job, sequence);
   } catch (error) {
     await cleanupStartFailure(userId, sequence.id, sequence.scenes.map((scene) => scene.id));
@@ -25,10 +36,11 @@ async function preflightSequence(
   userId: string,
   projectId: string,
   input: AiCreatorVideoInput,
-  drafts: AiCreatorVideoSceneInput[]
+  drafts: AiCreatorVideoSceneInput[],
+  generation: AiCreatorVideoGeneration
 ) {
-  const costs = await Promise.all(drafts.map((draft) => preflightVideoGeneration(userId, projectId, videoInput(input, draft))));
-  const balance = await getCreditBalance(userId);
+  const costs = await Promise.all(drafts.map((draft) => generation.preflightVideoGeneration(userId, projectId, videoInput(input, draft))));
+  const balance = await generation.getCreditBalance(userId);
   if (balance < costs.reduce((sum, item) => sum + item.credits, 0)) throw new Error("Insufficient credits");
 }
 
@@ -36,14 +48,15 @@ async function createAiCreatorSequence(
   userId: string,
   projectId: string,
   input: AiCreatorVideoInput,
-  drafts: AiCreatorVideoSceneInput[]
+  drafts: AiCreatorVideoSceneInput[],
+  generation: AiCreatorVideoGeneration
 ) {
   const branch = await createSequenceBranch(projectId, drafts.length);
   const scenes: CreatedScene[] = [];
   let parentSceneId: string | undefined = input.parentSceneId;
   for (const draft of drafts) {
     const isFirstScene = scenes.length === 0;
-    const scene = await createAiCreatorScene({ branchEntityId: branch.id, draft, input, isFirstScene, parentSceneId, projectId, userId });
+    const scene = await createAiCreatorScene({ branchEntityId: branch.id, draft, generation, input, isFirstScene, parentSceneId, projectId, userId });
     scenes.push(scene);
     parentSceneId = scene.id;
   }
@@ -57,7 +70,7 @@ function createSequenceBranch(projectId: string, totalScenes: number) {
 }
 
 async function createAiCreatorScene(args: CreateAiCreatorSceneInput) {
-  return createSceneForUser(args.userId, args.projectId, {
+  return args.generation.createSceneForUser(args.userId, args.projectId, {
     branchEntityId: args.branchEntityId,
     durationSeconds: args.draft.duration,
     modelId: args.input.modelId,
@@ -67,7 +80,7 @@ async function createAiCreatorScene(args: CreateAiCreatorSceneInput) {
   });
 }
 
-function startedSequence(job: Awaited<ReturnType<typeof generateVideo>>, sequence: CreatedSequence) {
+function startedSequence(job: GeneratedVideoJob, sequence: CreatedSequence) {
   return {
     job,
     scene: sequence.scenes[0],
@@ -107,12 +120,22 @@ function videoInput(input: AiCreatorVideoInput, draft: AiCreatorVideoSceneInput)
 }
 
 type CreatedSequence = Awaited<ReturnType<typeof createAiCreatorSequence>>;
-type CreatedScene = Awaited<ReturnType<typeof createSceneForUser>>;
+type CreatedScene = { id: string };
+type GeneratedVideoJob = { id: string; status: string };
 type RemovableScene = Prisma.SceneGetPayload<{ include: { jobs: true } }>;
+type CreateSceneInput = {
+  branchEntityId: string;
+  durationSeconds: number;
+  modelId: string;
+  parentSceneId?: string;
+  prompt: string;
+  startFrameAssetId?: string;
+};
 
 type CreateAiCreatorSceneInput = {
   branchEntityId: string;
   draft: AiCreatorVideoSceneInput;
+  generation: AiCreatorVideoGeneration;
   input: AiCreatorVideoInput;
   isFirstScene: boolean;
   parentSceneId?: string;

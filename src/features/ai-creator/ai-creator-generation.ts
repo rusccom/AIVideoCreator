@@ -1,5 +1,5 @@
 import { imageBatchSize, imageCount } from "./ai-creator-state";
-import { generateProjectImageAssets } from "@/features/image-generation/client/project-image-client";
+import { generateProjectImageAssets } from "@/shared/client/project-image-client";
 import type { AiCreatorImageModel } from "./types";
 
 export type GeneratedCreatorAsset = {

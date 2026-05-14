@@ -6,33 +6,18 @@ type PaymentHistoryTableProps = {
 };
 
 export function PaymentHistoryTable({ payments }: PaymentHistoryTableProps) {
-  if (!payments.length) {
-    return <p className="form-note">No payments yet.</p>;
-  }
+  if (!payments.length) return <p className="form-note">No payments yet.</p>;
+  return <div className="billing-table-wrap"><table className="billing-table">{paymentHead()}<tbody>{payments.map(paymentRow)}</tbody></table></div>;
+}
+
+function paymentHead() {
   return (
-    <div className="billing-table-wrap">
-      <table className="billing-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Amount</th>
-            <th>Credits</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {payments.map((payment) => (
-            <tr key={payment.id}>
-              <td>{formatDate(payment.createdAt)}</td>
-              <td>{formatUsd(payment.amountCents)}</td>
-              <td>{payment.credits.toLocaleString()}</td>
-              <td>{statusLabel(payment.status)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <thead><tr><th>Date</th><th>Amount</th><th>Credits</th><th>Status</th></tr></thead>
   );
+}
+
+function paymentRow(payment: PaymentHistoryItem) {
+  return <tr key={payment.id}><td>{formatDate(payment.createdAt)}</td><td>{formatUsd(payment.amountCents)}</td><td>{payment.credits.toLocaleString()}</td><td>{statusLabel(payment.status)}</td></tr>;
 }
 
 function formatDate(date: Date) {

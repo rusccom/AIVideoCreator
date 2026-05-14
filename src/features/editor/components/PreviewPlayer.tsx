@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type RefObject } from "react";
 import { Maximize2 } from "lucide-react";
 import type { PlaybackState } from "../hooks/use-playback";
 import { usePreviewFit } from "../hooks/use-preview-fit";
@@ -20,24 +20,15 @@ export function PreviewPlayer(props: PreviewPlayerProps) {
   return (
     <section className="editor-panel preview-panel">
       <div className="preview-player-body">
-        <div className="preview-stage" ref={preview.stageRef}>
-          <div className="preview-screen" ref={screenRef} style={preview.screenStyle}>
-            <PreviewVideo playback={props.playback} />
-            <PreviewPlaybackOverlay playback={props.playback} />
-            <button
-              aria-label="Open video fullscreen"
-              className="preview-fullscreen-button"
-              onClick={() => openFullscreen(screenRef.current)}
-              type="button"
-            >
-              <Maximize2 size={16} />
-            </button>
-          </div>
-        </div>
+        {previewScreen(props, preview, screenRef)}
         {props.generating ? <GenerationProgressBar /> : null}
       </div>
     </section>
   );
+}
+
+function previewScreen(props: PreviewPlayerProps, preview: ReturnType<typeof usePreviewFit>, screenRef: RefObject<HTMLDivElement | null>) {
+  return <div className="preview-stage" ref={preview.stageRef}><div className="preview-screen" ref={screenRef} style={preview.screenStyle}><PreviewVideo playback={props.playback} /><PreviewPlaybackOverlay playback={props.playback} /><button aria-label="Open video fullscreen" className="preview-fullscreen-button" onClick={() => openFullscreen(screenRef.current)} type="button"><Maximize2 size={16} /></button></div></div>;
 }
 
 function openFullscreen(target: HTMLDivElement | null) {

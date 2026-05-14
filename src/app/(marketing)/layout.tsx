@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import "@/styles/marketing.css";
+import "@/styles/marketing-sections.css";
 import "@/styles/marketing-responsive.css";
-import { MarketingNav } from "@/features/marketing/components/MarketingNav";
+import { MarketingNav } from "@/application/marketing/client";
 
 const siteName = "AI Sequential Video Studio";
 const title = "AI Video Studio for Sequential Storyboards";

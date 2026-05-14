@@ -1,5 +1,5 @@
 import type { EditableReasoningModel } from "../types";
-import { ModelCheckbox } from "@/features/owner/components/ModelCheckbox";
+import { ModelCheckbox } from "@/shared/model-form";
 
 type ReasoningModelConfigFieldsProps = {
   model: EditableReasoningModel;

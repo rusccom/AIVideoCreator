@@ -5,6 +5,6 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "preDeployCommand": "npm run prisma:migrate"
+    "preDeployCommand": "case \"${RAILWAY_SERVICE_NAME}:${SERVICE_ROLE}\" in *worker*) echo skipping-worker-migrations ;; *) npm run prisma:migrate ;; esac"
   }
 }

@@ -3,8 +3,8 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { AssetOrigin, AssetType } from "@prisma/client";
 import type { ReadableStream as NodeReadableStream } from "node:stream/web";
-import { moveRemoteAssetToR2 } from "../src/features/assets/server/asset-storage-service";
-import { r2Storage } from "../src/features/assets/server/r2-storage";
+import { moveRemoteAssetToR2 } from "../src/application/assets/worker";
+import { r2Storage } from "../src/application/assets/worker";
 
 type DownloadableAsset = {
   externalUrl?: string | null;

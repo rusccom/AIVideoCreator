@@ -1,0 +1,78 @@
+.process-grid,
+.pricing-grid,
+.use-case-grid,
+.faq-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 30px;
+}
+
+.process-number {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255, 138, 60, 0.14);
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.audience-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.audience-pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: var(--soft);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.use-case-media {
+  display: grid;
+  grid-template-columns: 0.8fr repeat(3, 1fr);
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.use-case-frame {
+  min-height: 74px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #0f1f24, #14323a 52%, #5b3219);
+}
+
+.pricing-card.featured {
+  border-color: rgba(255, 138, 60, 0.48);
+  background: linear-gradient(180deg, rgba(255, 138, 60, 0.10), rgba(255, 255, 255, 0.04));
+}
+
+.price {
+  margin: 18px 0;
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.pricing-card ul {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  color: var(--soft);
+  list-style: none;
+}
+
+.marketing-footer {
+  border-top: 1px solid var(--line);
+  padding: 30px 0;
+  color: var(--muted);
+}
+
+.marketing-footer-inner {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}

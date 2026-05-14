@@ -1,6 +1,6 @@
-import { getSupportedModel } from "../models/catalog";
-import type { SupportedModelDefinition } from "../models/types";
-import { modelActive, modelPriceMap, modelStatsForKey, type ModelStats } from "./model-stats-service";
+import { getSupportedModel } from "@/shared/generation/models";
+import type { SupportedModelDefinition } from "@/shared/generation/models";
+import { modelActive, modelPriceMap, modelStatsForKey, type ModelStats } from "@/shared/server/model-stats";
 
 export type ModelType = "image-to-video" | "text-to-image";
 export type ResolutionPriceMap = Record<string, number>;

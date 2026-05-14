@@ -9,6 +9,7 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
+COPY prisma.config.ts ./
 COPY prisma ./prisma
 
 RUN npm ci
@@ -18,4 +19,4 @@ COPY . .
 
 RUN npm run build
 
-CMD ["sh", "-c", "case \"$RAILWAY_SERVICE_NAME:$SERVICE_ROLE\" in *worker*) npm run worker ;; *) npm run start ;; esac"]
+CMD ["sh", "-c", "case \"${RAILWAY_SERVICE_NAME}:${SERVICE_ROLE}\" in *worker*) npm run worker ;; *) npm run start ;; esac"]

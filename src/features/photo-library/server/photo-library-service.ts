@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
-import { createAssetFromBuffer } from "@/features/assets/server/asset-storage-service";
-import { touchProject } from "@/features/projects/server/project-touch-service";
+import { createAssetFromBuffer } from "@/shared/server/asset-storage-service";
+import { touchProject } from "@/shared/server/project-touch";
 import { prisma } from "@/shared/server/prisma";
 import type { PhotoLibraryAsset } from "../types";
 

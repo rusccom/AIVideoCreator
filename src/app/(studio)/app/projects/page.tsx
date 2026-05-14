@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/features/auth/server/current-user";
-import { DashboardHeader } from "@/features/studio/components/DashboardHeader";
-import { EmptyState } from "@/features/studio/components/EmptyState";
-import { ProjectCard } from "@/features/studio/components/ProjectCard";
-import { getDashboardData } from "@/features/studio/server/dashboard-service";
+import { getCurrentUser } from "@/application/auth/server";
+import { DashboardHeader } from "@/application/studio/client";
+import { EmptyState } from "@/application/studio/client";
+import { ProjectCard } from "@/application/studio/client";
+import { getDashboardData } from "@/application/studio/server";
 
 export default async function ProjectsPage() {
   const user = await getCurrentUser();

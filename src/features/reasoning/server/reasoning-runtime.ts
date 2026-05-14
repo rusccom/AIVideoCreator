@@ -1,17 +1,8 @@
+import type { ReasoningRequest } from "@/shared/server/reasoning-types";
 import { getSelectedReasoningModel } from "./reasoning-model-service";
 import { recordReasoningUsage, type ReasoningUsage } from "./reasoning-usage";
 
-type ReasoningMessage = {
-  role: "system" | "user" | "assistant";
-  content: string;
-};
-
-export type ReasoningRequest = {
-  maxTokens?: number;
-  messages: ReasoningMessage[];
-  responseFormat?: ReasoningResponseFormat;
-  temperature?: number;
-};
+export type { ReasoningRequest } from "@/shared/server/reasoning-types";
 
 export async function runReasoning(request: ReasoningRequest) {
   const model = await getSelectedReasoningModel();
@@ -93,17 +84,6 @@ function recordAt(source: Record<string, unknown>, key: string) {
 type OpenRouterResponse = {
   choices?: Array<{ message?: { content?: string } }>;
   usage?: Record<string, unknown>;
-};
-
-type ReasoningResponseFormat = {
-  json_schema: {
-    name: string;
-    schema: Record<string, unknown>;
-    strict?: boolean;
-  };
-  type: "json_schema";
-} | {
-  type: "json_object";
 };
 
 type ReasoningRuntimeModel = {

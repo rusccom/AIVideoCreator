@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { runReasoning, type ReasoningRequest } from "@/features/reasoning/server/reasoning-runtime";
+import type { ReasoningRequest, ReasoningRunner } from "@/shared/server/reasoning-types";
 import { prisma } from "@/shared/server/prisma";
 import { systemInstruction } from "@/shared/server/system-instructions";
 import { DEFAULT_SCENE_DURATION_SECONDS } from "../config";
@@ -36,7 +36,8 @@ const sceneDraftJsonSchema = {
 export async function draftAiCreatorScenes(
   userId: string,
   projectId: string,
-  input: AiCreatorSceneDraftInput
+  input: AiCreatorSceneDraftInput,
+  runReasoning: ReasoningRunner
 ) {
   await assertProjectOwner(userId, projectId);
   const response = await runReasoning(reasoningRequest(input));

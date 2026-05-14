@@ -1,4 +1,4 @@
-import type { EditableAiModel } from "../types";
+import type { EditableAiModel } from "@/shared/model-form";
 
 type AiModelHiddenFieldsProps = {
   model: EditableAiModel;

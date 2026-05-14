@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { loginSchema } from "@/features/auth/server/auth-schema";
-import { loginUser, toSessionUser } from "@/features/auth/server/auth-service";
-import { setSessionCookie, signSession } from "@/features/auth/server/session";
+import { loginSchema } from "@/application/auth/server";
+import { loginUser, toSessionUser } from "@/application/auth/server";
+import { setSessionCookie, signSession } from "@/application/auth/server";
 import { parseJson } from "@/shared/server/api";
 
 export const runtime = "nodejs";

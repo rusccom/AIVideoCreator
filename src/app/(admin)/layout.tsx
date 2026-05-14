@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import "@/styles/studio.css";
+import "@/styles/studio-responsive.css";
 import "@/styles/forms.css";
-import { getAdminUser } from "@/features/auth/server/admin-auth";
+import { getAdminUser } from "@/application/auth/server";
 
 export const metadata: Metadata = {
   title: "Admin",

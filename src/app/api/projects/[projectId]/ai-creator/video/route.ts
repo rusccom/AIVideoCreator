@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { generationErrorResponse } from "@/features/generation/server/generation-api-error";
-import { aiCreatorVideoSchema } from "@/features/ai-creator/server/ai-creator-video-schema";
-import { startAiCreatorVideo } from "@/features/ai-creator/server/ai-creator-video-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { generationErrorResponse } from "@/application/generation/server";
+import { aiCreatorVideoSchema } from "@/application/ai-creator/server";
+import { startAiCreatorVideo } from "@/application/ai-creator/server";
 import { parseJson } from "@/shared/server/api";
 
 export const runtime = "nodejs";

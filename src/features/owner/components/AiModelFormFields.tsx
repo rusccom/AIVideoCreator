@@ -1,6 +1,6 @@
-import type { EditableAiModel } from "../types";
+import type { EditableAiModel } from "@/shared/model-form";
 import { AiModelCapabilityFields } from "./AiModelCapabilityFields";
-import { AiModelDetailFields } from "./AiModelDetailFields";
+import { AiModelDetailFields } from "@/shared/model-form";
 import { AiModelDurationFields } from "./AiModelDurationFields";
 import { AiModelHiddenFields } from "./AiModelHiddenFields";
 import { AiModelPricingFields } from "./AiModelPricingFields";

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { AuthShell } from "@/features/auth/components/AuthShell";
-import { OwnerLoginForm } from "@/features/owner/components/OwnerLoginForm";
+import { AuthShell } from "@/application/auth/client";
+import { OwnerLoginForm } from "@/application/owner/client";
 
 export const metadata: Metadata = {
   title: "Owner access",

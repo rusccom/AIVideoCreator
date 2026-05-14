@@ -1,15 +1,15 @@
-import type { EditableAiModel } from "../types";
-import { updateAiModelAction } from "@/features/admin/server/ai-model-actions";
+import type { EditableAiModel } from "@/shared/model-form";
 import { AiModelFormFields } from "./AiModelFormFields";
-import { AiModelHeader } from "./AiModelHeader";
+import { AiModelHeader } from "@/shared/model-form";
 
 type AiModelRowProps = {
+  action: (formData: FormData) => void | Promise<void>;
   model: EditableAiModel;
 };
 
-export function AiModelRow({ model }: AiModelRowProps) {
+export function AiModelRow({ action, model }: AiModelRowProps) {
   return (
-    <form action={updateAiModelAction} className="settings-panel model-form ai-model-card">
+    <form action={action} className="settings-panel model-form ai-model-card">
       <AiModelHeader model={model} />
       <AiModelFormFields model={model} />
       <div className="ai-model-actions">

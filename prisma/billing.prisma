@@ -1,0 +1,34 @@
+model CreditLedger {
+  id              String         @id @default(cuid())
+  userId          String
+  amount          Int
+  type            String
+  reason          String
+  generationJobId String?
+  stripeEventId   String?
+  createdAt       DateTime       @default(now())
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job             GenerationJob? @relation(fields: [generationJobId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([userId, type, createdAt])
+}
+
+model Payment {
+  id                      String        @id @default(cuid())
+  userId                  String
+  packageKey              String
+  amountCents             Int
+  currency                String        @default("usd")
+  credits                 Int
+  status                  PaymentStatus @default(PENDING)
+  stripeCheckoutSessionId String?       @unique
+  stripePaymentIntentId   String?
+  createdAt               DateTime      @default(now())
+  paidAt                  DateTime?
+  user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([stripePaymentIntentId])
+}

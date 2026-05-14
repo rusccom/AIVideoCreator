@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { AudienceSection } from "@/features/marketing/components/AudienceSection";
-import { BenefitsSection } from "@/features/marketing/components/BenefitsSection";
-import { FaqSection } from "@/features/marketing/components/FaqSection";
-import { HeroSection } from "@/features/marketing/components/HeroSection";
-import { MarketingFooter } from "@/features/marketing/components/MarketingFooter";
-import { PricingSection } from "@/features/marketing/components/PricingSection";
-import { ProcessSection } from "@/features/marketing/components/ProcessSection";
-import { StructuredData } from "@/features/marketing/components/StructuredData";
-import { UseCasesSection } from "@/features/marketing/components/UseCasesSection";
+import { AudienceSection } from "@/application/marketing/client";
+import { BenefitsSection } from "@/application/marketing/client";
+import { FaqSection } from "@/application/marketing/client";
+import { HeroSection } from "@/application/marketing/client";
+import { MarketingFooter } from "@/application/marketing/client";
+import { PricingSection } from "@/application/marketing/client";
+import { ProcessSection } from "@/application/marketing/client";
+import { StructuredData } from "@/application/marketing/client";
+import { UseCasesSection } from "@/application/marketing/client";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },

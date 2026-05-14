@@ -1,0 +1,49 @@
+model GenerationJob {
+  id                   String         @id @default(cuid())
+  userId               String
+  projectId            String?
+  sceneId              String?
+  provider             String
+  modelId              String
+  providerRequestId    String?
+  type                 JobType
+  status               JobStatus      @default(QUEUED)
+  input                Json
+  estimatedCredits     Int            @default(0)
+  actualCredits        Int?
+  durationMs           Int?
+  creditsReserved      Int            @default(0)
+  creditsSpent         Int            @default(0)
+  providerCostEstimate Float?
+  startedAt            DateTime?
+  completedAt          DateTime?
+  createdAt            DateTime       @default(now())
+  user                 User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project              Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scene                Scene?         @relation(fields: [sceneId], references: [id], onDelete: SetNull)
+  ledger               CreditLedger[]
+  result               JobResult?
+  error                JobError?
+
+  @@index([providerRequestId])
+  @@index([userId, status])
+  @@index([userId, type, status])
+  @@index([status, createdAt])
+}
+
+model JobResult {
+  jobId       String        @id
+  assets      Json          @default("[]")
+  rawResponse Json
+  createdAt   DateTime      @default(now())
+  job         GenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
+
+model JobError {
+  jobId     String        @id
+  code      String?
+  message   String
+  rawError  Json?
+  createdAt DateTime      @default(now())
+  job       GenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}

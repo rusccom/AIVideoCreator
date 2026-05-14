@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import "@/styles/studio.css";
+import "@/styles/studio-responsive.css";
 import "@/styles/forms.css";
 import "@/styles/owner-models.css";
 import "@/styles/owner-users.css";
 import "@/styles/billing.css";
-import { getAdminUser } from "@/features/auth/server/admin-auth";
-import { OwnerShell } from "@/features/owner/components/OwnerShell";
+import { getAdminUser } from "@/application/auth/server";
+import { OwnerShell } from "@/application/owner/client";
 
 export const metadata: Metadata = {
   title: "Owner",

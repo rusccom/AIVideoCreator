@@ -1,6 +1,6 @@
-import { OwnerPageHeader } from "@/features/owner/components/OwnerPageHeader";
-import { OwnerUsersSummary } from "@/features/owner-users/components/OwnerUsersSummary";
-import { getOwnerUsersOverview } from "@/features/owner-users/server/owner-user-service";
+import { OwnerPageHeader } from "@/application/owner/client";
+import { OwnerUsersSummary } from "@/application/owner-users/client";
+import { getOwnerUsersOverview } from "@/application/owner-users/server";
 
 export const dynamic = "force-dynamic";
 

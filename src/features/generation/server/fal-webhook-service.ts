@@ -1,10 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
-import { getSupportedModel } from "../models/catalog";
-import { getFalResult } from "./fal-client";
+import { getSupportedModel } from "@/shared/generation/models";
+import { getFalResult } from "@/shared/server/fal-client";
+import { logProviderError, logProviderEvent } from "@/shared/server/provider-log";
+import { providerErrorPayload } from "@/shared/server/provider-error";
 import { completeGenerationJob, failGenerationJob } from "./generation-result-service";
-import { logProviderError, logProviderEvent } from "./provider-log";
-import { providerErrorPayload } from "./provider-error";
 
 type FalWebhookPayload = {
   request_id?: string;
@@ -21,31 +21,42 @@ export async function handleFalWebhook(payload: FalWebhookPayload) {
     throw new Error("Missing fal request id");
   }
   logProviderEvent("info", "fal.webhook.received", webhookLog(eventId, payload));
-  const created = await createWebhookEvent(eventId, payload);
-  if (!created) {
+  const event = await upsertWebhookEvent(eventId, payload);
+  if (event.processedAt) {
     logProviderEvent("warn", "fal.webhook.duplicate", { eventId });
     return { duplicate: true };
   }
+  return processWebhookEvent(eventId, payload);
+}
+
+export async function processDeferredFalWebhook(eventId: string) {
+  const event = await prisma.webhookEvent.findUnique({
+    where: { provider_eventId: { provider: "fal", eventId } }
+  });
+  if (!event || event.processedAt) return null;
+  return processWebhookEvent(eventId, event.payloadJson as FalWebhookPayload);
+}
+
+async function processWebhookEvent(eventId: string, payload: FalWebhookPayload) {
   const job = await findJob(eventId);
   if (!job) {
     logProviderEvent("warn", "fal.webhook.ignored", { eventId, status: payload.status });
-    return { ignored: true };
+    return { deferred: true };
   }
   logProviderEvent("info", "fal.webhook.matched_job", jobLog(job, payload));
-  return isFailure(payload) ? failJob(job.id, payload) : processJob(job);
+  const result = isFailure(payload) ? await failJob(job.id, payload) : await processJob(job, payload);
+  await markWebhookProcessed(eventId);
+  return result;
 }
 
-async function createWebhookEvent(eventId: string, payload: FalWebhookPayload) {
+async function upsertWebhookEvent(eventId: string, payload: FalWebhookPayload) {
   const existing = await prisma.webhookEvent.findUnique({
     where: { provider_eventId: { provider: "fal", eventId } }
   });
-  if (existing) {
-    return false;
-  }
-  await prisma.webhookEvent.create({
-    data: { provider: "fal", eventId, payloadJson: asJson(payload) }
+  if (existing) return existing;
+  return prisma.webhookEvent.create({
+    data: { expiresAt: webhookExpiresAt(), provider: "fal", eventId, payloadJson: asJson(payload) }
   });
-  return true;
 }
 
 async function findJob(requestId: string) {
@@ -64,7 +75,7 @@ async function failJob(jobId: string, payload: FalWebhookPayload) {
   return failGenerationJob(jobId, payload.error ?? payload, "fal generation failed");
 }
 
-async function processJob(job: Awaited<ReturnType<typeof findJob>>) {
+async function processJob(job: Awaited<ReturnType<typeof findJob>>, payload: FalWebhookPayload) {
   if (!job?.providerRequestId) throw new Error("Missing fal request id");
   if (job.status !== "GENERATING") {
     logProviderEvent("warn", "fal.webhook.job_already_closed", { jobId: job.id, status: job.status });
@@ -72,17 +83,24 @@ async function processJob(job: Awaited<ReturnType<typeof findJob>>) {
   }
   logProviderEvent("info", "fal.webhook.processing_job", { jobId: job.id, requestId: job.providerRequestId });
   try {
-    return await completeWebhookJob(job);
+    return await completeWebhookJob(job, payload);
   } catch (error) {
     logProviderError("fal.webhook.result_failed", { jobId: job.id, requestId: job.providerRequestId }, error);
     return failGenerationJob(job.id, providerErrorPayload(error), "fal result failed");
   }
 }
 
-async function completeWebhookJob(job: NonNullable<Awaited<ReturnType<typeof findJob>>>) {
+async function completeWebhookJob(job: NonNullable<Awaited<ReturnType<typeof findJob>>>, payload: FalWebhookPayload) {
   if (!job.providerRequestId) throw new Error("Missing fal request id");
-  const result = await getFalResult(providerModelId(job.modelId), job.providerRequestId);
+  const result = payload.data ? { data: payload.data } : await getFalResult(providerModelId(job.modelId), job.providerRequestId);
   return completeGenerationJob(job.id, result.data);
+}
+
+function markWebhookProcessed(eventId: string) {
+  return prisma.webhookEvent.update({
+    where: { provider_eventId: { provider: "fal", eventId } },
+    data: { processedAt: new Date() }
+  });
 }
 
 function providerModelId(modelId: string) {
@@ -93,6 +111,10 @@ function providerModelId(modelId: string) {
 
 function asJson(value: unknown) {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function webhookExpiresAt() {
+  return new Date(Date.now() + 1000 * 60 * 60 * 24 * 90);
 }
 
 function webhookLog(eventId: string, payload: FalWebhookPayload) {

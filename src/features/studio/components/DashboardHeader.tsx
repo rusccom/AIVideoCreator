@@ -1,13 +1,17 @@
-import { CreateProjectButton } from "@/features/projects/components/CreateProjectButton";
+import type { ReactNode } from "react";
 
-export function DashboardHeader() {
+type DashboardHeaderProps = {
+  createProjectButton: ReactNode;
+};
+
+export function DashboardHeader({ createProjectButton }: DashboardHeaderProps) {
   return (
     <div className="studio-page-header">
       <div>
         <h1>Projects</h1>
         <p>Manage linked AI video timelines, current jobs, credits, and exports.</p>
       </div>
-      <CreateProjectButton label="Create new project" />
+      {createProjectButton}
     </div>
   );
 }

@@ -62,10 +62,6 @@ video {
   max-width: 100%;
 }
 
-.page-frame {
-  min-height: 100vh;
-}
-
 .container {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;

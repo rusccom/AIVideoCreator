@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { updateProjectSchema } from "@/features/projects/server/project-schema";
-import { deleteProject, getProject, updateProject } from "@/features/projects/server/project-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { updateProjectSchema } from "@/application/projects/server";
+import { deleteProject, getProject, updateProject } from "@/application/projects/server";
 import { notFound, parseJson, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

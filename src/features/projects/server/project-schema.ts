@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   COMMON_ASPECT_RATIO_PRESETS,
   defaultAspectRatioPreset
-} from "@/features/generation/models/aspect-ratio-presets";
+} from "@/shared/generation/models";
 
 const aspectRatioValues = COMMON_ASPECT_RATIO_PRESETS.map((item) => item.value) as [string, ...string[]];
 

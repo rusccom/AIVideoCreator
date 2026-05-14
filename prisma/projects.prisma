@@ -1,0 +1,97 @@
+model Project {
+  id                   String          @id @default(cuid())
+  userId               String
+  title                String
+  aspectRatio          String
+  status               ProjectStatus   @default(DRAFT)
+  initialFrameAssetId  String?
+  coverAssetId         String?
+  totalDurationSeconds Int             @default(0)
+  sceneCount           Int             @default(0)
+  readySceneCount      Int             @default(0)
+  timelineItemCount    Int             @default(0)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  archivedAt           DateTime?
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scenes               Scene[]
+  assets               Asset[]
+  jobs                 GenerationJob[]
+  exports              ExportJob[]
+  timelineItems        TimelineItem[]
+  branches             SceneBranch[]
+  initialFrameAsset    Asset?          @relation("ProjectInitialFrame", fields: [initialFrameAssetId], references: [id], onDelete: SetNull)
+  coverAsset           Asset?          @relation("ProjectCover", fields: [coverAssetId], references: [id], onDelete: SetNull)
+
+  @@index([userId, archivedAt, updatedAt])
+  @@index([coverAssetId])
+  @@index([initialFrameAssetId])
+}
+
+model SceneBranch {
+  id          String            @id @default(cuid())
+  projectId   String
+  kind        SceneBranchKind
+  status      SceneBranchStatus @default(GENERATING)
+  totalScenes Int               @default(0)
+  readyScenes Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scenes      Scene[]
+
+  @@index([projectId, status])
+}
+
+model Scene {
+  id                String          @id @default(cuid())
+  projectId         String
+  branchEntityId    String?
+  orderIndex        Int
+  durationSeconds   Int             @default(6)
+  status            SceneStatus     @default(DRAFT)
+  startFrameAssetId String?
+  videoAssetId      String?
+  endFrameAssetId   String?
+  userPrompt        String
+  modelId           String
+  generationJobId   String?
+  parentSceneId     String?
+  isStale           Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  project           Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch            SceneBranch?    @relation(fields: [branchEntityId], references: [id], onDelete: SetNull)
+  startFrameAsset   Asset?          @relation("SceneStartFrame", fields: [startFrameAssetId], references: [id], onDelete: SetNull)
+  videoAsset        Asset?          @relation("SceneVideo", fields: [videoAssetId], references: [id], onDelete: SetNull)
+  endFrameAsset     Asset?          @relation("SceneEndFrame", fields: [endFrameAssetId], references: [id], onDelete: SetNull)
+  parentScene       Scene?          @relation("SceneParent", fields: [parentSceneId], references: [id], onDelete: SetNull)
+  childScenes       Scene[]         @relation("SceneParent")
+  jobs              GenerationJob[]
+  timelineItems     TimelineItem[]
+
+  @@index([projectId, orderIndex])
+  @@index([projectId, status])
+  @@index([branchEntityId, orderIndex])
+  @@index([startFrameAssetId])
+  @@index([videoAssetId])
+  @@index([endFrameAssetId])
+  @@index([parentSceneId])
+}
+
+model TimelineItem {
+  id               String   @id @default(cuid())
+  projectId        String
+  sceneId          String
+  orderIndex       Int
+  trimStartSeconds Int      @default(0)
+  trimEndSeconds   Int?
+  durationSeconds  Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  project          Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scene            Scene    @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, orderIndex])
+  @@index([projectId, sceneId])
+}

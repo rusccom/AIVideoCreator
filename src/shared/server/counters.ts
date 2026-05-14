@@ -4,10 +4,6 @@ export async function incrementUserCredits(tx: Prisma.TransactionClient, userId:
   await tx.user.update({ where: { id: userId }, data: { creditBalance: { increment: delta } } });
 }
 
-export async function incrementUserStorage(tx: Prisma.TransactionClient, userId: string, deltaBytes: number) {
-  await tx.user.update({ where: { id: userId }, data: { storageBytesUsed: { increment: BigInt(deltaBytes) } } });
-}
-
 export async function incrementProjectScenes(tx: Prisma.TransactionClient, projectId: string, delta: number) {
   await tx.project.update({ where: { id: projectId }, data: { sceneCount: { increment: delta } } });
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { getAiCreatorSequenceStatus } from "@/features/ai-creator/server/ai-creator-sequence-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { getAiCreatorSequenceStatus } from "@/application/ai-creator/server";
 import { serverError, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

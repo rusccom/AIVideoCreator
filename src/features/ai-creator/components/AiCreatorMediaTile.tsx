@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { useResolvedAssetUrl } from "@/features/assets/hooks/use-resolved-asset-url";
+import { useResolvedAssetUrl } from "@/shared/client/use-resolved-asset-url";
 import type { AiCreatorMediaSlot } from "../types";
 import { AiCreatorSpinner } from "./AiCreatorSpinner";
 

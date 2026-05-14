@@ -1,0 +1,65 @@
+@media (max-width: 760px) {
+  .ai-creator-modal {
+    width: 100%;
+  }
+
+  .ai-creator-modal-body,
+  .ai-creator-idea-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-creator-modal-body {
+    gap: 10px;
+    min-height: 0;
+  }
+
+  .ai-creator-panel-header,
+  .ai-creator-scene-card button {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ai-creator-panel-header .button {
+    justify-content: center;
+  }
+
+  .ai-creator-media-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .ai-creator-scenes-list {
+    max-height: min(42dvh, 360px);
+    padding: 10px;
+  }
+
+  .ai-creator-nested-backdrop {
+    align-items: start;
+    overflow: auto;
+    padding: 10px;
+  }
+
+  .ai-creator-idea-modal {
+    max-height: calc(100dvh - 20px);
+    overflow: auto;
+    padding: 14px;
+  }
+
+  .ai-creator-modal-footer,
+  .ai-creator-idea-modal .button-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ai-creator-modal-footer .button,
+  .ai-creator-idea-modal .button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .ai-creator-media-grid {
+    grid-template-columns: 1fr;
+  }
+}

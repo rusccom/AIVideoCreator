@@ -1,4 +1,4 @@
-import { runReasoning, type ReasoningRequest } from "@/features/reasoning/server/reasoning-runtime";
+import type { ReasoningRequest, ReasoningRunner } from "@/shared/server/reasoning-types";
 import { prisma } from "@/shared/server/prisma";
 import { systemInstruction } from "@/shared/server/system-instructions";
 import type { AiCreatorPromptInput } from "./ai-creator-prompt-schema";
@@ -6,7 +6,8 @@ import type { AiCreatorPromptInput } from "./ai-creator-prompt-schema";
 export async function repairAiCreatorPrompt(
   userId: string,
   sequenceId: string,
-  input: AiCreatorPromptInput
+  input: AiCreatorPromptInput,
+  runReasoning: ReasoningRunner
 ) {
   await assertFailedSequence(userId, sequenceId);
   const response = await runReasoning(repairRequest(input.prompt));

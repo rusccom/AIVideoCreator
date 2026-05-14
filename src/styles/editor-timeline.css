@@ -20,10 +20,6 @@
   grid-template-rows: minmax(0, 1fr);
 }
 
-.editor-message {
-  grid-row: 2;
-}
-
 .timeline-panel {
   grid-row: 4;
   min-width: 0;
@@ -59,7 +55,6 @@
 }
 
 .scene-list,
-.asset-list,
 .photo-panel-body {
   overflow: auto;
 }
@@ -193,7 +188,6 @@
     padding: 0 10px 10px;
   }
 
-  .editor-message,
   .editor-workspace,
   .timeline-panel {
     grid-row: auto;
@@ -218,7 +212,6 @@
   }
 
   .scene-list,
-  .asset-list,
   .photo-panel-body {
     max-height: min(32dvh, 300px);
   }

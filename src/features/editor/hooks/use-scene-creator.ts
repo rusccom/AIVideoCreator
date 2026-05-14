@@ -2,20 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { StartedCreatorVideo } from "@/features/ai-creator/ai-creator-video-generation";
+import type { StartedCreatorVideo, SceneProgressTarget } from "../editor-integrations";
 import type { EditorProject, EditorScene } from "../types";
 
 export type SceneCreateTarget = {
   assetId?: string;
   parentSceneId?: string;
   prompt: string;
-};
-
-export type SceneProgressTarget = {
-  jobId: string;
-  projectId: string;
-  sequenceId?: string;
-  total: number;
 };
 
 export function useSceneCreator(project: EditorProject) {

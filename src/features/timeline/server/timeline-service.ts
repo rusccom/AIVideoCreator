@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { incrementProjectTimelineItems } from "@/shared/server/counters";
 import { prisma } from "@/shared/server/prisma";
-import { touchProjectInTransaction } from "@/features/projects/server/project-touch-service";
+import { touchProjectInTransaction } from "@/shared/server/project-touch";
 import type { CreateTimelineItemInput, ReorderTimelineInput } from "./timeline-schema";
 
 export async function createTimelineItemForUser(

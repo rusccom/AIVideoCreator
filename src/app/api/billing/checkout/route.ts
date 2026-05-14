@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { checkoutSchema } from "@/features/billing/server/billing-schema";
-import { createTopUpCheckoutSession } from "@/features/billing/server/billing-checkout-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { checkoutSchema } from "@/application/billing/server";
+import { createTopUpCheckoutSession } from "@/application/billing/server";
 import { parseJson, serverError, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

@@ -1,26 +1,38 @@
 import type { SceneStatus } from "@prisma/client";
-import { generateVideo } from "@/features/generation/server/generation-service";
-import type { GenerateVideoInput } from "@/features/generation/server/generation-schema";
-import { getModel } from "@/features/generation/server/model-registry";
+import type { GenerateVideoInput, ModelDefinition } from "@/shared/generation/types";
 import { prisma } from "@/shared/server/prisma";
 
-export async function getAiCreatorSequenceStatus(userId: string, sequenceId: string) {
+export type AiCreatorSequenceGeneration = {
+  generateVideo: (userId: string, sceneId: string, input: GenerateVideoInput) => Promise<GeneratedVideoJob>;
+  getModel: (modelId: string) => Promise<VideoModel>;
+};
+
+export async function getAiCreatorSequenceStatus(
+  userId: string,
+  sequenceId: string,
+  generation: AiCreatorSequenceGeneration
+) {
   const scenes = await sequenceScenes(userId, sequenceId);
   if (!scenes.length) return emptySequenceStatus(sequenceId, 0);
   const total = scenes.length;
   if (!await hasSequenceScenes(userId, sequenceId)) return emptySequenceStatus(sequenceId, total);
-  await advanceSequence(userId, sequenceId);
+  await advanceSequence(userId, sequenceId, generation);
   const finalScenes = await sequenceScenes(userId, sequenceId);
   return finalScenes.length ? sequenceStatus(sequenceId, finalScenes, total) : emptySequenceStatus(sequenceId, total);
 }
 
-export async function startNextAiCreatorScene(userId: string, parentSceneId: string, frameAssetId: string) {
+export async function startNextAiCreatorScene(
+  userId: string,
+  parentSceneId: string,
+  frameAssetId: string,
+  generation: AiCreatorSequenceGeneration
+) {
   const scene = await nextSequenceScene(userId, parentSceneId);
   if (!scene) return null;
   const claimed = await claimSceneStartFrame(scene.id, frameAssetId);
   if (!claimed) return null;
   try {
-    return await generateVideo(userId, scene.id, await linkedVideoInput(scene));
+    return await generation.generateVideo(userId, scene.id, await linkedVideoInput(scene, generation));
   } catch {
     await markSceneFailed(scene.id);
     await deleteFollowingDraftScenes(userId, scene.id);
@@ -28,11 +40,15 @@ export async function startNextAiCreatorScene(userId: string, parentSceneId: str
   }
 }
 
-export async function retryFailedAiCreatorScene(userId: string, sequenceId: string) {
+export async function retryFailedAiCreatorScene(
+  userId: string,
+  sequenceId: string,
+  generation: AiCreatorSequenceGeneration
+) {
   const scene = await failedSequenceScene(userId, sequenceId);
   if (!scene) throw new Error("Failed scene not found");
   await ensureRetryStartFrame(userId, scene);
-  return generateVideo(userId, scene.id, await linkedVideoInput(scene));
+  return generation.generateVideo(userId, scene.id, await linkedVideoInput(scene, generation));
 }
 
 export async function updateFailedAiCreatorPrompt(userId: string, sequenceId: string, prompt: string) {
@@ -58,14 +74,18 @@ async function hasSequenceScenes(userId: string, sequenceId: string) {
   return count > 0;
 }
 
-async function advanceSequence(userId: string, sequenceId: string) {
+async function advanceSequence(userId: string, sequenceId: string, generation: AiCreatorSequenceGeneration) {
   const scenes = await sequenceFrameScenes(userId, sequenceId);
-  await Promise.all(scenes.map((scene) => advanceFromScene(userId, scene)));
+  await Promise.all(scenes.map((scene) => advanceFromScene(userId, scene, generation)));
 }
 
-async function advanceFromScene(userId: string, scene: SequenceFrameScene) {
+async function advanceFromScene(
+  userId: string,
+  scene: SequenceFrameScene,
+  generation: AiCreatorSequenceGeneration
+) {
   if (scene.status !== "READY" || !scene.endFrameAssetId) return;
-  await startNextAiCreatorScene(userId, scene.id, scene.endFrameAssetId);
+  await startNextAiCreatorScene(userId, scene.id, scene.endFrameAssetId, generation);
 }
 
 async function sequenceFrameScenes(userId: string, sequenceId: string) {
@@ -143,8 +163,8 @@ function nextSceneWhere(userId: string, parentSceneId: string) {
   };
 }
 
-async function linkedVideoInput(scene: LinkedVideoScene) {
-  const model = await getModel(scene.modelId);
+async function linkedVideoInput(scene: LinkedVideoScene, generation: AiCreatorSequenceGeneration) {
+  const model = await generation.getModel(scene.modelId);
   return {
     aspectRatio: videoAspectRatio(model, scene.project.aspectRatio),
     duration: scene.durationSeconds,
@@ -169,7 +189,7 @@ async function parentEndFrameAssetId(userId: string, sceneId: string) {
   return parent?.endFrameAssetId;
 }
 
-function videoAspectRatio(model: Awaited<ReturnType<typeof getModel>>, aspectRatio: string) {
+function videoAspectRatio(model: VideoModel, aspectRatio: string) {
   if (model.supportedAspectRatios.includes(aspectRatio)) return aspectRatio;
   return model.supportedAspectRatios.includes("auto") ? "auto" : model.defaultAspectRatio;
 }
@@ -238,3 +258,5 @@ type SequenceFrameScene = Awaited<ReturnType<typeof sequenceFrameScenes>>[number
 type SequenceSceneStatus = ReturnType<typeof sequenceSceneStatus>;
 type RetryScene = NonNullable<Awaited<ReturnType<typeof failedSequenceScene>>>;
 type LinkedVideoScene = Pick<RetryScene, "durationSeconds" | "modelId" | "project" | "userPrompt">;
+type GeneratedVideoJob = { id: string; status: string };
+type VideoModel = Pick<ModelDefinition, "defaultAspectRatio" | "defaultResolution" | "supportedAspectRatios">;

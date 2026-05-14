@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Prisma } from "@prisma/client";
-import { createAssetFromLocalFile } from "../src/features/assets/server/asset-storage-service";
+import { createAssetFromLocalFile } from "../src/application/assets/worker";
 import { recordOutboxEvent } from "../src/shared/server/outbox";
 import { publishPendingOutboxEvents } from "../src/shared/server/outbox-publisher";
 import { prisma } from "../src/shared/server/prisma";

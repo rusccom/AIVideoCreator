@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { generateProjectImageSchema } from "@/features/image-generation/server/image-generation-schema";
-import { startProjectImageGeneration } from "@/features/image-generation/server/project-image-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { generateProjectImageSchema } from "@/application/image-generation/server";
+import { startProjectImageGeneration } from "@/application/image-generation/server";
 import { parseJson, serverError, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

@@ -3,7 +3,7 @@ import { incrementProjectReadyScenes, incrementProjectScenes, incrementProjectTi
 import { recordOutboxEvent } from "@/shared/server/outbox";
 import { publishPendingOutboxEvents } from "@/shared/server/outbox-publisher";
 import { prisma } from "@/shared/server/prisma";
-import { touchProjectInTransaction } from "@/features/projects/server/project-touch-service";
+import { touchProjectInTransaction } from "@/shared/server/project-touch";
 import { incrementBranchReadyScenes } from "./scene-branch-counters";
 import type { CreateSceneInput, PickFrameInput, UpdateSceneInput } from "./scene-schema";
 
@@ -80,35 +80,30 @@ export async function updateSceneForUser(
 
 export async function deleteSceneForUser(userId: string, sceneId: string) {
   const scene = await sceneForDelete(userId, sceneId);
-  const result = await prisma.$transaction(async (tx) => {
-    const removedTimelines = await tx.timelineItem.findMany({
-      where: { sceneId: scene.id },
-      select: { durationSeconds: true, scene: { select: { durationSeconds: true } } }
-    });
-    await tx.scene.delete({ where: { id: scene.id } });
-    await compactSceneOrder(tx, scene.projectId);
-    await compactTimelineOrder(tx, scene.projectId);
-    await incrementProjectScenes(tx, scene.projectId, -1);
-    if (scene.status === "READY") await incrementProjectReadyScenes(tx, scene.projectId, -1);
-    const durationDelta = removedTimelines.reduce((sum, item) => sum + (item.durationSeconds ?? item.scene.durationSeconds), 0);
-    await incrementProjectTimelineItems(tx, scene.projectId, -removedTimelines.length, -durationDelta);
-    await recordSceneEvent(tx, scene.projectId, "scene.deleted", scene.id);
-    await touchProjectInTransaction(tx, scene.projectId);
-    return { id: scene.id };
-  });
+  const result = await prisma.$transaction((tx) => deleteSceneInTransaction(tx, scene));
   await publishPendingOutboxEvents();
   return result;
 }
 
-export async function createNextScene(previousSceneId: string, prompt: string) {
-  const previous = await prisma.scene.findUniqueOrThrow({ where: { id: previousSceneId } });
-  return createScene(previous.projectId, {
-    prompt,
-    modelId: previous.modelId,
-    startFrameAssetId: previous.endFrameAssetId ?? undefined,
-    parentSceneId: previous.id,
-    branchEntityId: previous.branchEntityId ?? undefined
+async function deleteSceneInTransaction(tx: Prisma.TransactionClient, scene: DeletedScene) {
+  const removedTimelines = await tx.timelineItem.findMany({
+    where: { sceneId: scene.id },
+    select: { durationSeconds: true, scene: { select: { durationSeconds: true } } }
   });
+  await tx.scene.delete({ where: { id: scene.id } });
+  await compactSceneOrder(tx, scene.projectId);
+  await compactTimelineOrder(tx, scene.projectId);
+  await incrementProjectScenes(tx, scene.projectId, -1);
+  if (scene.status === "READY") await incrementProjectReadyScenes(tx, scene.projectId, -1);
+  await applyDeletedTimelineCounters(tx, scene.projectId, removedTimelines);
+  await recordSceneEvent(tx, scene.projectId, "scene.deleted", scene.id);
+  await touchProjectInTransaction(tx, scene.projectId);
+  return { id: scene.id };
+}
+
+async function applyDeletedTimelineCounters(tx: Prisma.TransactionClient, projectId: string, items: RemovedTimeline[]) {
+  const durationDelta = items.reduce((sum, item) => sum + (item.durationSeconds ?? item.scene.durationSeconds), 0);
+  await incrementProjectTimelineItems(tx, projectId, -items.length, -durationDelta);
 }
 
 export async function pickFrame(sceneId: string, input: PickFrameInput) {
@@ -289,3 +284,5 @@ async function recordSceneEvent(
 }
 
 type CreatedScene = Prisma.SceneGetPayload<{}>;
+type DeletedScene = Awaited<ReturnType<typeof sceneForDelete>>;
+type RemovedTimeline = { durationSeconds: number | null; scene: { durationSeconds: number } };

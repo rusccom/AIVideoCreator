@@ -1,7 +1,5 @@
-import type { EditableAiModel } from "../types";
-import { ModelCheckbox } from "./ModelCheckbox";
-import { ModelFieldSection } from "./ModelFieldSection";
-import { ModelTextInput } from "./ModelTextInput";
+import type { EditableAiModel } from "@/shared/model-form";
+import { ModelCheckbox, ModelFieldSection, ModelTextInput } from "@/shared/model-form";
 
 type AiModelPricingFieldsProps = {
   model: EditableAiModel;

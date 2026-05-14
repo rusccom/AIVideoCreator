@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { createExportSchema } from "@/features/exports/server/export-schema";
-import { createExportJob } from "@/features/exports/server/export-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { createExportSchema } from "@/application/exports/server";
+import { createExportJob } from "@/application/exports/server";
 import { parseJson, serverError, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

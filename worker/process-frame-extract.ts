@@ -1,8 +1,8 @@
 import { join } from "node:path";
 import { Prisma } from "@prisma/client";
-import { createAssetFromLocalFile } from "../src/features/assets/server/asset-storage-service";
-import { startNextAiCreatorScene } from "../src/features/ai-creator/server/ai-creator-sequence-service";
-import { touchProjectInTransaction } from "../src/features/projects/server/project-touch-service";
+import { createAssetFromLocalFile } from "../src/application/assets/worker";
+import { startNextAiCreatorScene } from "../src/application/ai-creator/worker";
+import { touchProjectInTransaction } from "../src/application/projects/worker";
 import { prisma } from "../src/shared/server/prisma";
 import { runFfmpeg } from "./ffmpeg";
 import { createJobWorkspace, removeJobWorkspace } from "./job-workspace";

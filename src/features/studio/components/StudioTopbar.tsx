@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { EditorExitButton } from "./EditorExitButton";
 
 type StudioTopbarProps = {
   credits: number;
@@ -17,13 +16,5 @@ export function StudioTopbar({ credits, editorMode = false }: StudioTopbarProps)
         </div>
       </div>
     </header>
-  );
-}
-
-function EditorExitButton() {
-  return (
-    <Link aria-label="Back to projects" className="editor-exit-button" href="/app/projects">
-      <ArrowLeft size={18} />
-    </Link>
   );
 }

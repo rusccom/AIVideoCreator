@@ -1,6 +1,6 @@
-import type { EditableAiModel } from "@/features/owner/types";
-import { ModelFieldSection } from "@/features/owner/components/ModelFieldSection";
-import { ModelReadonlyField } from "@/features/owner/components/ModelReadonlyField";
+import type { EditableAiModel } from "@/shared/model-form";
+import { ModelFieldSection } from "@/shared/model-form";
+import { ModelReadonlyField } from "@/shared/model-form";
 
 type ImageModelDefaultsProps = {
   model: EditableAiModel;

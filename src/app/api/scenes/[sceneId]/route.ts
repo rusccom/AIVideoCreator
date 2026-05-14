@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { updateSceneSchema } from "@/features/generation/server/scene-schema";
-import { deleteSceneForUser, updateSceneForUser } from "@/features/generation/server/scene-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { updateSceneSchema } from "@/application/generation/server";
+import { deleteSceneForUser, updateSceneForUser } from "@/application/generation/server";
 import { parseJson, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

@@ -1,11 +1,11 @@
 import { Prisma, type Asset } from "@prisma/client";
-import { createAssetFromRemoteUrl } from "@/features/assets/server/asset-storage-service";
-import { buildFalInput } from "@/features/generation/models/build-fal-input";
-import { getSupportedModel } from "@/features/generation/models/catalog";
-import { submitFalJob } from "@/features/generation/server/fal-client";
-import { modelActive, modelStatsForKey } from "@/features/generation/server/model-stats-service";
-import { providerErrorPayload } from "@/features/generation/server/provider-error";
-import { touchProject } from "@/features/projects/server/project-touch-service";
+import { createAssetFromRemoteUrl } from "@/shared/server/asset-storage-service";
+import { buildFalInput } from "@/shared/generation/models";
+import { getSupportedModel } from "@/shared/generation/models";
+import { modelActive, modelStatsForKey } from "@/shared/server/model-stats";
+import { submitFalJob } from "@/shared/server/fal-client";
+import { providerErrorPayload } from "@/shared/server/provider-error";
+import { touchProject } from "@/shared/server/project-touch";
 import { recordOutboxEvent } from "@/shared/server/outbox";
 import { publishPendingOutboxEvents } from "@/shared/server/outbox-publisher";
 import { prisma } from "@/shared/server/prisma";
@@ -15,14 +15,17 @@ import type { GenerateProjectImageInput } from "./image-generation-schema";
 export async function startProjectImageGeneration(
   userId: string,
   projectId: string,
-  input: GenerateProjectImageInput
+  input: GenerateProjectImageInput,
+  processDeferredWebhook?: DeferredWebhookProcessor
 ) {
   await assertProjectOwner(userId, projectId);
   const model = await imageModel(input.modelId);
   const job = await createImageJob(userId, projectId, model.id, input);
   try {
     const submitted = await submitFalJob({ ...falInput(model, input), webhookUrl: webhookUrl() });
-    return setProviderRequest(job.id, submitted.request_id);
+    const updated = await setProviderRequest(job.id, submitted.request_id);
+    await processDeferredWebhook?.(submitted.request_id);
+    return updated;
   } catch (error) {
     const failed = await markJobFailed(job.id, error, projectId);
     await publishPendingOutboxEvents();
@@ -254,3 +257,4 @@ type ImagePayload = {
 
 type ImageGenerationJob = Awaited<ReturnType<typeof prisma.generationJob.findUniqueOrThrow>>;
 type GeneratedAsset = ReturnType<typeof toGeneratedAsset>;
+type DeferredWebhookProcessor = (requestId: string) => Promise<unknown>;

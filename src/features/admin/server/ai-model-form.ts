@@ -1,5 +1,5 @@
 import { aiModelSchema } from "./ai-model-schema";
-import { supportedModels } from "@/features/generation/models/catalog";
+import { supportedModels } from "@/shared/generation/models";
 
 export function parseAiModelForm(formData: FormData) {
   const key = value(formData, "key");

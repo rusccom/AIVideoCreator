@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { reorderTimelineSchema } from "@/features/timeline/server/timeline-schema";
-import { reorderTimelineForUser } from "@/features/timeline/server/timeline-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { reorderTimelineSchema } from "@/application/timeline/server";
+import { reorderTimelineForUser } from "@/application/timeline/server";
 import { parseJson, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

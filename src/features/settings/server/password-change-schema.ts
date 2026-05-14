@@ -8,5 +8,3 @@ export const passwordChangeSchema = z.object({
   message: "Passwords do not match.",
   path: ["confirmPassword"]
 });
-
-export type PasswordChangeInput = z.infer<typeof passwordChangeSchema>;

@@ -5,7 +5,7 @@ import type { EditorTimelineItem } from "../types";
 import type { PlaybackState } from "../hooks/use-playback";
 import { useResolvedTimelineVideoUrls } from "../hooks/use-resolved-timeline-video-urls";
 import type { ScenePosition } from "../playback/playback-timeline";
-import { ResolvedAssetImage } from "./ResolvedAssetImage";
+import { FallbackFrame } from "./FallbackFrame";
 
 type PreviewVideoProps = {
   playback: PlaybackState;
@@ -73,19 +73,6 @@ function renderBufferVideo(ref: React.RefObject<HTMLVideoElement | null>, url?: 
       preload="metadata"
       ref={ref}
       src={url}
-    />
-  );
-}
-
-function FallbackFrame({ position }: { position: ScenePosition | null }) {
-  const fallback = position ? "Ready to generate" : "Add clips to the timeline";
-  return (
-    <ResolvedAssetImage
-      alt="Start frame"
-      className="preview-image"
-      fallback={fallback}
-      loading="eager"
-      source={position?.scene.startFrameUrl}
     />
   );
 }

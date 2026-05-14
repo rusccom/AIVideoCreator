@@ -18,18 +18,9 @@ export function usePhotoLibrary(input: UsePhotoLibraryInput) {
 
   const refresh = useCallback(() => refreshAssets(input.projectId, setAssets, setError, setLoading), [input.projectId]);
 
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
-
-  async function upload(file: File) {
-    return uploadAsset(input.projectId, file, refresh, setError, setUploading);
-  }
-
-  async function deleteAsset(assetId: string) {
-    return removeAsset(assetId, refresh, setError, setDeletingId);
-  }
-
+  useEffect(() => { void refresh(); }, [refresh]);
+  const upload = (file: File) => uploadAsset(input.projectId, file, refresh, setError, setUploading);
+  const deleteAsset = (assetId: string) => removeAsset(assetId, refresh, setError, setDeletingId);
   return { assets, deleteAsset, deletingId, error, loading, refresh, upload, uploading };
 }
 

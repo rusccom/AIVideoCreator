@@ -1,6 +1,7 @@
-import { OwnerPageHeader } from "@/features/owner/components/OwnerPageHeader";
-import { ReasoningModelList } from "@/features/reasoning/components/ReasoningModelList";
-import { listReasoningModels } from "@/features/reasoning/server/reasoning-model-service";
+import { OwnerPageHeader } from "@/application/owner/client";
+import { ReasoningModelList } from "@/application/reasoning/client";
+import { updateReasoningModelAction } from "@/application/reasoning/model-actions";
+import { listReasoningModels } from "@/application/reasoning/server";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export default async function OwnerIntelligenceModelsPage() {
         title="Intelligence models"
         description="Choose the global reasoning model and track token usage."
       />
-      <ReasoningModelList models={models} />
+      <ReasoningModelList action={updateReasoningModelAction} models={models} />
     </main>
   );
 }

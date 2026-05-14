@@ -1,5 +1,5 @@
-import { getSupportedModel } from "@/features/generation/models/catalog";
-import { recordModelUsage, updateModelStats } from "@/features/generation/server/model-stats-service";
+import { getSupportedModel } from "@/shared/generation/models";
+import { recordModelUsage, updateModelStats } from "@/shared/server/model-stats";
 
 type UpdateImageModelInput = {
   active: boolean;

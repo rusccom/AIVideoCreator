@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/features/auth/server/current-user";
-import { ProjectEditor } from "@/features/editor/components/ProjectEditor";
-import { getEditorProject } from "@/features/editor/server/editor-service";
-import { getTopbarData } from "@/features/studio/server/dashboard-service";
+import { getCurrentUser } from "@/application/auth/server";
+import { ProjectEditor } from "@/application/editor/client";
+import { getEditorProject } from "@/application/editor/server";
+import { getTopbarData } from "@/application/studio/server";
 
 type ProjectPageProps = {
   params: Promise<{

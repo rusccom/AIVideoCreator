@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useResolvedAssetUrl } from "@/features/assets/hooks/use-resolved-asset-url";
+import { useResolvedAssetUrl } from "@/shared/client/use-resolved-asset-url";
 
 type PhotoLibraryImageProps = {
   alt: string;

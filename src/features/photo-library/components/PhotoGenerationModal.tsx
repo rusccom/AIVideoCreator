@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { Sparkles, X } from "lucide-react";
-import { generateProjectImageAssets } from "@/features/image-generation/client/project-image-client";
+import { generateProjectImageAssets } from "@/shared/client/project-image-client";
 import type { PhotoLibraryImageModel } from "../types";
 
 type PhotoGenerationModalProps = {
@@ -20,7 +20,21 @@ export function PhotoGenerationModal(props: PhotoGenerationModalProps) {
   const [error, setError] = useState("");
   const model = selectedModel(props.models, modelId);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  return (
+    <div className="project-modal-backdrop photo-generation-backdrop" role="presentation">
+      <form className="project-modal photo-generation-modal" onSubmit={photoSubmit(props, model, prompt, setGenerating, setError)}>
+        {photoHeader(props)}
+        {photoPrompt(prompt, setPrompt)}
+        {photoModelSelect(props, modelId, setModelId)}
+        {error ? <div className="form-error">{error}</div> : null}
+        {photoActions(props, model, generating)}
+      </form>
+    </div>
+  );
+}
+
+function photoSubmit(props: PhotoGenerationModalProps, model: PhotoLibraryImageModel | undefined, prompt: string, setGenerating: SetBoolean, setError: SetText) {
+  return async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setGenerating(true);
     setError("");
@@ -28,40 +42,23 @@ export function PhotoGenerationModal(props: PhotoGenerationModalProps) {
     setGenerating(false);
     if (!result.ok) return setError(result.error);
     await props.onGenerated(result.assetId);
-  }
+  };
+}
 
-  return (
-    <div className="project-modal-backdrop photo-generation-backdrop" role="presentation">
-      <form className="project-modal photo-generation-modal" onSubmit={submit}>
-        <div className="project-modal-header">
-          <div>
-            <h2>Generate photo</h2>
-            <p>Create a new project image with an active image model.</p>
-          </div>
-          <button className="project-modal-close" onClick={props.onClose} type="button">
-            <X size={18} />
-          </button>
-        </div>
-        <label className="photo-library-field">
-          Prompt
-          <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} />
-        </label>
-        <label className="photo-library-field">
-          Model
-          <select value={modelId} onChange={(event) => setModelId(event.target.value)}>
-            {props.models.map((item) => <option key={item.id} value={item.id}>{item.displayName}</option>)}
-          </select>
-        </label>
-        {error ? <div className="form-error">{error}</div> : null}
-        <div className="button-row">
-          <button className="button button-secondary" onClick={props.onClose} type="button">Cancel</button>
-          <button className="button button-primary" disabled={generating || !model} type="submit">
-            <Sparkles size={16} /> {generating ? "Generating..." : "Generate"}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
+function photoHeader(props: PhotoGenerationModalProps) {
+  return <div className="project-modal-header"><div><h2>Generate photo</h2><p>Create a new project image with an active image model.</p></div><button className="project-modal-close" onClick={props.onClose} type="button"><X size={18} /></button></div>;
+}
+
+function photoPrompt(prompt: string, setPrompt: SetText) {
+  return <label className="photo-library-field">Prompt<textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} /></label>;
+}
+
+function photoModelSelect(props: PhotoGenerationModalProps, modelId: string, setModelId: SetText) {
+  return <label className="photo-library-field">Model<select value={modelId} onChange={(event) => setModelId(event.target.value)}>{props.models.map((item) => <option key={item.id} value={item.id}>{item.displayName}</option>)}</select></label>;
+}
+
+function photoActions(props: PhotoGenerationModalProps, model: PhotoLibraryImageModel | undefined, generating: boolean) {
+  return <div className="button-row"><button className="button button-secondary" onClick={props.onClose} type="button">Cancel</button><button className="button button-primary" disabled={generating || !model} type="submit"><Sparkles size={16} /> {generating ? "Generating..." : "Generate"}</button></div>;
 }
 
 async function generateImage(
@@ -96,3 +93,6 @@ function imageAspectRatio(model: PhotoLibraryImageModel, aspectRatio: string) {
 function selectedModel(models: PhotoLibraryImageModel[], modelId: string) {
   return models.find((model) => model.id === modelId) ?? models[0];
 }
+
+type SetBoolean = (value: boolean) => void;
+type SetText = (value: string) => void;

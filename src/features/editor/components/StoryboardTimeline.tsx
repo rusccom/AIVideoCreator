@@ -34,37 +34,22 @@ export function StoryboardTimeline(props: StoryboardTimelineProps) {
   const boardWidth = timelineWidth(layout.width, props.insertionIndex);
   return (
     <section className="timeline-panel">
-      <div className="editor-panel-header">
-        <h2>Storyboard Timeline</h2>
-        <div className="timeline-header-actions">
-          <TimelineZoomControls
-            onZoomIn={() => setScaleIndex(clampScaleIndex(scaleIndex - 1))}
-            onZoomOut={() => setScaleIndex(clampScaleIndex(scaleIndex + 1))}
-            rangeLabel={scale.label}
-          />
-        </div>
-      </div>
-      <div className="timeline-scroll">
-        <div
-          className="timeline-board"
-          onClick={(event) => seekFromClick(event, layout, props.playback.seek)}
-          style={{ width: boardWidth }}
-        >
-          <TimelineScale seconds={layout.seconds} step={scale.tickSeconds} width={boardWidth} />
-          <TimelineTrack
-            activeItemId={props.activeItemId}
-            clipBoxes={layout.clipBoxes}
-            insertionIndex={props.insertionIndex}
-            onContextMenu={props.onContextMenu}
-            onSelect={props.onSelectItem}
-            selectedItemId={props.selectedItemId}
-            width={boardWidth}
-          />
-          <TimelinePlayhead position={layout.timeToPx(props.playback.currentTime)} />
-        </div>
-      </div>
+      {timelineHeader(scaleIndex, setScaleIndex, scale.label)}
+      {timelineBoard(props, layout, scale.tickSeconds, boardWidth)}
     </section>
   );
+}
+
+function timelineHeader(scaleIndex: number, setScaleIndex: (index: number) => void, rangeLabel: string) {
+  return <div className="editor-panel-header"><h2>Storyboard Timeline</h2><div className="timeline-header-actions"><TimelineZoomControls onZoomIn={() => setScaleIndex(clampScaleIndex(scaleIndex - 1))} onZoomOut={() => setScaleIndex(clampScaleIndex(scaleIndex + 1))} rangeLabel={rangeLabel} /></div></div>;
+}
+
+function timelineBoard(props: StoryboardTimelineProps, layout: TimelineLayout, tickSeconds: number, boardWidth: number) {
+  return <div className="timeline-scroll"><div className="timeline-board" onClick={(event) => seekFromClick(event, layout, props.playback.seek)} style={{ width: boardWidth }}><TimelineScale seconds={layout.seconds} step={tickSeconds} width={boardWidth} />{timelineTrack(props, layout, boardWidth)}<TimelinePlayhead position={layout.timeToPx(props.playback.currentTime)} /></div></div>;
+}
+
+function timelineTrack(props: StoryboardTimelineProps, layout: TimelineLayout, boardWidth: number) {
+  return <TimelineTrack activeItemId={props.activeItemId} clipBoxes={layout.clipBoxes} insertionIndex={props.insertionIndex} onContextMenu={props.onContextMenu} onSelect={props.onSelectItem} selectedItemId={props.selectedItemId} width={boardWidth} />;
 }
 
 function timelineWidth(width: number, insertionIndex: number | null) {

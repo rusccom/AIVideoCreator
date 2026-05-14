@@ -1,7 +1,8 @@
-import { listAiModels } from "@/features/admin/server/ai-model-service";
-import { ImageModelList } from "@/features/image-generation/components/ImageModelList";
-import { OwnerEmptyPanel } from "@/features/owner/components/OwnerEmptyPanel";
-import { OwnerPageHeader } from "@/features/owner/components/OwnerPageHeader";
+import { listAiModels } from "@/application/admin/server";
+import { updateImageModelAction } from "@/application/image-generation/model-actions";
+import { ImageModelList } from "@/application/image-generation/client-components";
+import { OwnerEmptyPanel } from "@/application/owner/client";
+import { OwnerPageHeader } from "@/application/owner/client";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export default async function OwnerImageModelsPage() {
         description="Configure image model adapters when they are added to the code catalog."
       />
       {imageModels.length > 0 ? (
-        <ImageModelList models={imageModels} />
+        <ImageModelList action={updateImageModelAction} models={imageModels} />
       ) : (
         <OwnerEmptyPanel
           title="No image models"

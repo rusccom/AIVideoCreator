@@ -1,7 +1,5 @@
-import type { EditableAiModel } from "../types";
-import { ModelChipList } from "./ModelChipList";
-import { ModelFieldSection } from "./ModelFieldSection";
-import { ModelReadonlyField } from "./ModelReadonlyField";
+import type { EditableAiModel } from "@/shared/model-form";
+import { ModelChipList, ModelFieldSection, ModelReadonlyField } from "@/shared/model-form";
 
 type AiModelCapabilityFieldsProps = {
   model: EditableAiModel;

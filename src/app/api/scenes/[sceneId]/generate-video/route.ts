@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { generationErrorResponse } from "@/features/generation/server/generation-api-error";
-import { generateVideoSchema } from "@/features/generation/server/generation-schema";
-import { generateVideo } from "@/features/generation/server/generation-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { generationErrorResponse } from "@/application/generation/server";
+import { generateVideoSchema } from "@/application/generation/server";
+import { generateVideo } from "@/application/generation/server";
 import { parseJson } from "@/shared/server/api";
 
 export const runtime = "nodejs";

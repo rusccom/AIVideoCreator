@@ -28,14 +28,24 @@ async function reserveCreditsTransaction(
   reason: string
 ) {
   await prisma.$transaction(async (tx) => {
-    const reserved = await tx.user.updateMany({
-      where: { id: userId, creditBalance: { gte: amount } },
-      data: { creditBalance: { decrement: amount } }
-    });
-    if (reserved.count !== 1) throw new Error("Insufficient credits");
-    await tx.generationJob.update({ where: { id: jobId }, data: { creditsReserved: amount } });
-    await tx.creditLedger.create({ data: reserveData(userId, amount, jobId, reason) });
+    await reserveCreditsInTransaction(tx, userId, amount, jobId, reason);
   }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
+}
+
+export async function reserveCreditsInTransaction(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  amount: number,
+  jobId: string,
+  reason: string
+) {
+  const reserved = await tx.user.updateMany({
+    where: { id: userId, creditBalance: { gte: amount } },
+    data: { creditBalance: { decrement: amount } }
+  });
+  if (reserved.count !== 1) throw new Error("Insufficient credits");
+  await tx.generationJob.update({ where: { id: jobId }, data: { creditsReserved: amount } });
+  await tx.creditLedger.create({ data: reserveData(userId, amount, jobId, reason) });
 }
 
 export async function commitCredits(jobId: string) {

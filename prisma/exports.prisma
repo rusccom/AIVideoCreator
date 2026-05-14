@@ -1,0 +1,15 @@
+model ExportJob {
+  id              String    @id @default(cuid())
+  projectId       String
+  userId          String
+  status          JobStatus @default(QUEUED)
+  format          String
+  resolution      String
+  r2Key           String?
+  durationSeconds Int?
+  errorMessage    String?
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

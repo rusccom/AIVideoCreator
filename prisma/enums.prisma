@@ -1,0 +1,76 @@
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+  EXPORTING
+}
+
+enum SceneStatus {
+  DRAFT
+  QUEUED
+  GENERATING
+  READY
+  FAILED
+  STALE
+  EXPORTING
+}
+
+enum AssetType {
+  IMAGE
+  VIDEO
+  FRAME
+  THUMBNAIL
+  EXPORT
+}
+
+enum AssetSource {
+  UPLOAD
+  FAL_GENERATION
+  FRAME_EXTRACT
+  EXPORT
+}
+
+enum AssetOrigin {
+  R2
+  EXTERNAL_URL
+  PENDING
+}
+
+enum JobStatus {
+  QUEUED
+  GENERATING
+  PROCESSING
+  READY
+  FAILED
+  CANCELED
+}
+
+enum JobType {
+  VIDEO_GENERATION
+  IMAGE_GENERATION
+  FRAME_EXTRACT
+  EXPORT
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELED
+}
+
+enum SceneBranchKind {
+  AI_CREATOR
+  MANUAL_CONTINUE
+}
+
+enum SceneBranchStatus {
+  GENERATING
+  READY
+  FAILED
+}

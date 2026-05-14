@@ -1,0 +1,20 @@
+model User {
+  id               String          @id @default(cuid())
+  email            String          @unique
+  name             String?
+  passwordHash     String?
+  avatarUrl        String?
+  role             UserRole        @default(USER)
+  creditBalance    Int             @default(0)
+  storageBytesUsed BigInt          @default(0)
+  projectCount     Int             @default(0)
+  lastActiveAt     DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  projects         Project[]
+  assets           Asset[]
+  jobs             GenerationJob[]
+  ledgerEntries    CreditLedger[]
+  payments         Payment[]
+  exportJobs       ExportJob[]
+}

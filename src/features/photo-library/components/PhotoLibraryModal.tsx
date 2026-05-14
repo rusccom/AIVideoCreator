@@ -31,6 +31,23 @@ type PhotoMenuState = {
 };
 
 export function PhotoLibraryModal(props: PhotoLibraryModalProps) {
+  const state = usePhotoLibraryState(props);
+  return (
+    <div className="project-modal-backdrop" role="presentation">
+      <div className="project-modal photo-library-modal">
+        {modalHeader(props)}
+        {modalToolbar(props, state)}
+        {state.library.error ? <div className="form-error">{state.library.error}</div> : null}
+        {modalGrid(state)}
+        {modalMenu(state)}
+        {modalFooter(props, state)}
+      </div>
+      {generationModal(props, state)}
+    </div>
+  );
+}
+
+function usePhotoLibraryState(props: PhotoLibraryModalProps) {
   const library = usePhotoLibrary({ initialAssets: props.assets, projectId: props.projectId });
   const [selectedId, setSelectedId] = useState(props.initialSelectedAssetId);
   const [menu, setMenu] = useState<PhotoMenuState | null>(null);
@@ -46,101 +63,44 @@ export function PhotoLibraryModal(props: PhotoLibraryModalProps) {
       removeMenuListeners(closeMenu);
     };
   }, [closeMenu, menu]);
+  const deleteAsset = async (assetId: string) => deletePhotoAsset({ assetId, library, props, selectedId, setMenu, setSelectedId });
+  return { choose: () => selectedAsset && props.onSelect?.(selectedAsset), deleteAsset, deleteSelected: () => selectedAsset && deleteAsset(selectedAsset.id), generated: (assetId?: string) => generatedPhoto({ assetId, library, props, setSelectedId, setShowGeneration }), library, menu, openMenu: (asset: PhotoLibraryAsset, event: MouseEvent) => openPhotoMenu(asset, event, setMenu, setSelectedId), selectedAsset, selectedId, setSelectedId, setShowGeneration, showGeneration, upload: (file: File) => uploadPhoto(file, library, props, setSelectedId) };
+}
 
-  async function upload(file: File) {
-    const assetId = await library.upload(file);
-    if (!assetId) return;
-    setSelectedId(assetId);
-    props.onChanged?.();
-  }
+type PhotoLibraryState = ReturnType<typeof usePhotoLibraryState>;
 
-  async function generated(assetId?: string) {
-    setShowGeneration(false);
-    await library.refresh();
-    if (assetId) setSelectedId(assetId);
-    props.onChanged?.();
-  }
-
-  function choose() {
-    if (selectedAsset) props.onSelect?.(selectedAsset);
-  }
-
-  async function deleteSelected() {
-    if (!selectedAsset) return;
-    await deleteAsset(selectedAsset.id);
-  }
-
-  async function deleteAsset(assetId: string) {
-    setMenu(null);
-    clearSelectedAsset(selectedId, setSelectedId, assetId);
-    if (await library.deleteAsset(assetId)) props.onChanged?.();
-  }
-
-  function openMenu(asset: PhotoLibraryAsset, event: MouseEvent) {
-    event.preventDefault();
-    setSelectedId(asset.id);
-    setMenu(menuState(asset, event));
-  }
-
+function modalHeader(props: PhotoLibraryModalProps) {
   return (
-    <div className="project-modal-backdrop" role="presentation">
-      <div className="project-modal photo-library-modal">
-        <div className="project-modal-header">
-          <div>
-            <h2>{props.mode === "select" ? "Choose photo" : "Project photos"}</h2>
-            <p>Use an existing photo, upload from your computer, or generate a new one.</p>
-          </div>
-          <button className="project-modal-close" onClick={props.onClose} type="button">
-            <X size={18} />
-          </button>
-        </div>
-        <PhotoLibraryToolbar
-          canDelete={Boolean(selectedAsset)}
-          canGenerate={props.imageModels.length > 0}
-          count={library.assets.length}
-          deleting={Boolean(library.deletingId)}
-          onDelete={deleteSelected}
-          loading={library.loading}
-          onGenerate={() => setShowGeneration(true)}
-          onRefresh={library.refresh}
-          onUpload={upload}
-          uploading={library.uploading}
-        />
-        {library.error ? <div className="form-error">{library.error}</div> : null}
-        <PhotoLibraryGrid
-          assets={library.assets}
-          loading={library.loading}
-          onContextMenu={openMenu}
-          onSelect={(asset) => setSelectedId(asset.id)}
-          selectedAssetId={selectedId}
-        />
-        {menu ? (
-          <PhotoLibraryContextMenu
-            asset={menu.asset}
-            deleting={library.deletingId === menu.asset.id}
-            onDelete={deleteAsset}
-            x={menu.x}
-            y={menu.y}
-          />
-        ) : null}
-        <PhotoLibraryFooter
-          canChoose={Boolean(selectedAsset)}
-          mode={props.mode}
-          onChoose={choose}
-          onClose={props.onClose}
-        />
+    <div className="project-modal-header">
+      <div>
+        <h2>{props.mode === "select" ? "Choose photo" : "Project photos"}</h2>
+        <p>Use an existing photo, upload from your computer, or generate a new one.</p>
       </div>
-      {showGeneration ? (
-        <PhotoGenerationModal
-          models={props.imageModels}
-          onClose={() => setShowGeneration(false)}
-          onGenerated={generated}
-          projectAspectRatio={props.projectAspectRatio}
-          projectId={props.projectId}
-        />
-      ) : null}
+      <button className="project-modal-close" onClick={props.onClose} type="button"><X size={18} /></button>
     </div>
   );
+}
+
+function modalToolbar(props: PhotoLibraryModalProps, state: PhotoLibraryState) {
+  return <PhotoLibraryToolbar canDelete={Boolean(state.selectedAsset)} canGenerate={props.imageModels.length > 0} count={state.library.assets.length} deleting={Boolean(state.library.deletingId)} loading={state.library.loading} onDelete={state.deleteSelected} onGenerate={() => state.setShowGeneration(true)} onRefresh={state.library.refresh} onUpload={state.upload} uploading={state.library.uploading} />;
+}
+
+function modalGrid(state: PhotoLibraryState) {
+  return <PhotoLibraryGrid assets={state.library.assets} loading={state.library.loading} onContextMenu={state.openMenu} onSelect={(asset) => state.setSelectedId(asset.id)} selectedAssetId={state.selectedId} />;
+}
+
+function modalMenu(state: PhotoLibraryState) {
+  if (!state.menu) return null;
+  return <PhotoLibraryContextMenu asset={state.menu.asset} deleting={state.library.deletingId === state.menu.asset.id} onDelete={state.deleteAsset} x={state.menu.x} y={state.menu.y} />;
+}
+
+function modalFooter(props: PhotoLibraryModalProps, state: PhotoLibraryState) {
+  return <PhotoLibraryFooter canChoose={Boolean(state.selectedAsset)} mode={props.mode} onChoose={state.choose} onClose={props.onClose} />;
+}
+
+function generationModal(props: PhotoLibraryModalProps, state: PhotoLibraryState) {
+  if (!state.showGeneration) return null;
+  return <PhotoGenerationModal models={props.imageModels} onClose={() => state.setShowGeneration(false)} onGenerated={state.generated} projectAspectRatio={props.projectAspectRatio} projectId={props.projectId} />;
 }
 
 function clearSelectedAsset(
@@ -149,6 +109,42 @@ function clearSelectedAsset(
   assetId: string
 ) {
   if (current === assetId) setSelectedId(undefined);
+}
+
+async function uploadPhoto(
+  file: File,
+  library: ReturnType<typeof usePhotoLibrary>,
+  props: PhotoLibraryModalProps,
+  setSelectedId: (value?: string) => void
+) {
+  const assetId = await library.upload(file);
+  if (!assetId) return;
+  setSelectedId(assetId);
+  props.onChanged?.();
+}
+
+async function generatedPhoto(input: GeneratedPhotoInput) {
+  input.setShowGeneration(false);
+  await input.library.refresh();
+  if (input.assetId) input.setSelectedId(input.assetId);
+  input.props.onChanged?.();
+}
+
+async function deletePhotoAsset(input: DeletePhotoInput) {
+  input.setMenu(null);
+  clearSelectedAsset(input.selectedId, input.setSelectedId, input.assetId);
+  if (await input.library.deleteAsset(input.assetId)) input.props.onChanged?.();
+}
+
+function openPhotoMenu(
+  asset: PhotoLibraryAsset,
+  event: MouseEvent,
+  setMenu: (value: PhotoMenuState) => void,
+  setSelectedId: (value: string) => void
+) {
+  event.preventDefault();
+  setSelectedId(asset.id);
+  setMenu(menuState(asset, event));
 }
 
 function menuState(asset: PhotoLibraryAsset, event: MouseEvent) {
@@ -172,3 +168,20 @@ function addMenuListeners(close: () => void) {
   window.addEventListener("click", close);
   window.addEventListener("scroll", close, true);
 }
+
+type GeneratedPhotoInput = {
+  assetId?: string;
+  library: ReturnType<typeof usePhotoLibrary>;
+  props: PhotoLibraryModalProps;
+  setSelectedId: (value?: string) => void;
+  setShowGeneration: (value: boolean) => void;
+};
+
+type DeletePhotoInput = {
+  assetId: string;
+  library: ReturnType<typeof usePhotoLibrary>;
+  props: PhotoLibraryModalProps;
+  selectedId?: string;
+  setMenu: (value: PhotoMenuState | null) => void;
+  setSelectedId: (value?: string) => void;
+};

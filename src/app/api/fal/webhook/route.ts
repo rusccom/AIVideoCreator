@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { handleFalWebhook } from "@/features/generation/server/fal-webhook-service";
-import { verifyFalWebhook } from "@/features/generation/server/fal-webhook-verifier";
+import { handleFalWebhook } from "@/application/generation/server";
+import { verifyFalWebhook } from "@/application/generation/server";
 
 export const runtime = "nodejs";
 

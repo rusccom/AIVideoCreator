@@ -1,5 +1,5 @@
-import { AuthShell } from "@/features/auth/components/AuthShell";
-import { RegisterForm } from "@/features/auth/components/RegisterForm";
+import { AuthShell } from "@/application/auth/client";
+import { RegisterForm } from "@/application/auth/client";
 
 export default function RegisterPage() {
   return (

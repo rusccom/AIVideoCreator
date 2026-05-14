@@ -1,0 +1,27 @@
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  provider    String
+  eventId     String
+  payloadJson Json
+  processedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([provider, eventId])
+  @@index([expiresAt])
+}
+
+model OutboxEvent {
+  id            String    @id @default(cuid())
+  aggregateId   String
+  aggregateType String
+  type          String
+  payload       Json
+  publishedAt   DateTime?
+  attempts      Int       @default(0)
+  lastError     String?
+  createdAt     DateTime  @default(now())
+
+  @@index([publishedAt, createdAt])
+  @@index([aggregateType, aggregateId, createdAt])
+}

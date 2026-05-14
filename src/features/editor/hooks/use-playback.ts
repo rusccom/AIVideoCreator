@@ -22,36 +22,13 @@ export function usePlayback(items: readonly EditorTimelineItem[]): PlaybackState
   const timeline = useMemo(() => new PlaybackTimeline(items), [items]);
   const [currentTime, setCurrentTimeRaw] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const setCurrentTime = useCallback(
-    (time: number) => setCurrentTimeRaw(clamp(time, 0, timeline.totalDuration)),
-    [timeline]
-  );
+  const setCurrentTime = useCallback((time: number) => setCurrentTimeRaw(clamp(time, 0, timeline.totalDuration)), [timeline]);
   const seek = setCurrentTime;
-  const seekToScene = useCallback(
-    (sceneId: string) => seekToSceneStart(timeline, sceneId, setCurrentTime),
-    [timeline, setCurrentTime]
-  );
-  const seekToItem = useCallback(
-    (itemId: string) => seekToItemStart(timeline, itemId, setCurrentTime),
-    [timeline, setCurrentTime]
-  );
-  const play = useCallback(() => setIsPlaying(true), []);
-  const pause = useCallback(() => setIsPlaying(false), []);
-  const toggle = useCallback(() => setIsPlaying((value) => !value), []);
+  const seekToScene = useCallback((sceneId: string) => seekToSceneStart(timeline, sceneId, setCurrentTime), [timeline, setCurrentTime]);
+  const seekToItem = useCallback((itemId: string) => seekToItemStart(timeline, itemId, setCurrentTime), [timeline, setCurrentTime]);
+  const play = useCallback(() => setIsPlaying(true), []), pause = useCallback(() => setIsPlaying(false), []), toggle = useCallback(() => setIsPlaying((value) => !value), []);
   const currentPosition = timeline.positionAtTime(currentTime);
-  return {
-    timeline,
-    currentTime,
-    currentPosition,
-    isPlaying,
-    setCurrentTime,
-    seek,
-    seekToItem,
-    seekToScene,
-    play,
-    pause,
-    toggle
-  };
+  return { timeline, currentTime, currentPosition, isPlaying, setCurrentTime, seek, seekToItem, seekToScene, play, pause, toggle };
 }
 
 function seekToItemStart(

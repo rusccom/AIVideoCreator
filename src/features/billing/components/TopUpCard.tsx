@@ -11,31 +11,29 @@ type TopUpCardProps = {
 export function TopUpCard({ option }: TopUpCardProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  return (
+    <article className="billing-top-up-card">
+      <span>{option.label}</span>
+      <strong>{option.credits.toLocaleString()} credits</strong>
+      <button className="button button-secondary" disabled={busy} onClick={handleCheckout(option.key, setBusy, setError)}><CreditCard size={16} />{busy ? "Opening" : "Pay"}</button>
+      {error ? <small>{error}</small> : null}
+    </article>
+  );
+}
 
-  async function handleCheckout() {
+function handleCheckout(packageKey: string, setBusy: SetBoolean, setError: SetText) {
+  return async () => {
     setBusy(true);
     setError("");
     try {
-      const response = await checkoutRequest(option.key);
+      const response = await checkoutRequest(packageKey);
       if (!response.url) throw new Error("Checkout URL is missing");
       window.location.href = response.url;
     } catch {
       setError("Checkout failed");
       setBusy(false);
     }
-  }
-
-  return (
-    <article className="billing-top-up-card">
-      <span>{option.label}</span>
-      <strong>{option.credits.toLocaleString()} credits</strong>
-      <button className="button button-secondary" disabled={busy} onClick={handleCheckout}>
-        <CreditCard size={16} />
-        {busy ? "Opening" : "Pay"}
-      </button>
-      {error ? <small>{error}</small> : null}
-    </article>
-  );
+  };
 }
 
 async function checkoutRequest(packageKey: string) {
@@ -51,3 +49,6 @@ function requestOptions(packageKey: string) {
     body: JSON.stringify({ packageKey })
   };
 }
+
+type SetBoolean = (value: boolean) => void;
+type SetText = (value: string) => void;

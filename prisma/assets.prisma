@@ -1,0 +1,30 @@
+model Asset {
+  id              String      @id @default(cuid())
+  userId          String
+  projectId       String?
+  type            AssetType
+  source          AssetSource
+  origin          AssetOrigin @default(PENDING)
+  r2Key           String?
+  externalUrl     String?
+  cdnUrl          String?
+  signedUrlCache  Json?
+  mimeType        String
+  sizeBytes       Int?
+  width           Int?
+  height          Int?
+  durationSeconds Int?
+  metadataJson    Json?
+  createdAt       DateTime    @default(now())
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project         Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  initialProjects Project[]   @relation("ProjectInitialFrame")
+  coveredProjects Project[]   @relation("ProjectCover")
+  startScenes     Scene[]     @relation("SceneStartFrame")
+  videoScenes     Scene[]     @relation("SceneVideo")
+  endScenes       Scene[]     @relation("SceneEndFrame")
+
+  @@index([userId, projectId, type])
+  @@index([projectId, type, createdAt])
+  @@index([origin, r2Key])
+}

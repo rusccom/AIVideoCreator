@@ -97,16 +97,6 @@
   text-align: right;
 }
 
-.billing-owner-form {
-  display: grid;
-  gap: 14px;
-  margin-top: 16px;
-}
-
-.billing-owner-form .button {
-  justify-self: start;
-}
-
 @media (max-width: 860px) {
   .billing-top-up-grid {
     grid-template-columns: 1fr;
@@ -124,8 +114,7 @@
     padding: 14px;
   }
 
-  .billing-top-up-card .button,
-  .billing-owner-form .button {
+  .billing-top-up-card .button {
     width: 100%;
   }
 }

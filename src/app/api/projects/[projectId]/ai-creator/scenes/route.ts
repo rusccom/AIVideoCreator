@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { aiCreatorSceneDraftSchema } from "@/features/ai-creator/server/scene-draft-schema";
-import { draftAiCreatorScenes } from "@/features/ai-creator/server/scene-draft-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { aiCreatorSceneDraftSchema } from "@/application/ai-creator/server";
+import { draftAiCreatorScenes } from "@/application/ai-creator/server";
 import { parseJson, serverError, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

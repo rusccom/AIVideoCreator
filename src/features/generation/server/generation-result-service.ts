@@ -1,22 +1,23 @@
 import { Prisma } from "@prisma/client";
-import { cleanupFailedAiCreatorSequence } from "@/features/ai-creator/server/ai-creator-sequence-cleanup";
-import { createAssetFromRemoteUrl } from "@/features/assets/server/asset-storage-service";
-import { completeProjectImageGeneration } from "@/features/image-generation/server/project-image-service";
-import { touchProjectInTransaction } from "@/features/projects/server/project-touch-service";
+import { cleanupFailedAiCreatorSequence } from "@/shared/server/ai-creator-sequence-cleanup";
+import { createAssetFromRemoteUrl } from "@/shared/server/asset-storage-service";
+import { touchProjectInTransaction } from "@/shared/server/project-touch";
 import { incrementProjectReadyScenes, incrementProjectTimelineItems } from "@/shared/server/counters";
 import { recordOutboxEvent } from "@/shared/server/outbox";
 import { publishPendingOutboxEvents } from "@/shared/server/outbox-publisher";
 import { prisma } from "@/shared/server/prisma";
 import { commitCredits, refundCredits } from "./credit-service";
-import { providerErrorPayload } from "./provider-error";
+import { providerErrorPayload } from "@/shared/server/provider-error";
+import { completeImageGenerationJob } from "./generation-image-result-service";
 import { markBranchFailed, markBranchSceneReady } from "./scene-branch-counters";
+import { videoAssetData, videoDuration, videoPayload, type VideoPayload } from "./generation-video-payload";
 
 export async function completeGenerationJob(jobId: string, data: unknown) {
   const claim = await claimGenerationCompletion(jobId);
   const job = claim.job;
   if (!claim.ready) return job;
   const result = job.type === "IMAGE_GENERATION"
-    ? await completeProjectImageGeneration(job, data)
+    ? await completeImageGenerationJob(job, data)
     : await completeVideoGenerationJob(job, data);
   await publishPendingOutboxEvents();
   return result;
@@ -35,25 +36,35 @@ export async function failGenerationJob(jobId: string, payload: unknown, reason:
 async function createVideoAsset(job: JobRecord, data: unknown) {
   const video = videoPayload(data);
   if (!video || !job.projectId || !job.sceneId) return null;
-  const asset = await createAssetFromRemoteUrl(videoAssetData(job, video));
-  await saveReadyScene({ assetId: asset.id, jobId: job.id, projectId: job.projectId, sceneId: job.sceneId, video });
+  const projectId = job.projectId;
+  const asset = await createAssetFromRemoteUrl(videoAssetData({ ...job, projectId }, video));
+  await saveReadyScene({ assetId: asset.id, jobId: job.id, projectId, sceneId: job.sceneId, video });
   return asset;
 }
 
 async function saveReadyScene(input: ReadySceneInput) {
   const durationSeconds = videoDuration(input.video);
-  await prisma.$transaction(async (tx) => {
-    const previous = await sceneBeforeReady(tx, input.sceneId);
-    const oldDuration = await timelineDuration(tx, input.sceneId, previous.durationSeconds);
-    await tx.scene.update({
-      where: { id: input.sceneId },
-      data: sceneData(input.jobId, input.assetId, durationSeconds)
-    });
-    const timelines = await tx.timelineItem.updateMany({ where: { sceneId: input.sceneId }, data: { durationSeconds } });
-    await updateProjectSceneCounters(tx, previous, input.projectId, timelines.count, durationSeconds, oldDuration);
-    await recordProjectEvent(tx, input.projectId, "scene.ready", { sceneId: input.sceneId });
-    await touchProjectInTransaction(tx, input.projectId);
+  await prisma.$transaction((tx) => saveReadySceneInTransaction(tx, input, durationSeconds));
+}
+
+async function saveReadySceneInTransaction(
+  tx: Prisma.TransactionClient,
+  input: ReadySceneInput,
+  durationSeconds: number
+) {
+  const previous = await sceneBeforeReady(tx, input.sceneId);
+  const oldDuration = await timelineDuration(tx, input.sceneId, previous.durationSeconds);
+  await tx.scene.update({ where: { id: input.sceneId }, data: sceneData(input.jobId, input.assetId, durationSeconds) });
+  const timelines = await tx.timelineItem.updateMany({ where: { sceneId: input.sceneId }, data: { durationSeconds } });
+  await updateProjectSceneCounters(tx, {
+    durationSeconds,
+    oldDuration,
+    previous,
+    projectId: input.projectId,
+    timelineCount: timelines.count
   });
+  await recordProjectEvent(tx, input.projectId, "scene.ready", { sceneId: input.sceneId });
+  await touchProjectInTransaction(tx, input.projectId);
 }
 
 async function completeVideoGenerationJob(job: JobRecord, data: unknown) {
@@ -101,22 +112,6 @@ async function queueLastFrameJob(job: JobRecord, videoAssetId: string) {
   });
 }
 
-function videoAssetData(job: JobRecord, video: ReadyVideoPayload) {
-  return {
-    userId: job.userId,
-    projectId: job.projectId,
-    type: "VIDEO" as const,
-    source: "FAL_GENERATION" as const,
-    remoteUrl: video.url,
-    mimeType: video.content_type ?? "video/mp4",
-    sizeBytes: video.file_size,
-    width: video.width,
-    height: video.height,
-    durationSeconds: videoDuration(video),
-    metadataJson: asJson(video)
-  };
-}
-
 function sceneData(jobId: string, assetId: string, durationSeconds: number) {
   return {
     generationJobId: jobId,
@@ -138,16 +133,6 @@ async function markSceneFailed(sceneId?: string | null) {
     }
     await recordProjectEvent(tx, scene.projectId, "scene.failed", { sceneId });
   });
-}
-
-function videoPayload(data: unknown): ReadyVideoPayload | null {
-  const source = record(data);
-  const video = record(source.video) as VideoPayload;
-  return typeof video.url === "string" ? { ...video, url: video.url } : null;
-}
-
-function videoDuration(video: VideoPayload) {
-  return Math.max(1, Math.round(Number(video.duration ?? 6)));
 }
 
 function record(value: unknown) {
@@ -180,16 +165,16 @@ async function timelineDuration(
 
 async function updateProjectSceneCounters(
   tx: Prisma.TransactionClient,
-  previous: { branchEntityId: string | null; status: string },
-  projectId: string,
-  timelineCount: number,
-  durationSeconds: number,
-  oldDuration: number
+  input: ProjectSceneCounterInput
 ) {
-  const readyDelta = previous.status !== "READY" ? 1 : 0;
-  if (readyDelta) await incrementProjectReadyScenes(tx, projectId, readyDelta);
-  await incrementProjectTimelineItems(tx, projectId, 0, timelineCount * durationSeconds - oldDuration);
-  if (readyDelta && previous.branchEntityId) await markBranchSceneReady(tx, previous.branchEntityId);
+  const readyDelta = input.previous.status !== "READY" ? 1 : 0;
+  if (readyDelta) await incrementProjectReadyScenes(tx, input.projectId, readyDelta);
+  await incrementProjectTimelineItems(tx, input.projectId, 0, durationDelta(input));
+  if (readyDelta && input.previous.branchEntityId) await markBranchSceneReady(tx, input.previous.branchEntityId);
+}
+
+function durationDelta(input: ProjectSceneCounterInput) {
+  return input.timelineCount * input.durationSeconds - input.oldDuration;
 }
 
 function markJobFailed(jobId: string, payload: unknown) {
@@ -268,19 +253,6 @@ async function recordJobEvent(tx: Prisma.TransactionClient, jobId: string, type:
 
 type JobRecord = Awaited<ReturnType<typeof prisma.generationJob.findUniqueOrThrow>>;
 
-type VideoPayload = {
-  content_type?: string;
-  duration?: number;
-  file_size?: number;
-  height?: number;
-  url?: string;
-  width?: number;
-};
-
-type ReadyVideoPayload = VideoPayload & {
-  url: string;
-};
-
 type GeneratedAsset = ReturnType<typeof generatedAsset>;
 
 type ReadySceneInput = {
@@ -289,4 +261,12 @@ type ReadySceneInput = {
   projectId: string;
   sceneId: string;
   video: VideoPayload;
+};
+
+type ProjectSceneCounterInput = {
+  durationSeconds: number;
+  oldDuration: number;
+  previous: { branchEntityId: string | null; status: string };
+  projectId: string;
+  timelineCount: number;
 };

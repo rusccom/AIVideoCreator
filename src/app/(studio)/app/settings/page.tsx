@@ -1,4 +1,4 @@
-import { ChangePasswordForm } from "@/features/settings/components/ChangePasswordForm";
+import { ChangePasswordForm } from "@/application/settings/client";
 
 export default function SettingsPage() {
   return (

@@ -19,20 +19,8 @@ export const TimelineClipSlot = memo(function TimelineClipSlot(props: TimelineCl
   const drop = useDroppable({ id: dropId(item.id), data: dropData(item.id) });
   const drag = useDraggable({ id: dragId(item.id), data: dragData(item.id) });
   return (
-    <div
-      className={slotClass(drag.isDragging)}
-      data-timeline-item-id={item.id}
-      ref={mergeRefs(drop.setNodeRef, drag.setNodeRef)}
-      style={slotStyle(props.box, props.insertOffset)}
-      {...drag.attributes}
-      {...drag.listeners}
-    >
-      <TimelineClipCard
-        item={item}
-        onContextMenu={props.onContextMenu}
-        onSelect={props.onSelect}
-        selected={props.selected}
-      />
+    <div className={slotClass(drag.isDragging)} data-timeline-item-id={item.id} ref={mergeRefs(drop.setNodeRef, drag.setNodeRef)} style={slotStyle(props.box, props.insertOffset)} {...drag.attributes} {...drag.listeners}>
+      <TimelineClipCard item={item} onContextMenu={props.onContextMenu} onSelect={props.onSelect} selected={props.selected} />
     </div>
   );
 });

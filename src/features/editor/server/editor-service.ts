@@ -1,13 +1,13 @@
 import { prisma } from "@/shared/server/prisma";
-import { supportedModels } from "@/features/generation/models/catalog";
+import { supportedModels } from "@/shared/generation/models";
 import {
   modelActive,
   modelImageCount,
   modelPriceMap,
   modelStatsByKey,
   type ModelStats
-} from "@/features/generation/server/model-stats-service";
-import type { SupportedModelDefinition } from "@/features/generation/models/types";
+} from "@/shared/server/model-stats";
+import type { SupportedModelDefinition } from "@/shared/generation/models";
 import type { EditorAsset, EditorImageModel, EditorProject, EditorScene, EditorTimelineItem, EditorVideoModel } from "../types";
 import { loadEditorAssets } from "./asset-loader";
 
@@ -15,29 +15,27 @@ export async function getEditorProject(
   userId: string,
   projectId: string
 ): Promise<EditorProject | null> {
-  const project = await prisma.project.findFirst({
-    where: { id: projectId, userId },
-    include: {
-      scenes: { orderBy: { orderIndex: "asc" } },
-      timelineItems: { include: { scene: true }, orderBy: { orderIndex: "asc" } }
-    }
-  });
+  const project = await findEditorProject(userId, projectId);
   if (!project) return null;
   const assets = await loadEditorAssets(project.id, project.scenes);
   const timelineItems = project.timelineItems.map((item) => toTimelineItem(item, assets.byId));
   const videoModels = await listModels("image-to-video", toVideoModel);
   const imageModels = await listModels("text-to-image", toImageModel);
-  return {
-    id: project.id,
-    title: project.title,
-    aspectRatio: project.aspectRatio,
-    totalDuration: `${totalTimelineSeconds(timelineItems)}s`,
-    scenes: project.scenes.map((scene) => toEditorScene(scene, assets.byId)),
-    timelineItems,
-    assets: assets.recent.map(toEditorAsset),
-    imageModels,
-    videoModels
-  };
+  return editorProject(project, assets, timelineItems, imageModels, videoModels);
+}
+
+function findEditorProject(userId: string, projectId: string) {
+  return prisma.project.findFirst({ where: { id: projectId, userId }, include: { scenes: { orderBy: { orderIndex: "asc" } }, timelineItems: { include: { scene: true }, orderBy: { orderIndex: "asc" } } } });
+}
+
+function editorProject(
+  project: NonNullable<Awaited<ReturnType<typeof findEditorProject>>>,
+  assets: Awaited<ReturnType<typeof loadEditorAssets>>,
+  timelineItems: EditorTimelineItem[],
+  imageModels: EditorImageModel[],
+  videoModels: EditorVideoModel[]
+) {
+  return { id: project.id, title: project.title, aspectRatio: project.aspectRatio, totalDuration: `${totalTimelineSeconds(timelineItems)}s`, scenes: project.scenes.map((scene) => toEditorScene(scene, assets.byId)), timelineItems, assets: assets.recent.map(toEditorAsset), imageModels, videoModels } satisfies EditorProject;
 }
 
 async function listModels<T>(type: string, mapper: ModelMapper<T>) {

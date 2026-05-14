@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { deleteAssetForUser } from "@/features/assets/server/asset-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { deleteAssetForUser } from "@/application/assets/server";
 import { unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

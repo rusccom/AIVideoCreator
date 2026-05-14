@@ -1,5 +1,5 @@
 import { prisma } from "@/shared/server/prisma";
-import { r2Storage } from "@/features/assets/server/r2-storage";
+import { r2Storage } from "@/shared/server/r2-storage";
 import type { CreateProjectInput, UpdateProjectInput } from "./project-schema";
 
 export async function listProjects(userId: string) {

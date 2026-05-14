@@ -17,24 +17,12 @@ type EditorContextMenuProps = {
 
 export function EditorContextMenu(props: EditorContextMenuProps) {
   return (
-    <div
-      className="editor-context-menu"
-      role="menu"
-      style={{ left: props.x, top: props.y }}
-    >
-      {props.items.map((item) => (
-        <button
-          className={item.danger ? "danger" : undefined}
-          disabled={item.disabled}
-          key={item.id}
-          onClick={item.onSelect}
-          role="menuitem"
-          type="button"
-        >
-          {item.icon}
-          {item.label}
-        </button>
-      ))}
+    <div className="editor-context-menu" role="menu" style={{ left: props.x, top: props.y }}>
+      {props.items.map(menuButton)}
     </div>
   );
+}
+
+function menuButton(item: EditorContextMenuItem) {
+  return <button className={item.danger ? "danger" : undefined} disabled={item.disabled} key={item.id} onClick={item.onSelect} role="menuitem" type="button">{item.icon}{item.label}</button>;
 }

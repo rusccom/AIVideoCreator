@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { aiCreatorPromptSchema } from "@/features/ai-creator/server/ai-creator-prompt-schema";
-import { updateFailedAiCreatorPrompt } from "@/features/ai-creator/server/ai-creator-sequence-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { aiCreatorPromptSchema } from "@/application/ai-creator/server";
+import { updateFailedAiCreatorPrompt } from "@/application/ai-creator/server";
 import { parseJson, serverError, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

@@ -1,6 +1,6 @@
-import { AdminDashboard } from "@/features/admin/components/AdminDashboard";
-import { listAiModels } from "@/features/admin/server/ai-model-service";
-import { getAdminMetrics } from "@/features/admin/server/admin-service";
+import { AdminDashboard } from "@/application/admin/client";
+import { listAiModels } from "@/application/admin/server";
+import { getAdminMetrics } from "@/application/admin/server";
 
 export const dynamic = "force-dynamic";
 

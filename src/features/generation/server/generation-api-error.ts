@@ -1,5 +1,5 @@
 import { paymentRequired, serverError, unauthorized } from "@/shared/server/api";
-import { providerErrorMessage } from "./provider-error";
+import { providerErrorMessage } from "@/shared/server/provider-error";
 
 export function generationErrorResponse(error: unknown, fallback: string) {
   if (error instanceof Error && error.message === "Unauthorized") return unauthorized();

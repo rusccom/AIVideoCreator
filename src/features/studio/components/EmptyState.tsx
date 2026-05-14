@@ -1,6 +1,10 @@
-import { CreateProjectButton } from "@/features/projects/components/CreateProjectButton";
+import type { ReactNode } from "react";
 
-export function EmptyState() {
+type EmptyStateProps = {
+  createProjectButton: ReactNode;
+};
+
+export function EmptyState({ createProjectButton }: EmptyStateProps) {
   return (
     <section className="empty-state">
       <div>
@@ -9,7 +13,7 @@ export function EmptyState() {
           Start a new workspace for your idea, then shape the project as it
           grows.
         </p>
-        <CreateProjectButton label="Create project" />
+        {createProjectButton}
       </div>
     </section>
   );

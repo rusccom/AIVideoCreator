@@ -1,5 +1,5 @@
 import { prisma } from "../src/shared/server/prisma";
-import { refreshGenerationJobForUser } from "../src/features/generation/server/job-service";
+import { refreshGenerationJobForUser } from "../src/application/generation/worker";
 
 export async function processNextImageGenerationJob() {
   const job = await nextImageJob();

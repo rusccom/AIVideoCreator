@@ -22,17 +22,17 @@ export function TimelineClipCard(props: TimelineClipCardProps) {
       type="button"
     >
       <div className="timeline-preview" />
-      <div className="timeline-copy">
-        <strong>{scene.name} - {scene.status}</strong>
-        <span>{scene.duration} - {scene.model}</span>
-        <StatusBadge status={scene.status} />
-        <div className="link-row">
-          <Icon size={14} />
-          <span>Start to end: {scene.linkState}</span>
-        </div>
-      </div>
+      <div className="timeline-copy">{clipText(props.item)}{clipLink(scene.linkState, Icon)}</div>
     </button>
   );
+}
+
+function clipText(item: EditorTimelineItem) {
+  return <><strong>{item.scene.name} - {item.scene.status}</strong><span>{item.scene.duration} - {item.scene.model}</span><StatusBadge status={item.scene.status} /></>;
+}
+
+function clipLink(linkState: string, Icon: typeof Link2) {
+  return <div className="link-row"><Icon size={14} /><span>Start to end: {linkState}</span></div>;
 }
 
 function clipClass(item: EditorTimelineItem, selected: boolean) {

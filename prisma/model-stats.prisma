@@ -1,0 +1,41 @@
+model AiModelStats {
+  key                    String    @id
+  usageRequestCount      Int       @default(0)
+  usageGeneratedImages   Int       @default(0)
+  aiCreatorImageCount    Int       @default(4)
+  lastUsedAt             DateTime?
+  pricePerSecondOverride Json?
+  active                 Boolean   @default(true)
+  selected               Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@index([active])
+  @@index([selected, active])
+}
+
+model ReasoningModel {
+  id                            String   @id @default(cuid())
+  key                           String   @unique
+  provider                      String
+  providerModelId               String
+  displayName                   String
+  contextWindowTokens           Int
+  inputTokenPriceUsdPerMillion  Float    @default(0)
+  outputTokenPriceUsdPerMillion Float    @default(0)
+  reasoningEffort               String   @default("medium")
+  excludeReasoning              Boolean  @default(true)
+  promptTokensUsed              Int      @default(0)
+  completionTokensUsed          Int      @default(0)
+  reasoningTokensUsed           Int      @default(0)
+  totalTokensUsed               Int      @default(0)
+  requestCount                  Int      @default(0)
+  estimatedCostUsd              Float    @default(0)
+  selected                      Boolean  @default(false)
+  active                        Boolean  @default(true)
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+
+  @@index([provider, active])
+  @@index([selected, active])
+}

@@ -1,6 +1,6 @@
-import { OwnerBillingSummary } from "@/features/billing/components/OwnerBillingSummary";
-import { getOwnerBillingOverview } from "@/features/billing/server/billing-owner-service";
-import { OwnerPageHeader } from "@/features/owner/components/OwnerPageHeader";
+import { OwnerBillingSummary } from "@/application/billing/client";
+import { getOwnerBillingOverview } from "@/application/billing/server";
+import { OwnerPageHeader } from "@/application/owner/client";
 
 export const dynamic = "force-dynamic";
 

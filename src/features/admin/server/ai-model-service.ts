@@ -1,14 +1,14 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
-import { supportedModels } from "@/features/generation/models/catalog";
+import { supportedModels } from "@/shared/generation/models";
 import {
   modelActive,
   modelImageCount,
   modelPriceMap,
   modelStatsByKey,
   type ModelStats
-} from "@/features/generation/server/model-stats-service";
-import type { EditableAiModel } from "@/features/owner/types";
+} from "@/shared/server/model-stats";
+import type { EditableAiModel } from "@/shared/model-form";
 import type { AiModelInput } from "./ai-model-schema";
 
 export async function listAiModels(): Promise<EditableAiModel[]> {
@@ -37,32 +37,7 @@ function editableModel(
   model: (typeof supportedModels)[number],
   stats?: ModelStats
 ): EditableAiModel {
-  return {
-    id: model.id,
-    key: model.id,
-    provider: model.provider,
-    providerModelId: model.providerModelId,
-    type: model.type,
-    displayName: model.displayName,
-    qualityTier: model.qualityTier,
-    supportedAspectRatios: model.supportedAspectRatios,
-    supportedResolutions: model.supportedResolutions,
-    supportsStartFrame: model.supportsStartFrame,
-    supportsEndFrame: model.supportsEndFrame,
-    supportsSeed: model.supportsSeed,
-    defaultAspectRatio: model.defaultAspectRatio,
-    defaultDurationSeconds: model.defaultDurationSeconds,
-    defaultResolution: model.defaultResolution,
-    imageDefaults: model.imageDefaults,
-    minDurationSeconds: model.minDurationSeconds,
-    maxDurationSeconds: model.maxDurationSeconds,
-    pricePerSecondByResolution: modelPriceMap(model, stats),
-    active: modelActive(model, stats),
-    aiCreatorImageCount: modelImageCount(model, stats),
-    lastUsedAt: stats?.lastUsedAt ?? null,
-    usageGeneratedImages: stats?.usageGeneratedImages ?? 0,
-    usageRequestCount: stats?.usageRequestCount ?? 0
-  } satisfies EditableAiModel;
+  return { ...model, active: modelActive(model, stats), aiCreatorImageCount: modelImageCount(model, stats), id: model.id, key: model.id, lastUsedAt: stats?.lastUsedAt ?? null, pricePerSecondByResolution: modelPriceMap(model, stats), usageGeneratedImages: stats?.usageGeneratedImages ?? 0, usageRequestCount: stats?.usageRequestCount ?? 0 } satisfies EditableAiModel;
 }
 
 function asJson(value: unknown) {

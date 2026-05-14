@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { getAssetReadUrl } from "@/features/assets/server/asset-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { getAssetReadUrl } from "@/application/assets/server";
 import { serverError, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

@@ -1,9 +1,10 @@
-import { AiCreatorButton } from "@/features/ai-creator/components/AiCreatorButton";
+import type { EditorIntegrations } from "../editor-integrations";
 import type { EditorImageModel, EditorScene, EditorVideoModel } from "../types";
 import { DownloadClipButton } from "./DownloadClipButton";
 
 type EditorAccountActionsProps = {
   imageModels: EditorImageModel[];
+  integrations: EditorIntegrations;
   projectAspectRatio: string;
   projectId: string;
   projectTitle: string;
@@ -12,6 +13,7 @@ type EditorAccountActionsProps = {
 };
 
 export function EditorAccountActions(props: EditorAccountActionsProps) {
+  const AiCreatorButton = props.integrations.AiCreatorButton;
   return (
     <div className="editor-account-actions">
       <AiCreatorButton

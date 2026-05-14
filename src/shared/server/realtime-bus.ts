@@ -24,8 +24,9 @@ export function subscribeProjectEvents(projectId: string, listener: ProjectListe
 
 export function publishProjectEvent(projectId: string, event: ProjectRealtimeEvent) {
   const projectListeners = listeners.get(projectId);
-  if (!projectListeners?.size) return;
+  if (!projectListeners?.size) return false;
   projectListeners.forEach((listener) => listener(event));
+  return true;
 }
 
 function unsubscribeProjectEvents(projectId: string, listener: ProjectListener) {

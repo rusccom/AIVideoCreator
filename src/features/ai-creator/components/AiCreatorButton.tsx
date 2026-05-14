@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { defaultAspectRatioPreset } from "@/features/generation/models/aspect-ratio-presets";
+import { defaultAspectRatioPreset } from "@/shared/generation/models";
 import type { StartedCreatorVideo } from "../ai-creator-video-generation";
 import type { AiCreatorImageModel, AiCreatorVideoModel } from "../types";
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getStripe } from "@/features/billing/server/stripe-client";
-import { handleStripeEvent } from "@/features/billing/server/stripe-webhook-service";
+import { getStripe } from "@/application/billing/server";
+import { handleStripeEvent } from "@/application/billing/server";
 
 export const runtime = "nodejs";
 

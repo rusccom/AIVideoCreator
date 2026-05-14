@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { deleteTimelineItemForUser } from "@/features/timeline/server/timeline-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { deleteTimelineItemForUser } from "@/application/timeline/server";
 import { unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

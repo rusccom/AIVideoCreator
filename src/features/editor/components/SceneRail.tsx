@@ -14,24 +14,15 @@ type SceneRailProps = {
 export function SceneRail(props: SceneRailProps) {
   return (
     <section className="editor-panel">
-      <div className="editor-panel-header">
-        <h2>Clips</h2>
-        <button className="button button-quiet" onClick={props.onCreate} type="button">
-          <Plus size={15} />
-        </button>
-      </div>
+      <div className="editor-panel-header"><h2>Clips</h2><button className="button button-quiet" onClick={props.onCreate} type="button"><Plus size={15} /></button></div>
       <div className="scene-list">
         {props.scenes.length === 0 ? <p className="form-note">No clips yet.</p> : null}
-        {props.scenes.map((scene) => (
-          <SceneRailItem
-            key={scene.id}
-            onContextMenu={props.onContextMenu}
-            onSelect={props.onSelect}
-            scene={scene}
-            selected={scene.id === props.selectedSceneId}
-          />
-        ))}
+        {props.scenes.map((scene) => sceneItem(props, scene))}
       </div>
     </section>
   );
+}
+
+function sceneItem(props: SceneRailProps, scene: EditorScene) {
+  return <SceneRailItem key={scene.id} onContextMenu={props.onContextMenu} onSelect={props.onSelect} scene={scene} selected={scene.id === props.selectedSceneId} />;
 }

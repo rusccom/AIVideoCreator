@@ -1,6 +1,5 @@
-import type { EditableAiModel } from "../types";
-import { ModelFieldSection } from "./ModelFieldSection";
-import { ModelReadonlyField } from "./ModelReadonlyField";
+import type { EditableAiModel } from "@/shared/model-form";
+import { ModelFieldSection, ModelReadonlyField } from "@/shared/model-form";
 
 type AiModelDurationFieldsProps = {
   model: EditableAiModel;

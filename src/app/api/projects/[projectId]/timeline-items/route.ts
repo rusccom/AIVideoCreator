@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { createTimelineItemSchema } from "@/features/timeline/server/timeline-schema";
-import { createTimelineItemForUser } from "@/features/timeline/server/timeline-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { createTimelineItemSchema } from "@/application/timeline/server";
+import { createTimelineItemForUser } from "@/application/timeline/server";
 import { parseJson, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

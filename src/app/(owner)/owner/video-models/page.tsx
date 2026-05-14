@@ -1,6 +1,7 @@
-import { listAiModels } from "@/features/admin/server/ai-model-service";
-import { AiModelList } from "@/features/owner/components/AiModelList";
-import { OwnerPageHeader } from "@/features/owner/components/OwnerPageHeader";
+import { listAiModels } from "@/application/admin/server";
+import { updateAiModelAction } from "@/application/admin/model-actions";
+import { AiModelList } from "@/application/owner/client";
+import { OwnerPageHeader } from "@/application/owner/client";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export default async function OwnerVideoModelsPage() {
         description="Configure FAL video models, duration limits, and credit prices."
       />
       <div className="side-stack">
-        <AiModelList models={videoModels} />
+        <AiModelList action={updateAiModelAction} models={videoModels} />
       </div>
     </main>
   );

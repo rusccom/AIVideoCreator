@@ -21,14 +21,6 @@ export async function getExportJob(userId: string, exportId: string) {
   });
 }
 
-export async function listReadyScenes(projectId: string) {
-  return prisma.timelineItem.findMany({
-    where: { projectId, scene: { status: "READY", videoAssetId: { not: null } } },
-    include: { scene: true },
-    orderBy: { orderIndex: "asc" }
-  });
-}
-
 async function assertProjectOwner(userId: string, projectId: string) {
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId },

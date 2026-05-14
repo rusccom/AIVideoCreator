@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { selectStartImageSchema } from "@/features/generation/server/generation-schema";
-import { selectStartImage } from "@/features/generation/server/generation-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { selectStartImageSchema } from "@/application/generation/server";
+import { selectStartImage } from "@/application/generation/server";
 import { parseJson, serverError, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

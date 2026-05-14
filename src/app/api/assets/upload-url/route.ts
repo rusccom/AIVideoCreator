@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { uploadUrlSchema } from "@/features/assets/server/asset-schema";
-import { createUploadUrl } from "@/features/assets/server/asset-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { uploadUrlSchema } from "@/application/assets/server";
+import { createUploadUrl } from "@/application/assets/server";
 import { parseJson, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

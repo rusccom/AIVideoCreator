@@ -1,5 +1,5 @@
 import { prisma } from "@/shared/server/prisma";
-import { r2Storage } from "@/features/assets/server/r2-storage";
+import { resolveAssetReadUrl } from "@/shared/server/asset-read-url";
 
 type SceneRefs = {
   startFrameAssetId: string | null;
@@ -80,8 +80,5 @@ async function safeSignedAssetUrl(asset: EditorAssetRecord) {
 }
 
 async function signedAssetUrl(asset: EditorAssetRecord) {
-  if (asset.cdnUrl) return asset.cdnUrl;
-  if (asset.origin === "EXTERNAL_URL") return asset.externalUrl;
-  if (asset.origin !== "R2") return null;
-  return asset.r2Key ? r2Storage.createGetUrl(asset.r2Key) : null;
+  return resolveAssetReadUrl(asset);
 }

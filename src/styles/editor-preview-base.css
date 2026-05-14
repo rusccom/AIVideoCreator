@@ -1,0 +1,44 @@
+.preview-playback-overlay {
+  position: absolute;
+  inset: auto auto 24px 50%;
+  z-index: 3;
+  display: flex;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  padding: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 8px);
+  background: rgba(8, 9, 13, 0.58);
+  backdrop-filter: blur(14px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.preview-screen:hover .preview-playback-overlay,
+.preview-screen:focus-within .preview-playback-overlay {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+.preview-playback-overlay button {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.preview-playback-overlay button.active {
+  border-color: rgba(34, 211, 238, 0.52);
+  background: rgba(34, 211, 238, 0.16);
+}
+
+.preview-playback-overlay button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}

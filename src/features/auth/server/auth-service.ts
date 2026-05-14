@@ -11,24 +11,13 @@ type ChangePasswordInput = {
 
 export async function registerUser(input: RegisterInput) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
-  if (existing) {
-    throw new Error("Email already exists");
-  }
+  if (existing) throw new Error("Email already exists");
   const passwordHash = await hashPassword(input.password);
-  return prisma.user.create({
-    data: {
-      email: input.email,
-      name: input.name,
-      passwordHash,
-      ledgerEntries: {
-        create: {
-          amount: 100,
-          type: "grant",
-          reason: "trial credits"
-        }
-      }
-    }
-  });
+  return prisma.user.create({ data: { email: input.email, name: input.name, passwordHash, ledgerEntries: { create: trialCredits() } } });
+}
+
+function trialCredits() {
+  return { amount: 100, type: "grant", reason: "trial credits" };
 }
 
 export async function loginUser(input: LoginInput) {

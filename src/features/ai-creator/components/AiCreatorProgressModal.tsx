@@ -3,6 +3,7 @@
 import { Pencil, RotateCcw, X } from "lucide-react";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { useEffect, useState } from "react";
+import { subscribeProjectEvents } from "@/shared/client/project-events";
 import { useAiCreatorProgressRecovery, type AiCreatorProgressRecovery } from "../use-ai-creator-progress-recovery";
 import { AiCreatorProgressPulse } from "./AiCreatorProgressPulse";
 import { AiCreatorPromptEditModal } from "./AiCreatorPromptEditModal";
@@ -39,44 +40,41 @@ type ProgressViewState = {
   pulse: number;
 };
 
-type ProgressStatus = {
-  restart: () => void;
-  setState: Dispatch<SetStateAction<ProgressViewState>>;
-  state: ProgressViewState;
-};
-
 export function AiCreatorProgressModal(props: AiCreatorProgressModalProps) {
   const progressStatus = useProgressStatus(props);
   const recovery = useAiCreatorProgressRecovery(props, progressStatus);
   const state = progressStatus.state;
   const progress = state.progress;
-
   return (
     <div aria-modal="true" className="project-modal-backdrop" role="dialog">
       <div className="project-modal ai-creator-progress-modal">
-        <div className="ai-creator-progress-layout">
-          <AiCreatorProgressPulse
-            pulse={state.pulse}
-            readyCount={progress.readyCount}
-            status={progress.status}
-            total={progress.total}
-          />
-          <div className="ai-creator-progress-content">
-            <div>
-              <h2>{progressTitle(progress)}</h2>
-              <p>{progressText(progress)}</p>
-            </div>
-            <div aria-label="Clip generation progress" {...progressBarProps(state)}>
-              <span />
-            </div>
-            {progressActions(props, progress, recovery)}
-            {recovery.action.error ? <div className="form-error ai-creator-progress-error">{recovery.action.error}</div> : null}
-          </div>
-        </div>
+        {progressLayout(props, state, progress, recovery)}
         {editModal(props, progress, recovery)}
       </div>
     </div>
   );
+}
+
+function progressLayout(
+  props: AiCreatorProgressModalProps,
+  state: ProgressViewState,
+  progress: ProgressState,
+  recovery: AiCreatorProgressRecovery
+) {
+  return <div className="ai-creator-progress-layout"><AiCreatorProgressPulse pulse={state.pulse} readyCount={progress.readyCount} status={progress.status} total={progress.total} />{progressContent(props, state, progress, recovery)}</div>;
+}
+
+function progressContent(
+  props: AiCreatorProgressModalProps,
+  state: ProgressViewState,
+  progress: ProgressState,
+  recovery: AiCreatorProgressRecovery
+) {
+  return <div className="ai-creator-progress-content">{progressHeading(progress)}<div aria-label="Clip generation progress" {...progressBarProps(state)}><span /></div>{progressActions(props, progress, recovery)}{recovery.action.error ? <div className="form-error ai-creator-progress-error">{recovery.action.error}</div> : null}</div>;
+}
+
+function progressHeading(progress: ProgressState) {
+  return <div><h2>{progressTitle(progress)}</h2><p>{progressText(progress)}</p></div>;
 }
 
 function useProgressStatus(props: AiCreatorProgressModalProps) {
@@ -95,7 +93,7 @@ function runProgressSubscription(
   setState: Dispatch<SetStateAction<ProgressViewState>>
 ) {
   let active = true;
-  let source: EventSource | undefined;
+  let unsubscribe: (() => void) | undefined;
   const target = progressTarget(props);
   const refresh = async () => {
     setState(nextPulse);
@@ -103,22 +101,19 @@ function runProgressSubscription(
     if (!active) return;
     setState((state) => applyProgress(state, progress));
     if (progress?.status === "READY") props.onDone();
-    if (progress?.status === "READY" || isStoppedProgress(progress)) source?.close();
+    if (progress?.status === "READY" || isStoppedProgress(progress)) unsubscribe?.();
   };
   void refresh();
-  source = subscribeProgressEvents(target, refresh);
+  unsubscribe = subscribeProgressEvents(target, refresh);
   return () => {
     active = false;
-    source?.close();
+    unsubscribe?.();
   };
 }
 
 function subscribeProgressEvents(target: ProgressTarget, refresh: () => void) {
   if (!target.projectId) return undefined;
-  const source = new EventSource(`/api/projects/${target.projectId}/events`);
-  progressEventTypes().forEach((type) => source.addEventListener(type, refresh));
-  source.onerror = () => undefined;
-  return source;
+  return subscribeProjectEvents(target.projectId, progressEventTypes(), refresh);
 }
 
 function applyProgress(state: ProgressViewState, progress: ProgressState | null) {

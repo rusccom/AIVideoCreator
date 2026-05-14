@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { listProjectPhotos, uploadProjectPhoto } from "@/features/photo-library/server/photo-library-service";
+import { requireCurrentUser } from "@/application/auth/server";
+import { listProjectPhotos, uploadProjectPhoto } from "@/application/photo-library/server";
 import { serverError, unauthorized } from "@/shared/server/api";
 
 export const runtime = "nodejs";

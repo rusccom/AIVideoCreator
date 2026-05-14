@@ -1,0 +1,11 @@
+export { AudienceSection } from "@/features/marketing/components/AudienceSection";
+export { BenefitsSection } from "@/features/marketing/components/BenefitsSection";
+export { FaqSection } from "@/features/marketing/components/FaqSection";
+export { HeroSection } from "@/features/marketing/components/HeroSection";
+export { LegalPage } from "@/features/marketing/components/LegalPage";
+export { MarketingFooter } from "@/features/marketing/components/MarketingFooter";
+export { MarketingNav } from "@/features/marketing/components/MarketingNav";
+export { PricingSection } from "@/features/marketing/components/PricingSection";
+export { ProcessSection } from "@/features/marketing/components/ProcessSection";
+export { StructuredData } from "@/features/marketing/components/StructuredData";
+export { UseCasesSection } from "@/features/marketing/components/UseCasesSection";

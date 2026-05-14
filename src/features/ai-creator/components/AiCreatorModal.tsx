@@ -1,7 +1,7 @@
 "use client";
 
 import { RotateCcw, X } from "lucide-react";
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { generateCreatorImages, type GeneratedCreatorAsset } from "../ai-creator-generation";
 import { generateCreatorScenes } from "../ai-creator-scenes";
 import { estimateCreatorVideoCredits, generateCreatorVideo, type StartedCreatorVideo } from "../ai-creator-video-generation";
@@ -33,158 +33,196 @@ type AiCreatorModalProps = {
   videoModels?: AiCreatorVideoModel[];
 };
 
+type CreatorBase = {
+  form: AiCreatorIdeaFormState;
+  mediaSlots: AiCreatorMediaSlot[];
+  scenes: AiCreatorSceneDraft[];
+  selectedAssetId?: string;
+};
+
+type CreatorContext = CreatorBase & {
+  imageModels: AiCreatorImageModel[];
+  onBatch: (start: number, count: number, assets: GeneratedCreatorAsset[]) => void;
+  projectId?: string;
+  videoModels: AiCreatorVideoModel[];
+};
+
+type DraftSetters = {
+  setLoading: Dispatch<SetStateAction<boolean>>;
+  setMediaSlots: Dispatch<SetStateAction<AiCreatorMediaSlot[]>>;
+  setScenes: Dispatch<SetStateAction<AiCreatorSceneDraft[]>>;
+  setSelectedAssetId: Dispatch<SetStateAction<string | undefined>>;
+  setSelectedSceneId: Dispatch<SetStateAction<string | undefined>>;
+  setShowIdea: Dispatch<SetStateAction<boolean>>;
+};
+
 export function AiCreatorModal(props: AiCreatorModalProps) {
-  const imageModels = props.imageModels ?? [];
-  const videoModels = props.videoModels ?? [];
-  const [form, setForm] = useState(() => initialIdeaForm(imageModels, videoModels, props.projectAspectRatio));
-  const [showIdea, setShowIdea] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [videoError, setVideoError] = useState("");
-  const [videoSubmitting, setVideoSubmitting] = useState(false);
-  const [scenes, setScenes] = useState<AiCreatorSceneDraft[]>([]);
-  const [selectedSceneId, setSelectedSceneId] = useState<string>();
-  const [mediaSlots, setMediaSlots] = useState<AiCreatorMediaSlot[]>([]);
-  const [selectedAssetId, setSelectedAssetId] = useState<string>();
-  const projectReady = Boolean(props.projectId && imageModels.length > 0 && videoModels.length > 0);
-  const selectedScene = scenes.find((scene) => scene.id === selectedSceneId);
-
-  async function submitIdea() {
-    setLoading(true);
-    const nextScenes = await loadSceneDrafts(form);
-    setScenes(nextScenes);
-    setShowIdea(false);
-    setSelectedSceneId(nextScenes[0]?.id);
-    setLoading(false);
-    await loadFirstFrameImages(nextScenes[0], form);
-  }
-
-  async function submitVideo() {
-    const input = videoRequest();
-    if (!input) return setVideoError("Select a first frame before generating video.");
-    setVideoSubmitting(true);
-    setVideoError("");
-    try {
-      props.onVideoStarted(await generateCreatorVideo(input));
-    } catch (error) {
-      setVideoError(errorMessage(error));
-    } finally {
-      setVideoSubmitting(false);
-    }
-  }
-
-  async function loadSceneDrafts(nextForm: AiCreatorIdeaFormState) {
-    if (!props.projectId) return buildSceneDrafts(nextForm);
-    try {
-      return await generateCreatorScenes(props.projectId, nextForm);
-    } catch {
-      return buildSceneDrafts(nextForm);
-    }
-  }
-
-  async function loadFirstFrameImages(scene: AiCreatorSceneDraft | undefined, nextForm = form) {
-    const imageModel = selectedImageModel(imageModels, nextForm.imageModelId);
-    if (!scene || !props.projectId || !imageModel) return;
-    setLoading(true);
-    setMediaSlots(createLoadingSlots(imageCount(imageModel)));
-    setSelectedAssetId(undefined);
-    await generateSceneImages(scene, imageModel, nextForm);
-    setLoading(false);
-  }
-
-  async function generateSceneImages(
-    scene: AiCreatorSceneDraft,
-    imageModel: AiCreatorImageModel,
-    nextForm: AiCreatorIdeaFormState
-  ) {
-    try {
-      await generateCreatorImages(imageRequest(props.projectId!, scene, imageModel, nextForm, updateBatch));
-    } catch {
-      setMediaSlots((current) => failLoadingSlots(current));
-    }
-  }
-
-  function selectScene(sceneId: string) {
-    setSelectedSceneId(sceneId);
-  }
-
-  function updateSceneText(sceneId: string, text: string) {
-    setScenes((current) => current.map((scene) => scene.id === sceneId ? { ...scene, text } : scene));
-  }
-
-  function selectMedia(slot: AiCreatorMediaSlot) {
-    if (!slot.assetId) return;
-    setSelectedAssetId(slot.assetId);
-  }
-
-  function updateBatch(start: number, count: number, assets: GeneratedCreatorAsset[]) {
-    setSelectedAssetId((current) => current ?? assets[0]?.id);
-    setMediaSlots((current) => mergeAssets(current, start, count, assets));
-  }
-
-  function videoRequest() {
-    const assetId = selectedAssetId ?? firstReadyAssetId(mediaSlots);
-    const videoModel = selectedVideoModel(videoModels, form.videoModelId);
-    if (!props.projectId || !scenes.length || !assetId || !videoModel) return null;
-    return { assetId, form, projectId: props.projectId, scenes, videoModel };
-  }
-
-  const currentVideoRequest = videoRequest();
-  const currentVideoCost = currentVideoRequest ? estimateCreatorVideoCredits(currentVideoRequest) : null;
-
+  const state = useCreatorController(props);
   return (
     <div aria-labelledby="ai-creator-title" aria-modal="true" className="project-modal-backdrop" role="dialog">
       <div className="project-modal ai-creator-modal">
-        <div className="project-modal-header">
-          <div>
-            <h2 id="ai-creator-title">AI Creator</h2>
-            <p>{selectedScene ? `${selectedScene.name} ${selectedScene.range}` : "Build a video plan from one idea."}</p>
-          </div>
-          <div className="ai-creator-header-actions">
-            <button className="button button-secondary" onClick={() => setShowIdea(true)} type="button">
-              <RotateCcw size={16} /> Reload
-            </button>
-            <button aria-label="Close" className="project-modal-close" onClick={props.onClose} type="button">
-              <X size={18} />
-            </button>
-          </div>
-        </div>
-        <div className="ai-creator-modal-body">
-          <AiCreatorMediaPanel
-            addDisabled
-            generating={loading}
-            onAdd={() => setShowIdea(true)}
-            onSelect={selectMedia}
-            selectedAssetId={selectedAssetId}
-            slots={mediaSlots}
-          />
-          <AiCreatorScenePanel
-            onSelect={selectScene}
-            onTextChange={updateSceneText}
-            scenes={scenes}
-            selectedSceneId={selectedSceneId}
-          />
-        </div>
-        {videoError ? <div className="form-error">{videoError}</div> : null}
-        <div className="ai-creator-modal-footer">
-          <button className="button button-primary" disabled={videoDisabled(currentVideoRequest, loading, videoSubmitting)} onClick={submitVideo} type="button">
-            {videoButtonText(videoSubmitting, currentVideoCost, scenes.length)}
-          </button>
-        </div>
-        {showIdea ? (
-          <AiCreatorIdeaModal
-            form={form}
-            imageModels={imageModels}
-            loading={loading}
-            onCancel={scenes.length > 0 ? () => setShowIdea(false) : props.onClose}
-            onChange={setForm}
-            onSubmit={submitIdea}
-            projectReady={projectReady}
-            videoModels={videoModels}
-          />
-        ) : null}
+        {modalHeader(props, state)}
+        {modalBody(state)}
+        {state.videoError ? <div className="form-error">{state.videoError}</div> : null}
+        {modalFooter(state)}
+        {ideaModal(props, state)}
       </div>
     </div>
   );
+}
+
+function useCreatorController(props: AiCreatorModalProps) {
+  const imageModels = props.imageModels ?? [], videoModels = props.videoModels ?? [];
+  const [form, setForm] = useState(() => initialIdeaForm(imageModels, videoModels, props.projectAspectRatio)),
+    [showIdea, setShowIdea] = useState(true),
+    [loading, setLoading] = useState(false),
+    [videoError, setVideoError] = useState(""),
+    [videoSubmitting, setVideoSubmitting] = useState(false),
+    [scenes, setScenes] = useState<AiCreatorSceneDraft[]>([]),
+    [selectedSceneId, setSelectedSceneId] = useState<string>(),
+    [mediaSlots, setMediaSlots] = useState<AiCreatorMediaSlot[]>([]),
+    [selectedAssetId, setSelectedAssetId] = useState<string>();
+  const projectReady = Boolean(props.projectId && imageModels.length > 0 && videoModels.length > 0);
+  const selectedScene = scenes.find((scene) => scene.id === selectedSceneId);
+  const onBatch = (start: number, count: number, assets: GeneratedCreatorAsset[]) => updateBatch(setMediaSlots, setSelectedAssetId, start, count, assets);
+  const context = { form, imageModels, mediaSlots, onBatch, projectId: props.projectId, scenes, selectedAssetId, videoModels };
+  const request = videoRequest(context);
+  const setters = { setLoading, setMediaSlots, setScenes, setSelectedAssetId, setSelectedSceneId, setShowIdea };
+  return { form, imageModels, loading, mediaSlots, projectReady, scenes, selectedAssetId, selectedScene, selectedSceneId, setForm, setShowIdea, showIdea, selectMedia: (slot: AiCreatorMediaSlot) => selectMedia(setSelectedAssetId, slot), selectScene: setSelectedSceneId, submitIdea: () => submitIdea(context, setters), submitVideo: () => submitVideo(context, props.onVideoStarted, setVideoSubmitting, setVideoError), updateSceneText: (sceneId: string, text: string) => updateSceneText(setScenes, sceneId, text), videoCost: request ? estimateCreatorVideoCredits(request) : null, videoError, videoModels, videoRequest: request, videoSubmitting };
+}
+
+type CreatorController = ReturnType<typeof useCreatorController>;
+
+function modalHeader(props: AiCreatorModalProps, state: CreatorController) {
+  return (
+    <div className="project-modal-header">
+      <div>
+        <h2 id="ai-creator-title">AI Creator</h2>
+        <p>{state.selectedScene ? `${state.selectedScene.name} ${state.selectedScene.range}` : "Build a video plan from one idea."}</p>
+      </div>
+      <div className="ai-creator-header-actions">
+        <button className="button button-secondary" onClick={() => state.setShowIdea(true)} type="button">
+          <RotateCcw size={16} /> Reload
+        </button>
+        <button aria-label="Close" className="project-modal-close" onClick={props.onClose} type="button"><X size={18} /></button>
+      </div>
+    </div>
+  );
+}
+
+function modalBody(state: CreatorController) {
+  return (
+    <div className="ai-creator-modal-body">
+      <AiCreatorMediaPanel addDisabled generating={state.loading} onAdd={() => state.setShowIdea(true)} onSelect={state.selectMedia} selectedAssetId={state.selectedAssetId} slots={state.mediaSlots} />
+      <AiCreatorScenePanel onSelect={state.selectScene} onTextChange={state.updateSceneText} scenes={state.scenes} selectedSceneId={state.selectedSceneId} />
+    </div>
+  );
+}
+
+function modalFooter(state: CreatorController) {
+  return (
+    <div className="ai-creator-modal-footer">
+      <button className="button button-primary" disabled={videoDisabled(state.videoRequest, state.loading, state.videoSubmitting)} onClick={state.submitVideo} type="button">
+        {videoButtonText(state.videoSubmitting, state.videoCost, state.scenes.length)}
+      </button>
+    </div>
+  );
+}
+
+function ideaModal(props: AiCreatorModalProps, state: CreatorController) {
+  if (!state.showIdea) return null;
+  return <AiCreatorIdeaModal form={state.form} imageModels={state.imageModels} loading={state.loading} onCancel={cancelIdea(props, state)} onChange={state.setForm} onSubmit={state.submitIdea} projectReady={state.projectReady} videoModels={state.videoModels} />;
+}
+
+async function submitIdea(context: CreatorContext, setters: DraftSetters) {
+  setters.setLoading(true);
+  const scenes = await loadSceneDrafts(context);
+  setters.setScenes(scenes);
+  setters.setShowIdea(false);
+  setters.setSelectedSceneId(scenes[0]?.id);
+  setters.setLoading(false);
+  await loadFirstFrameImages(context, setters, scenes[0]);
+}
+
+async function submitVideo(
+  context: CreatorContext,
+  onVideoStarted: (video: StartedCreatorVideo) => void,
+  setSubmitting: Dispatch<SetStateAction<boolean>>,
+  setError: Dispatch<SetStateAction<string>>
+) {
+  const input = videoRequest(context);
+  if (!input) return setError("Select a first frame before generating video.");
+  setSubmitting(true);
+  setError("");
+  try {
+    onVideoStarted(await generateCreatorVideo(input));
+  } catch (error) {
+    setError(errorMessage(error));
+  } finally {
+    setSubmitting(false);
+  }
+}
+
+async function loadSceneDrafts(context: CreatorContext) {
+  if (!context.projectId) return buildSceneDrafts(context.form);
+  try {
+    return await generateCreatorScenes(context.projectId, context.form);
+  } catch {
+    return buildSceneDrafts(context.form);
+  }
+}
+
+async function loadFirstFrameImages(context: CreatorContext, setters: DraftSetters, scene?: AiCreatorSceneDraft) {
+  const imageModel = selectedImageModel(context.imageModels, context.form.imageModelId);
+  if (!scene || !context.projectId || !imageModel) return;
+  setters.setLoading(true);
+  setters.setMediaSlots(createLoadingSlots(imageCount(imageModel)));
+  setters.setSelectedAssetId(undefined);
+  await generateSceneImages(context, setters, scene, imageModel);
+  setters.setLoading(false);
+}
+
+async function generateSceneImages(
+  context: CreatorContext,
+  setters: DraftSetters,
+  scene: AiCreatorSceneDraft,
+  imageModel: AiCreatorImageModel
+) {
+  try {
+    await generateCreatorImages(imageRequest(context.projectId!, scene, imageModel, context.form, context.onBatch));
+  } catch {
+    setters.setMediaSlots((current) => failLoadingSlots(current));
+  }
+}
+
+function selectMedia(setSelectedAssetId: Dispatch<SetStateAction<string | undefined>>, slot: AiCreatorMediaSlot) {
+  if (slot.assetId) setSelectedAssetId(slot.assetId);
+}
+
+function updateSceneText(setScenes: Dispatch<SetStateAction<AiCreatorSceneDraft[]>>, sceneId: string, text: string) {
+  setScenes((current) => current.map((scene) => scene.id === sceneId ? { ...scene, text } : scene));
+}
+
+function updateBatch(
+  setMediaSlots: Dispatch<SetStateAction<AiCreatorMediaSlot[]>>,
+  setSelectedAssetId: Dispatch<SetStateAction<string | undefined>>,
+  start: number,
+  count: number,
+  assets: GeneratedCreatorAsset[]
+) {
+  setSelectedAssetId((current) => current ?? assets[0]?.id);
+  setMediaSlots((current) => mergeAssets(current, start, count, assets));
+}
+
+function videoRequest(context: CreatorContext) {
+  const assetId = context.selectedAssetId ?? firstReadyAssetId(context.mediaSlots);
+  const videoModel = selectedVideoModel(context.videoModels, context.form.videoModelId);
+  if (!context.projectId || !context.scenes.length || !assetId || !videoModel) return null;
+  return { assetId, form: context.form, projectId: context.projectId, scenes: context.scenes, videoModel };
+}
+
+function cancelIdea(props: AiCreatorModalProps, state: CreatorController) {
+  return state.scenes.length > 0 ? () => state.setShowIdea(false) : props.onClose;
 }
 
 function imageRequest(

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireCurrentUser } from "@/features/auth/server/current-user";
-import { retryFailedAiCreatorScene } from "@/features/ai-creator/server/ai-creator-sequence-service";
-import { generationErrorResponse } from "@/features/generation/server/generation-api-error";
+import { requireCurrentUser } from "@/application/auth/server";
+import { retryFailedAiCreatorScene } from "@/application/ai-creator/server";
+import { generationErrorResponse } from "@/application/generation/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

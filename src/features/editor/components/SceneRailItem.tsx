@@ -15,21 +15,9 @@ type SceneRailItemProps = {
 export const SceneRailItem = memo(function SceneRailItem(props: SceneRailItemProps) {
   const drag = useDraggable({ id: `clip:${props.scene.id}`, data: dragData(props.scene.id) });
   return (
-    <button
-      className={sceneClass(props.selected, drag.isDragging)}
-      onClick={() => props.onSelect(props.scene.id)}
-      onContextMenu={(event) => props.onContextMenu(props.scene, event)}
-      ref={drag.setNodeRef}
-      type="button"
-      {...drag.attributes}
-      {...drag.listeners}
-    >
+    <button className={sceneClass(props.selected, drag.isDragging)} onClick={() => props.onSelect(props.scene.id)} onContextMenu={(event) => props.onContextMenu(props.scene, event)} ref={drag.setNodeRef} type="button" {...drag.attributes} {...drag.listeners}>
       <span className="scene-thumb" />
-      <div>
-        <strong>{props.scene.name}</strong>
-        <span>{props.scene.duration} - {props.scene.model}</span>
-        <StatusBadge status={props.scene.status} />
-      </div>
+      <div><strong>{props.scene.name}</strong><span>{props.scene.duration} - {props.scene.model}</span><StatusBadge status={props.scene.status} /></div>
     </button>
   );
 });
