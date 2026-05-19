@@ -1,5 +1,6 @@
 export { AudienceSection } from "@/features/marketing/components/AudienceSection";
 export { BenefitsSection } from "@/features/marketing/components/BenefitsSection";
+export { CommercialOfferSection } from "@/features/marketing/components/CommercialOfferSection";
 export { FaqSection } from "@/features/marketing/components/FaqSection";
 export { HeroSection } from "@/features/marketing/components/HeroSection";
 export { LegalPage } from "@/features/marketing/components/LegalPage";

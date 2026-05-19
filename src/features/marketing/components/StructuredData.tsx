@@ -33,7 +33,7 @@ const softwareApplication = {
   applicationCategory: "MultimediaApplication",
   operatingSystem: "Web",
   description:
-    "Generate long AI video scenes from linked 10-second clips that continue from the previous end frame.",
+    "Generate source images, create linked AI video clips, continue from end frames, and export MP4 timelines.",
   offers: marketingPlans.map((plan) => ({
     "@type": "Offer",
     name: plan.name,

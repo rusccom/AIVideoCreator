@@ -9,7 +9,7 @@ export function UseCasesSection() {
         <h2 className="section-title">Use-case storyboards, not a flat gallery</h2>
         <div className="grid use-case-grid">
           {useCases.map((useCase) => (
-            <UseCaseCard key={useCase} title={useCase} />
+            <UseCaseCard key={useCase.title} useCase={useCase} />
           ))}
         </div>
       </div>

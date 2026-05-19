@@ -9,25 +9,25 @@ export type MarketingPlan = {
 
 export const marketingPlans: MarketingPlan[] = [
   {
-    key: "topup-10",
+    key: "usd_10",
     name: "Credit pack",
     price: "$10",
-    credits: "Credits by current account rate",
-    features: ["Stripe checkout", "Instant balance update", "Payment history"]
+    credits: "1,000 credits at default rate",
+    features: ["Stripe checkout", "Starter generation balance", "Payment history"]
   },
   {
-    key: "topup-20",
+    key: "usd_20",
     name: "Creator pack",
     price: "$20",
-    credits: "Credits by current account rate",
+    credits: "2,000 credits at default rate",
     featured: true,
-    features: ["Stripe checkout", "Instant balance update", "Payment history"]
+    features: ["Stripe checkout", "More room for video scenes", "Payment history"]
   },
   {
-    key: "topup-50",
+    key: "usd_50",
     name: "Studio pack",
     price: "$50",
-    credits: "Credits by current account rate",
-    features: ["Stripe checkout", "Instant balance update", "Payment history"]
+    credits: "5,000 credits at default rate",
+    features: ["Stripe checkout", "Larger campaign batches", "Payment history"]
   }
 ];

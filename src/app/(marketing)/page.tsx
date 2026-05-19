@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AudienceSection } from "@/application/marketing/client";
 import { BenefitsSection } from "@/application/marketing/client";
+import { CommercialOfferSection } from "@/application/marketing/client";
 import { FaqSection } from "@/application/marketing/client";
 import { HeroSection } from "@/application/marketing/client";
 import { MarketingFooter } from "@/application/marketing/client";
@@ -43,6 +44,7 @@ export default function HomePage() {
       <HeroSection />
       <ProcessSection />
       <BenefitsSection />
+      <CommercialOfferSection />
       <AudienceSection />
       <UseCasesSection />
       <PricingSection />

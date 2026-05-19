@@ -1,3 +1,4 @@
+import Link from "next/link";
 import styles from "./EditorCreditBalance.module.css";
 
 type EditorCreditBalanceProps = {
@@ -5,5 +6,5 @@ type EditorCreditBalanceProps = {
 };
 
 export function EditorCreditBalance(props: EditorCreditBalanceProps) {
-  return <span className={styles.credit}>{props.credits} credits</span>;
+  return <Link className={styles.credit} href="/app/billing">{props.credits} credits</Link>;
 }

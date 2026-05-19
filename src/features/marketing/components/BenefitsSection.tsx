@@ -8,7 +8,7 @@ export function BenefitsSection() {
         <span className="eyebrow">Core advantages</span>
         <h2 className="section-title">Designed for continuity, not random clips</h2>
         <div className="grid feature-grid">
-          {benefits.map((benefit) => <BenefitCard benefit={benefit} key={benefit} />)}
+          {benefits.map((benefit) => <BenefitCard benefit={benefit} key={benefit.title} />)}
         </div>
       </div>
     </section>

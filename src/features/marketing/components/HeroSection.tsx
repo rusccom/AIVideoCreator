@@ -7,7 +7,7 @@ export function HeroSection() {
 }
 
 function heroCopy() {
-  return <div><span className="eyebrow">Sequential AI video</span><h1>AI video studio for long scenes made from short generations</h1><p className="hero-copy">Create the first frame, generate a 6-second clip, then continue from the real end frame. Build longer AI scenes as a linked storyboard instead of isolated video attempts.</p>{heroActions()}</div>;
+  return <div><span className="eyebrow">Sequential AI video</span><h1>AI video production studio for connected scenes</h1><p className="hero-copy">Create source frames, generate short AI video clips, continue from real end frames, and export the timeline as one production-ready MP4.</p>{heroActions()}</div>;
 }
 
 function heroActions() {

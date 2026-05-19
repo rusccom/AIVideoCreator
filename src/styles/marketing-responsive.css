@@ -10,6 +10,7 @@
 
   .hero-grid,
   .feature-grid,
+  .offer-grid,
   .process-grid,
   .pricing-grid,
   .use-case-grid,
@@ -108,6 +109,10 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .offer-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .marketing-footer-inner {
     align-items: flex-start;
     flex-direction: column;
@@ -124,6 +129,7 @@
   }
 
   .mock-timeline,
+  .offer-metrics,
   .use-case-media {
     grid-template-columns: 1fr;
   }

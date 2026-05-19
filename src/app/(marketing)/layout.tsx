@@ -7,7 +7,7 @@ import { MarketingNav } from "@/application/marketing/client";
 const siteName = "AI Sequential Video Studio";
 const title = "AI Video Studio for Sequential Storyboards";
 const description =
-  "Generate long AI scenes from short clips that continue from the previous end frame. Build connected storyboards instead of isolated AI video attempts.";
+  "Generate source images, create linked AI video clips, continue scenes from end frames, and export connected MP4 timelines.";
 
 export const metadata: Metadata = {
   title,

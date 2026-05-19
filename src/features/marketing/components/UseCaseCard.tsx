@@ -1,8 +1,11 @@
 type UseCaseCardProps = {
-  title: string;
+  useCase: {
+    title: string;
+    text: string;
+  };
 };
 
-export function UseCaseCard({ title }: UseCaseCardProps) {
+export function UseCaseCard({ useCase }: UseCaseCardProps) {
   return (
     <article className="use-case-card">
       <div className="use-case-media">
@@ -11,8 +14,8 @@ export function UseCaseCard({ title }: UseCaseCardProps) {
         <span className="use-case-frame" />
         <span className="use-case-frame" />
       </div>
-      <h3>{title}</h3>
-      <p>Start frame, linked clips, and final stitched result in one project.</p>
+      <h3>{useCase.title}</h3>
+      <p>{useCase.text}</p>
     </article>
   );
 }

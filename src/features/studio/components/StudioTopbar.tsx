@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { EditorExitButton } from "./EditorExitButton";
 
 type StudioTopbarProps = {
@@ -12,7 +13,7 @@ export function StudioTopbar({ credits, editorMode = false }: StudioTopbarProps)
         {editorMode ? <EditorExitButton /> : null}
         <div>
           <strong>Creator workspace</strong>
-          <span className="badge">{credits} credits</span>
+          <Link className="studio-credit-badge" href="/app/billing">{credits} credits</Link>
         </div>
       </div>
     </header>
