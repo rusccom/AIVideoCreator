@@ -79,6 +79,12 @@
   min-width: 0;
 }
 
+.studio-topbar-left > div {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .studio-credit-badge {
   display: inline-flex;
   align-items: center;

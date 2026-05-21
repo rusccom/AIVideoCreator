@@ -6,15 +6,11 @@ export function videoPayload(data: unknown): ReadyVideoPayload | null {
   return typeof video.url === "string" ? { ...video, url: video.url } : null;
 }
 
-export function videoDuration(video: VideoPayload) {
-  return Math.max(1, Math.round(Number(video.duration ?? 6)));
-}
-
 export function videoAssetData(job: VideoAssetJob, video: ReadyVideoPayload) {
   return {
-    durationSeconds: videoDuration(video),
+    durationSeconds: job.durationSeconds,
     height: video.height,
-    metadataJson: asJson(video),
+    metadata: asJson(video),
     mimeType: video.content_type ?? "video/mp4",
     projectId: job.projectId,
     remoteUrl: video.url,
@@ -36,6 +32,7 @@ function asJson(value: unknown) {
 }
 
 type VideoAssetJob = {
+  durationSeconds: number;
   projectId: string;
   userId: string;
 };

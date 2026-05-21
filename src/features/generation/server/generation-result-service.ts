@@ -10,7 +10,7 @@ import { commitCredits, refundCredits } from "./credit-service";
 import { providerErrorPayload } from "@/shared/server/provider-error";
 import { completeImageGenerationJob } from "./generation-image-result-service";
 import { markBranchFailed, markBranchSceneReady } from "./scene-branch-counters";
-import { videoAssetData, videoDuration, videoPayload, type VideoPayload } from "./generation-video-payload";
+import { videoAssetData, videoPayload } from "./generation-video-payload";
 
 export async function completeGenerationJob(jobId: string, data: unknown) {
   const claim = await claimGenerationCompletion(jobId);
@@ -37,14 +37,21 @@ async function createVideoAsset(job: JobRecord, data: unknown) {
   const video = videoPayload(data);
   if (!video || !job.projectId || !job.sceneId) return null;
   const projectId = job.projectId;
-  const asset = await createAssetFromRemoteUrl(videoAssetData({ ...job, projectId }, video));
-  await saveReadyScene({ assetId: asset.id, jobId: job.id, projectId, sceneId: job.sceneId, video });
+  const savedScene = await sceneBeforeReady(prisma, job.sceneId);
+  const durationSeconds = savedScene.durationSeconds;
+  const asset = await createAssetFromRemoteUrl(videoAssetData({ ...job, durationSeconds, projectId }, video));
+  await saveReadyScene({
+    assetId: asset.id,
+    durationSeconds,
+    jobId: job.id,
+    projectId,
+    sceneId: job.sceneId
+  });
   return asset;
 }
 
 async function saveReadyScene(input: ReadySceneInput) {
-  const durationSeconds = videoDuration(input.video);
-  await prisma.$transaction((tx) => saveReadySceneInTransaction(tx, input, durationSeconds));
+  await prisma.$transaction((tx) => saveReadySceneInTransaction(tx, input, input.durationSeconds));
 }
 
 async function saveReadySceneInTransaction(
@@ -257,10 +264,10 @@ type GeneratedAsset = ReturnType<typeof generatedAsset>;
 
 type ReadySceneInput = {
   assetId: string;
+  durationSeconds: number;
   jobId: string;
   projectId: string;
   sceneId: string;
-  video: VideoPayload;
 };
 
 type ProjectSceneCounterInput = {

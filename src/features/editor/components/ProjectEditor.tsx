@@ -167,7 +167,7 @@ function openTimelineMenuAt(
 }
 
 function projectEventTypes() {
-  return ["scene.created", "scene.updated", "scene.deleted", "scene.ready", "scene.failed", "images.ready", "images.failed"];
+  return ["scene.created", "scene.queued", "scene.updated", "scene.deleted", "scene.ready", "scene.failed", "images.ready", "images.failed"];
 }
 
 function useMenuListeners(menu: EditorMenuState | null, close: () => void) {
