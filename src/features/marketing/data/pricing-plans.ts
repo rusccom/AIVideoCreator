@@ -9,25 +9,32 @@ export type MarketingPlan = {
 
 export const marketingPlans: MarketingPlan[] = [
   {
-    key: "usd_10",
-    name: "Credit pack",
+    key: "starter",
+    name: "Starter",
     price: "$10",
-    credits: "1,000 credits at default rate",
-    features: ["Stripe checkout", "Starter generation balance", "Payment history"]
+    credits: "For testing ideas and creating simple short projects.",
+    features: ["Prompt-to-plan workflow", "Short video projects", "Basic exports"]
   },
   {
-    key: "usd_20",
-    name: "Creator pack",
+    key: "creator",
+    name: "Creator",
     price: "$20",
-    credits: "2,000 credits at default rate",
+    credits: "For regular content, product ads and social videos.",
     featured: true,
-    features: ["Stripe checkout", "More room for video scenes", "Payment history"]
+    features: ["More scenes per project", "Product and social videos", "Project history"]
   },
   {
-    key: "usd_50",
-    name: "Studio pack",
+    key: "studio",
+    name: "Studio",
     price: "$50",
-    credits: "5,000 credits at default rate",
-    features: ["Stripe checkout", "Larger campaign batches", "Payment history"]
+    credits: "For longer videos, premium models and serious production.",
+    features: ["Longer connected timelines", "Premium model access", "Campaign batches"]
+  },
+  {
+    key: "enterprise",
+    name: "Enterprise",
+    price: "Custom",
+    credits: "For teams, custom workflows and dedicated limits.",
+    features: ["Team workflows", "Dedicated limits", "Custom production setup"]
   }
 ];

@@ -1,20 +1,36 @@
+@media (max-width: 1120px) {
+  .audience-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .process-grid,
+  .pricing-grid,
+  .use-case-grid,
+  .faq-grid,
+  .four-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 980px) {
   .marketing-nav-inner {
     gap: 16px;
   }
 
+  .marketing-shell .section-title {
+    font-size: 3rem;
+  }
+
   .hero {
-    min-height: auto;
     padding: 34px 0 56px;
   }
 
-  .hero-grid,
+  .hero h1 {
+    font-size: 4rem;
+  }
+
   .feature-grid,
-  .offer-grid,
-  .process-grid,
-  .pricing-grid,
-  .use-case-grid,
-  .faq-grid {
+  .three-card-grid {
     grid-template-columns: 1fr;
   }
 
@@ -44,12 +60,18 @@
     display: none;
   }
 
+  .marketing-shell .section-title,
+  .cta-band h2,
+  .final-cta h2 {
+    font-size: 2.25rem;
+  }
+
   .hero {
     padding: 30px 0 48px;
   }
 
   .hero h1 {
-    font-size: clamp(2.35rem, 13vw, 4rem);
+    font-size: 3.25rem;
     line-height: 1;
   }
 
@@ -74,28 +96,33 @@
     padding: 14px;
   }
 
-  .mockup-stage {
+  .mockup-flow,
+  .process-grid,
+  .pricing-grid,
+  .use-case-grid,
+  .faq-grid,
+  .four-card-grid,
+  .audience-card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .mockup-flow {
     gap: 10px;
     padding: 14px;
   }
 
-  .mock-link {
-    display: none;
+  .flow-step svg {
+    transform: rotate(90deg);
   }
 
-  .mock-shot {
-    min-height: 128px;
+  .director-prompt,
+  .director-output {
+    margin: 0 14px 14px;
+    padding: 16px;
   }
 
-  .mock-shot.video {
-    min-height: 170px;
-  }
-
-  .mock-timeline {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    padding: 0 14px 14px;
+  .director-prompt p {
+    font-size: 1.05rem;
   }
 
   .feature-card,
@@ -109,8 +136,23 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .offer-metrics {
-    grid-template-columns: repeat(2, 1fr);
+  .cta-band {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .cta-band .button {
+    width: 100%;
+  }
+
+  .comparison-row {
+    grid-template-columns: 1fr;
+  }
+
+  .comparison-row strong {
+    border-top: 1px solid var(--line);
+    border-left: 0;
   }
 
   .marketing-footer-inner {
@@ -125,17 +167,20 @@
   }
 
   .hero h1 {
-    font-size: clamp(2.1rem, 12vw, 3rem);
+    font-size: 2.7rem;
   }
 
-  .mock-timeline,
-  .offer-metrics,
+  .marketing-shell .section-title,
+  .cta-band h2,
+  .final-cta h2 {
+    font-size: 2rem;
+  }
+
   .use-case-media {
     grid-template-columns: 1fr;
   }
 
-  .audience-pill {
+  .director-chips span {
     width: 100%;
-    text-align: center;
   }
 }

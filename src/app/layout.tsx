@@ -4,14 +4,14 @@ import "@/styles/base.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://aivideocreator.app"),
   title: {
-    default: "AI Sequential Video Studio",
-    template: "%s | AI Sequential Video Studio"
+    default: "AI Video Director",
+    template: "%s | AI Video Director"
   },
-  description: "Create long AI video scenes from linked 10-second clips.",
-  applicationName: "AI Sequential Video Studio",
-  authors: [{ name: "AI Sequential Video Studio" }],
-  creator: "AI Sequential Video Studio",
-  publisher: "AI Sequential Video Studio",
+  description: "Create long AI videos from one idea with connected scenes and no visible transitions.",
+  applicationName: "AI Video Director",
+  authors: [{ name: "AI Video Director" }],
+  creator: "AI Video Director",
+  publisher: "AI Video Director",
   formatDetection: {
     email: false,
     address: false,

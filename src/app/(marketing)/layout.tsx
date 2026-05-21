@@ -4,10 +4,10 @@ import "@/styles/marketing-sections.css";
 import "@/styles/marketing-responsive.css";
 import { MarketingNav } from "@/application/marketing/client";
 
-const siteName = "AI Sequential Video Studio";
-const title = "AI Video Studio for Sequential Storyboards";
+const siteName = "AI Video Director";
+const title = "AI Video Director - Long AI Videos From One Idea";
 const description =
-  "Generate source images, create linked AI video clips, continue scenes from end frames, and export connected MP4 timelines.";
+  "Create long AI videos from one idea for ads, product stories, AI news episodes and social content without visible transitions.";
 
 export const metadata: Metadata = {
   title,

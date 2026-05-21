@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
 import { AudienceSection } from "@/application/marketing/client";
 import { BenefitsSection } from "@/application/marketing/client";
-import { CommercialOfferSection } from "@/application/marketing/client";
+import { ComparisonSection } from "@/application/marketing/client";
+import { ConnectedVideosSection } from "@/application/marketing/client";
+import { DirectorSection } from "@/application/marketing/client";
 import { FaqSection } from "@/application/marketing/client";
+import { FinalCtaSection } from "@/application/marketing/client";
 import { HeroSection } from "@/application/marketing/client";
 import { MarketingFooter } from "@/application/marketing/client";
+import { MidCtaSection } from "@/application/marketing/client";
 import { PricingSection } from "@/application/marketing/client";
+import { ProblemSection } from "@/application/marketing/client";
+import { ProjectSection } from "@/application/marketing/client";
 import { ProcessSection } from "@/application/marketing/client";
 import { StructuredData } from "@/application/marketing/client";
 import { UseCasesSection } from "@/application/marketing/client";
@@ -13,15 +19,15 @@ import { UseCasesSection } from "@/application/marketing/client";
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
   keywords: [
-    "AI video generator",
-    "sequential video",
-    "AI storyboard",
+    "AI Video Director",
+    "long AI video generator",
+    "AI product video",
+    "AI news video",
+    "AI video ads",
     "image to video",
-    "long AI scenes",
-    "AI video studio",
-    "Kling",
-    "Runway",
-    "frame continuation"
+    "AI storyboard",
+    "connected AI scenes",
+    "AI video without transitions"
   ],
   openGraph: { url: "/" },
   robots: {
@@ -42,13 +48,19 @@ export default function HomePage() {
     <main>
       <StructuredData />
       <HeroSection />
-      <ProcessSection />
       <BenefitsSection />
-      <CommercialOfferSection />
-      <AudienceSection />
+      <ProblemSection />
+      <ProcessSection />
+      <DirectorSection />
       <UseCasesSection />
+      <MidCtaSection />
+      <ConnectedVideosSection />
+      <AudienceSection />
+      <ProjectSection />
+      <ComparisonSection />
       <PricingSection />
       <FaqSection />
+      <FinalCtaSection />
       <MarketingFooter />
     </main>
   );

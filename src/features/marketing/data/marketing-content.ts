@@ -1,129 +1,255 @@
-export const processSteps = [
-  {
-    title: "Create source visuals",
-    text: "Upload a frame, generate a project image, or use a saved asset as a starting point."
-  },
-  {
-    title: "Generate motion",
-    text: "Run image-to-video models with a controlled prompt, duration, aspect ratio, and resolution."
-  },
-  {
-    title: "Continue the story",
-    text: "The extracted end frame becomes the next start frame for linked scene generation."
-  },
-  {
-    title: "Export the timeline",
-    text: "Arrange ready clips into a timeline and render one normalized MP4 export."
-  }
-];
-
-export const benefits = [
-  {
-    title: "Endless scene continuation",
-    text: "Extract end frames automatically and use them as the next start frame."
-  },
-  {
-    title: "AI Creator scene planning",
-    text: "Draft multi-scene sequences from one concept before generation starts."
-  },
-  {
-    title: "Reference image generation",
-    text: "Generate production frames from text prompts or existing project images."
-  },
-  {
-    title: "Storyboard Timeline",
-    text: "Order ready scenes, track stale clips, and keep project history intact."
-  },
-  {
-    title: "Multi-model video generation",
-    text: "Use Grok Imagine, Kling, and Seedance image-to-video model families."
-  },
-  {
-    title: "MP4 timeline export",
-    text: "Normalize ready clips and render one stitched video for delivery."
-  },
-  {
-    title: "Credits and payment history",
-    text: "Sell generation work with Stripe top-ups and a visible ledger."
-  },
-  {
-    title: "Owner model controls",
-    text: "Manage model availability, default settings, and pricing overrides."
-  }
-];
-
-export const audiences = [
-  "Creators",
-  "SMM teams",
-  "Ad agencies",
-  "Brands",
-  "Short-film directors",
-  "Reels and Shorts authors",
-  "Storyboard producers"
-];
-
-export const useCases = [
-  {
-    title: "Fashion spot",
-    text: "Turn a lookbook frame into a short campaign sequence."
-  },
-  {
-    title: "Space sequence",
-    text: "Build cinematic shots with repeated camera and motion direction."
-  },
-  {
-    title: "Product commercial",
-    text: "Prototype product movement, reveals, and social ad variants."
-  },
-  {
-    title: "Music visual",
-    text: "Create connected visual loops and export a single timeline."
-  },
-  {
-    title: "Trailer shot",
-    text: "Sketch mood, pacing, and scene continuation before production."
-  },
-  {
-    title: "AI character motion",
-    text: "Keep a character-driven scene moving across linked clips."
-  }
-];
-
-export const commercialOffer = {
-  title: "Commercial offer for AI video production workflows",
-  copy:
-    "A browser studio for teams that need repeatable AI video output: generate source images, animate them with multiple image-to-video models, continue scenes from real end frames, and export finished timeline clips.",
-  scope: [
-    "Private projects with uploaded, generated, extracted, and exported assets",
-    "AI Creator flow that drafts multi-scene video sequences from a concept",
-    "Text-to-image and reference-image generation for production frames",
-    "Image-to-video generation with Grok Imagine, Kling, and Seedance model families",
-    "Timeline ordering, stale-scene handling, frame picking, and MP4 export",
-    "Credits, Stripe checkout, payment history, and owner-level model pricing controls"
-  ],
-  metrics: [
-    { label: "Video models", value: "5" },
-    { label: "Image models", value: "3" },
-    { label: "Clip length", value: "2-15s" },
-    { label: "Export", value: "MP4" }
-  ]
+export type MarketingCard = {
+  title: string;
+  text: string;
 };
 
-export const faqs = [
+export type ComparisonRow = {
+  basic: string;
+  director: string;
+};
+
+export const heroTags = [
+  "Product ads",
+  "AI news channels",
+  "Social videos",
+  "No visible transitions",
+  "Story-driven clips",
+  "Brand content",
+  "Character videos"
+];
+
+export const directorOutputs = [
+  "Scene plan",
+  "Visual style",
+  "Camera movement",
+  "Connected video flow",
+  "Final export"
+];
+
+export const creationTypes: MarketingCard[] = [
   {
-    question: "How long is one generated clip?",
-    answer: "Supported video models currently generate clips from 2 to 15 seconds, depending on the selected model."
+    title: "Product commercials",
+    text: "Create clean product videos, launch clips, comparison ads and premium brand visuals."
   },
   {
-    question: "Can a scene continue forever?",
-    answer: "You can keep adding linked clips as long as credits, model limits, and storage allow."
+    title: "Social media videos",
+    text: "Generate Reels, Shorts, TikTok-style clips and vertical campaigns with a clear visual story."
   },
   {
-    question: "Can I upload my own image?",
-    answer: "Yes. Uploaded images become private project assets and can start any scene."
+    title: "AI news channels",
+    text: "Build news-style episodes, explainers, visual reports and recurring video formats."
   },
   {
-    question: "What happens if I regenerate the middle?",
-    answer: "Following clips are marked stale so you can relink, regenerate, or branch from there."
+    title: "Brand storytelling",
+    text: "Turn a simple idea into a sequence of cinematic scenes for your brand or project."
+  },
+  {
+    title: "Digital characters",
+    text: "Create videos with AI presenters, mascots, influencers or story characters."
+  },
+  {
+    title: "Trailers & concepts",
+    text: "Make cinematic previews, concept videos, mood films and pitch materials."
+  }
+];
+
+export const problemBenefits: MarketingCard[] = [
+  {
+    title: "No need to start over every time",
+    text: "Continue your video instead of creating unrelated clips."
+  },
+  {
+    title: "One project, one story",
+    text: "Keep scenes, prompts, visuals and exports organized in one place."
+  },
+  {
+    title: "Longer videos, clearer structure",
+    text: "Build 30-second, 60-second, 2-minute or even longer videos without turning the result into a visible clip montage."
+  }
+];
+
+export const processSteps: MarketingCard[] = [
+  {
+    title: "Describe what you want",
+    text: "Write your idea in simple words: an ad, a news segment, a product video, a story or a social clip."
+  },
+  {
+    title: "Choose the direction",
+    text: "Select the format, mood, style and goal - or let the AI Director decide."
+  },
+  {
+    title: "Get a scene plan",
+    text: "The system breaks your idea into connected scenes with camera direction, motion and visual flow."
+  },
+  {
+    title: "Generate and continue",
+    text: "Create the first scene, continue the story, adjust any part and export one continuous final video."
+  }
+];
+
+export const directorFeatures: MarketingCard[] = [
+  {
+    title: "Smart video planning",
+    text: "The system helps turn your raw idea into a clear creative brief."
+  },
+  {
+    title: "Scene-by-scene creation",
+    text: "Each part of the video has a purpose: opening, product reveal, action, emotion, message and ending."
+  },
+  {
+    title: "Style consistency",
+    text: "Keep the same mood, product, character or world across the whole video without obvious scene breaks."
+  },
+  {
+    title: "Easy corrections",
+    text: "Regenerate one scene, change the direction, continue from a better version."
+  }
+];
+
+export const useCases: MarketingCard[] = [
+  {
+    title: "Maternity bag commercial",
+    text: "\"Create a 45-second ad showing a pregnant woman preparing for the hospital, discovering a ready-made maternity bag, and feeling calm and ready.\""
+  },
+  {
+    title: "AI news episode",
+    text: "\"Create a 2-minute visual news segment about the latest technology trends with an AI presenter, studio background and supporting visuals.\""
+  },
+  {
+    title: "Premium product ad",
+    text: "\"Create a cinematic commercial for a water bottle with mountain spring visuals, close-up product shots and refreshing lifestyle scenes.\""
+  },
+  {
+    title: "Children's clothing campaign",
+    text: "\"Create a warm social media video for baby clothes, showing soft fabrics, family emotions and product details.\""
+  },
+  {
+    title: "YouTube intro sequence",
+    text: "\"Create a futuristic intro for a tech channel with a digital host, fast camera movement and cinematic transitions.\""
+  },
+  {
+    title: "Story trailer",
+    text: "\"Create a short fantasy trailer with a main character, dramatic atmosphere and connected scenes.\""
+  }
+];
+
+export const continuityItems: MarketingCard[] = [
+  {
+    title: "No visible transitions",
+    text: "The final video should feel like one continuous piece, not a stitched collection of clips."
+  },
+  {
+    title: "Continue the same product",
+    text: "Good for commercials and brand videos."
+  },
+  {
+    title: "Continue the same character",
+    text: "Good for presenters, influencers and stories."
+  },
+  {
+    title: "Continue the same world and message",
+    text: "Good for trailers, channels, explainers and campaign videos."
+  }
+];
+
+export const audienceCards: MarketingCard[] = [
+  {
+    title: "For online stores",
+    text: "Create product ads, bundle videos, seasonal campaigns and launch content."
+  },
+  {
+    title: "For marketers",
+    text: "Test different creative ideas before spending money on full production."
+  },
+  {
+    title: "For content creators",
+    text: "Build long-form visual stories, intros, episodes and channel formats."
+  },
+  {
+    title: "For agencies",
+    text: "Prepare client concepts, storyboards and campaign previews faster."
+  },
+  {
+    title: "For AI creators",
+    text: "Turn isolated AI generations into complete video projects."
+  }
+];
+
+export const audiences = audienceCards.map((audience) => audience.title);
+
+export const projectFeatures: MarketingCard[] = [
+  {
+    title: "Prompt to video plan",
+    text: "Start with a simple idea and get a structured direction."
+  },
+  {
+    title: "Scene timeline",
+    text: "See your video as connected parts, not separate files."
+  },
+  {
+    title: "Regenerate any scene",
+    text: "Improve one moment without throwing away the whole project."
+  },
+  {
+    title: "Export final video",
+    text: "Turn your connected scenes into one ready-to-use video without visible transitions."
+  }
+];
+
+export const comparisonRows: ComparisonRow[] = [
+  {
+    basic: "Creates one short clip",
+    director: "Builds a longer video project"
+  },
+  {
+    basic: "Every prompt starts from zero",
+    director: "Scenes continue the same idea"
+  },
+  {
+    basic: "Hard to make a complete ad",
+    director: "Designed for ads, stories and episodes"
+  },
+  {
+    basic: "Clips feel separate",
+    director: "Video feels like one continuous result"
+  },
+  {
+    basic: "Needs edits to hide the joins",
+    director: "Built to reduce visible scene breaks"
+  },
+  {
+    basic: "You manage everything manually",
+    director: "AI helps plan the structure"
+  }
+];
+
+export const faqs: MarketingCard[] = [
+  {
+    title: "Is this only for short AI clips?",
+    text: "No. The system is designed to help you build longer videos from connected scenes."
+  },
+  {
+    title: "Can I create advertising videos?",
+    text: "Yes. You can create product ads, brand videos, launch clips and social campaigns."
+  },
+  {
+    title: "Can I make AI news-style videos?",
+    text: "Yes. You can create visual news segments, explainers and recurring channel formats."
+  },
+  {
+    title: "Do I need to understand video models or prompts?",
+    text: "No. Start with a simple idea. The AI Director helps structure it into scenes and visual direction."
+  },
+  {
+    title: "Can I upload my own image or product photo?",
+    text: "Yes. You can start from your own image and build a video around it."
+  },
+  {
+    title: "How long can the video be?",
+    text: "You can keep extending the project scene by scene, depending on credits, model limits and storage."
+  },
+  {
+    title: "Will the video look like separate clips?",
+    text: "The goal is to make the final export feel like one continuous video without visible transitions between scenes."
   }
 ];

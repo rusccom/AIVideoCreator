@@ -10,9 +10,9 @@ export function PricingCard({ plan }: PricingCardProps) {
 
   return (
     <article className={className}>
-      <span className="badge">{plan.credits}</span>
       <h3>{plan.name}</h3>
       <div className="price">{plan.price}</div>
+      <p className="pricing-summary">{plan.credits}</p>
       <Link className="button button-secondary" href="/register">
         Choose plan
       </Link>

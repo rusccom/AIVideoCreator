@@ -2,7 +2,7 @@ import { faqs } from "../data/marketing-content";
 import { marketingPlans } from "../data/pricing-plans";
 
 const baseUrl = "https://aivideocreator.app";
-const siteName = "AI Sequential Video Studio";
+const siteName = "AI Video Director";
 
 const organization = {
   "@type": "Organization",
@@ -33,7 +33,7 @@ const softwareApplication = {
   applicationCategory: "MultimediaApplication",
   operatingSystem: "Web",
   description:
-    "Generate source images, create linked AI video clips, continue from end frames, and export MP4 timelines.",
+    "Turn a single prompt into a long connected AI video with scene planning, visual continuity and no visible transitions.",
   offers: marketingPlans.map((plan) => ({
     "@type": "Offer",
     name: plan.name,
@@ -48,10 +48,10 @@ const faqPage = {
   "@id": `${baseUrl}/#faq`,
   mainEntity: faqs.map((faq) => ({
     "@type": "Question",
-    name: faq.question,
+    name: faq.title,
     acceptedAnswer: {
       "@type": "Answer",
-      text: faq.answer
+      text: faq.text
     }
   }))
 };

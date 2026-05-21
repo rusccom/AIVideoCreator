@@ -5,7 +5,9 @@ import { grokImagineVideoDefinition } from "./grok-imagine-video/definition";
 import { klingV34kImageToVideoDefinition } from "./kling-v3-4k-image-to-video/definition";
 import { klingV3ProImageToVideoDefinition } from "./kling-v3-pro-image-to-video/definition";
 import { klingV3StandardImageToVideoDefinition } from "./kling-v3-standard-image-to-video/definition";
+import { seedance2FastReferenceToVideoDefinition } from "./seedance-2-fast-reference-to-video/definition";
 import { seedance2ImageToVideoDefinition } from "./seedance-2-image-to-video/definition";
+import { seedance2ReferenceToVideoDefinition } from "./seedance-2-reference-to-video/definition";
 import type { SupportedModelDefinition } from "./types";
 
 export const supportedModels: SupportedModelDefinition[] = [
@@ -16,7 +18,9 @@ export const supportedModels: SupportedModelDefinition[] = [
   klingV34kImageToVideoDefinition,
   klingV3ProImageToVideoDefinition,
   klingV3StandardImageToVideoDefinition,
-  seedance2ImageToVideoDefinition
+  seedance2FastReferenceToVideoDefinition,
+  seedance2ImageToVideoDefinition,
+  seedance2ReferenceToVideoDefinition
 ];
 
 export function getSupportedModel(modelId: string) {

@@ -1,35 +1,34 @@
-import { ArrowRight, Link2 } from "lucide-react";
+import { ArrowRight, Clapperboard, Lightbulb, Sparkles } from "lucide-react";
+import { directorOutputs } from "../data/marketing-content";
 
 export function ContinuityMockup() {
   return (
-    <div className="continuity-mockup" aria-label="Continuity editor preview">
+    <div className="continuity-mockup" aria-label="AI Director workflow preview">
       {mockTopbar()}
-      {mockStage()}
-      {mockTimeline()}
+      {mockFlow()}
+      {promptPanel()}
+      {directorPanel()}
     </div>
   );
 }
 
 function mockTopbar() {
-  return <div className="mockup-topbar"><span>Project: Connected scene</span><span>24s timeline</span></div>;
+  return <div className="mockup-topbar"><span>AI Video Director</span><span>Complete video project</span></div>;
 }
 
-function mockStage() {
-  return <div className="mockup-stage">{mockCard("mock-shot", "Start frame", "Scene 01 input")}<ArrowRight className="mock-link" size={24} />{videoCard()}<ArrowRight className="mock-link" size={24} />{endCard()}</div>;
+function mockFlow() {
+  const items = ["Idea", "AI Director", "Scenes", "Complete Video"];
+  return <div className="mockup-flow">{items.map((item, index) => flowItem(item, index))}</div>;
 }
 
-function mockCard(shotClass: string, label: string, sub: string) {
-  return <div className="mock-card"><div className={shotClass} /><div className="mock-meta"><div className="mock-label">{label}</div><div className="mock-sub">{sub}</div></div></div>;
+function flowItem(item: string, index: number) {
+  return <div className="flow-step" key={item}><span>{item}</span>{index < 3 ? <ArrowRight size={17} /> : null}</div>;
 }
 
-function videoCard() {
-  return <div className="mock-card"><div className="mock-shot video"><span className="play-pulse" /></div><div className="mock-meta"><div className="mock-label">6-second clip</div><div className="mock-sub">Grok Imagine - Generating motion</div></div></div>;
+function promptPanel() {
+  return <div className="director-prompt"><Lightbulb size={18} /><div><strong>Prompt:</strong><p>"Create a cinematic ad for a maternity hospital bag"</p></div></div>;
 }
 
-function endCard() {
-  return <div className="mock-card"><div className="mock-shot alt" /><div className="mock-meta"><div className="mock-label">End frame</div><div className="mock-sub"><Link2 size={12} /> Linked to Scene 02</div></div></div>;
-}
-
-function mockTimeline() {
-  return <div className="mock-timeline">{["Scene 01", "Scene 02", "Scene 03", "Scene 04"].map((scene) => <div className="mock-timeline-item" key={scene}><strong>{scene}</strong><div className="mock-progress" /></div>)}</div>;
+function directorPanel() {
+  return <div className="director-output"><div className="director-output-title"><Clapperboard size={18} />AI Director creates:</div><div className="director-chips">{directorOutputs.map((item) => <span key={item}><Sparkles size={13} />{item}</span>)}</div></div>;
 }

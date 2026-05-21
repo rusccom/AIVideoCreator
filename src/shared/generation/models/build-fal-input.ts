@@ -5,7 +5,9 @@ import { buildGrokImagineVideoInput } from "./grok-imagine-video/build-input";
 import { buildKlingV34kImageToVideoInput } from "./kling-v3-4k-image-to-video/build-input";
 import { buildKlingV3ProImageToVideoInput } from "./kling-v3-pro-image-to-video/build-input";
 import { buildKlingV3StandardImageToVideoInput } from "./kling-v3-standard-image-to-video/build-input";
+import { buildSeedance2FastReferenceToVideoInput } from "./seedance-2-fast-reference-to-video/build-input";
 import { buildSeedance2ImageToVideoInput } from "./seedance-2-image-to-video/build-input";
+import { buildSeedance2ReferenceToVideoInput } from "./seedance-2-reference-to-video/build-input";
 import { getSupportedModel } from "./catalog";
 import { normalizeImageAspectRatio } from "./image-aspect-ratio";
 import type { FalInputBuilder, FalInputContext } from "./types";
@@ -18,7 +20,9 @@ const falInputBuilders: Record<string, FalInputBuilder> = {
   "kling-v3-4k-image-to-video": buildKlingV34kImageToVideoInput,
   "kling-v3-pro-image-to-video": buildKlingV3ProImageToVideoInput,
   "kling-v3-standard-image-to-video": buildKlingV3StandardImageToVideoInput,
-  "seedance-2-image-to-video": buildSeedance2ImageToVideoInput
+  "seedance-2-fast-reference-to-video": buildSeedance2FastReferenceToVideoInput,
+  "seedance-2-image-to-video": buildSeedance2ImageToVideoInput,
+  "seedance-2-reference-to-video": buildSeedance2ReferenceToVideoInput
 };
 
 export function buildFalInput(modelId: string, context: FalInputContext) {

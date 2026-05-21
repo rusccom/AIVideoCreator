@@ -4,7 +4,7 @@ export function MarketingFooter() {
   return (
     <footer className="marketing-footer">
       <div className="container marketing-footer-inner">
-        <span>AI Sequential Video Studio</span>
+        <span>AI Video Director</span>
         <div className="button-row">
           <Link href="/login">Login</Link>
           <Link href="/register">Register</Link>
