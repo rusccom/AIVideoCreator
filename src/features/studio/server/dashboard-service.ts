@@ -41,7 +41,7 @@ const getCreditBalance = cache(async (userId: string) => {
 });
 
 function dashboardQuery(userId: string) {
-  return prisma.$transaction([
+  return Promise.all([
     getProjects(userId),
     getUserCounters(userId),
     getRecentJobs(userId)

@@ -11,7 +11,7 @@ import { draftAiCreatorScenes as draftScenes } from "@/features/ai-creator/serve
 export { aiCreatorSceneDraftSchema } from "@/features/ai-creator/server/scene-draft-schema";
 import { startAiCreatorVideo as startVideo } from "@/features/ai-creator/server/ai-creator-video-service";
 export { aiCreatorVideoSchema } from "@/features/ai-creator/server/ai-creator-video-schema";
-import { createSceneForUser, generateVideo, getCreditBalance } from "@/application/generation/server";
+import { createSceneChainForUser, generateVideo, getCreditBalance } from "@/application/generation/server";
 import { getModel, preflightVideoGeneration, selectStartImage } from "@/application/generation/server";
 import { runReasoning } from "@/application/reasoning/server";
 import type { AiCreatorPromptInput } from "@/features/ai-creator/server/ai-creator-prompt-schema";
@@ -19,7 +19,7 @@ import type { AiCreatorSceneDraftInput } from "@/features/ai-creator/server/scen
 import type { AiCreatorVideoInput } from "@/features/ai-creator/server/ai-creator-video-schema";
 
 const generation = {
-  createSceneForUser,
+  createSceneChainForUser,
   generateVideo,
   getCreditBalance,
   getModel,

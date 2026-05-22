@@ -13,6 +13,8 @@ export {
 export type { GenerateVideoInput, ResolvedGenerateVideoInput, SelectStartImageInput } from "@/features/generation/server/generation-schema";
 export { createSceneForUser } from "@/features/generation/server/scene-service";
 export { deleteSceneForUser, pickFrameForUser, updateSceneForUser } from "@/features/generation/server/scene-service";
+export { createSceneChainForUser } from "@/features/generation/server/scene-chain-service";
+export type { CreateSceneChainInput, CreateSceneChainDraft } from "@/features/generation/server/scene-chain-service";
 export { createSceneSchema, pickFrameSchema, updateSceneSchema } from "@/features/generation/server/scene-schema";
 export { getModel } from "@/features/generation/server/model-registry";
 export {

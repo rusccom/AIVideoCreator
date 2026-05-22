@@ -1,5 +1,5 @@
 import { prisma } from "@/shared/server/prisma";
-import { resolveAssetReadUrl } from "@/shared/server/asset-read-url";
+import { resolveAssetReadUrls } from "@/shared/server/asset-read-url";
 
 type SceneRefs = {
   startFrameAssetId: string | null;
@@ -63,22 +63,15 @@ function mergeAssets(first: readonly EditorAssetRecord[], second: readonly Edito
   });
 }
 
-async function resolveAssetUrls(assets: readonly EditorAssetRecord[]) {
-  return Promise.all(assets.map(resolveAssetUrl));
+async function resolveAssetUrls(assets: readonly EditorAssetRecord[]): Promise<ResolvedEditorAssetRecord[]> {
+  const urls = await safeResolveUrls(assets);
+  return assets.map((asset, index) => ({ ...asset, resolvedUrl: urls[index] }));
 }
 
-async function resolveAssetUrl(asset: EditorAssetRecord): Promise<ResolvedEditorAssetRecord> {
-  return { ...asset, resolvedUrl: await safeSignedAssetUrl(asset) };
-}
-
-async function safeSignedAssetUrl(asset: EditorAssetRecord) {
+async function safeResolveUrls(assets: readonly EditorAssetRecord[]) {
   try {
-    return await signedAssetUrl(asset);
+    return await resolveAssetReadUrls(assets);
   } catch {
-    return null;
+    return assets.map(() => null);
   }
-}
-
-async function signedAssetUrl(asset: EditorAssetRecord) {
-  return resolveAssetReadUrl(asset);
 }

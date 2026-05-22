@@ -4,7 +4,7 @@ import type { GenerateVideoInput } from "@/shared/generation/types";
 import type { AiCreatorVideoInput, AiCreatorVideoSceneInput } from "./ai-creator-video-schema";
 
 export type AiCreatorVideoGeneration = {
-  createSceneForUser: (userId: string, projectId: string, input: CreateSceneInput) => Promise<CreatedScene>;
+  createSceneChainForUser: (userId: string, projectId: string, input: CreateSceneChainInput) => Promise<CreatedScene[]>;
   generateVideo: (userId: string, sceneId: string, input: GenerateVideoInput) => Promise<GeneratedVideoJob>;
   getCreditBalance: (userId: string) => Promise<number>;
   preflightVideoGeneration: (userId: string, projectId: string, input: GenerateVideoInput) => Promise<{ credits: number }>;
@@ -52,31 +52,19 @@ async function createAiCreatorSequence(
   generation: AiCreatorVideoGeneration
 ) {
   const branch = await createSequenceBranch(projectId, drafts.length);
-  const scenes: CreatedScene[] = [];
-  let parentSceneId: string | undefined = input.parentSceneId;
-  for (const draft of drafts) {
-    const isFirstScene = scenes.length === 0;
-    const scene = await createAiCreatorScene({ branchEntityId: branch.id, draft, generation, input, isFirstScene, parentSceneId, projectId, userId });
-    scenes.push(scene);
-    parentSceneId = scene.id;
-  }
+  const scenes = await generation.createSceneChainForUser(userId, projectId, {
+    branchEntityId: branch.id,
+    drafts: drafts.map((draft) => ({ durationSeconds: draft.duration, prompt: draft.prompt })),
+    modelId: input.modelId,
+    parentSceneId: input.parentSceneId,
+    startFrameAssetIdForFirst: input.assetId
+  });
   return { id: branch.id, scenes };
 }
 
 function createSequenceBranch(projectId: string, totalScenes: number) {
   return prisma.sceneBranch.create({
     data: { projectId, kind: "AI_CREATOR", status: "GENERATING", totalScenes }
-  });
-}
-
-async function createAiCreatorScene(args: CreateAiCreatorSceneInput) {
-  return args.generation.createSceneForUser(args.userId, args.projectId, {
-    branchEntityId: args.branchEntityId,
-    durationSeconds: args.draft.duration,
-    modelId: args.input.modelId,
-    parentSceneId: args.parentSceneId,
-    prompt: args.draft.prompt,
-    startFrameAssetId: args.isFirstScene ? args.input.assetId : undefined
   });
 }
 
@@ -123,22 +111,10 @@ type CreatedSequence = Awaited<ReturnType<typeof createAiCreatorSequence>>;
 type CreatedScene = { id: string };
 type GeneratedVideoJob = { id: string; status: string };
 type RemovableScene = Prisma.SceneGetPayload<{ include: { jobs: true } }>;
-type CreateSceneInput = {
-  branchEntityId: string;
-  durationSeconds: number;
+type CreateSceneChainInput = {
+  branchEntityId?: string;
+  drafts: Array<{ durationSeconds: number; prompt: string }>;
   modelId: string;
   parentSceneId?: string;
-  prompt: string;
-  startFrameAssetId?: string;
-};
-
-type CreateAiCreatorSceneInput = {
-  branchEntityId: string;
-  draft: AiCreatorVideoSceneInput;
-  generation: AiCreatorVideoGeneration;
-  input: AiCreatorVideoInput;
-  isFirstScene: boolean;
-  parentSceneId?: string;
-  projectId: string;
-  userId: string;
+  startFrameAssetIdForFirst?: string;
 };

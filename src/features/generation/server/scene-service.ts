@@ -10,8 +10,8 @@ import type { CreateSceneInput, PickFrameInput, UpdateSceneInput } from "./scene
 const ORDER_OFFSET = 1000000;
 
 export async function createScene(projectId: string, input: CreateSceneInput) {
-  const orderIndex = await nextSceneIndex(projectId);
   const scene = await prisma.$transaction(async (tx) => {
+    const orderIndex = await nextSceneIndex(tx, projectId);
     const scene = await tx.scene.create({ data: sceneCreateData(projectId, orderIndex, input) });
     const timeline = await tx.timelineItem.create({ data: await timelineCreateData(tx, scene) });
     await incrementProjectScenes(tx, projectId, 1);
@@ -131,12 +131,12 @@ export async function pickFrameForUser(
   return pickFrame(sceneId, input);
 }
 
-async function nextSceneIndex(projectId: string) {
-  const last = await prisma.scene.findFirst({
-    where: { projectId },
-    orderBy: { orderIndex: "desc" }
+async function nextSceneIndex(tx: Prisma.TransactionClient, projectId: string) {
+  const project = await tx.project.findUniqueOrThrow({
+    where: { id: projectId },
+    select: { sceneCount: true }
   });
-  return last ? last.orderIndex + 1 : 0;
+  return project.sceneCount;
 }
 
 function sceneCreateData(projectId: string, orderIndex: number, input: CreateSceneInput) {

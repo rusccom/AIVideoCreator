@@ -15,9 +15,8 @@ export async function getAiCreatorSequenceStatus(
   const scenes = await sequenceScenes(userId, sequenceId);
   if (!scenes.length) return emptySequenceStatus(sequenceId, 0);
   const total = scenes.length;
-  if (!await hasSequenceScenes(userId, sequenceId)) return emptySequenceStatus(sequenceId, total);
-  await advanceSequence(userId, sequenceId, generation);
-  const finalScenes = await sequenceScenes(userId, sequenceId);
+  const advanced = await advanceSequenceIfNeeded(userId, sequenceId, scenes, generation);
+  const finalScenes = advanced ? await sequenceScenes(userId, sequenceId) : scenes;
   return finalScenes.length ? sequenceStatus(sequenceId, finalScenes, total) : emptySequenceStatus(sequenceId, total);
 }
 
@@ -65,35 +64,30 @@ async function sequenceScenes(userId: string, sequenceId: string) {
   return prisma.scene.findMany({
     where: { branchEntityId: sequenceId, project: { userId } },
     orderBy: { orderIndex: "asc" },
-    select: { id: true, status: true, generationJobId: true, userPrompt: true }
+    select: { id: true, status: true, generationJobId: true, userPrompt: true, endFrameAssetId: true }
   });
 }
 
-async function hasSequenceScenes(userId: string, sequenceId: string) {
-  const count = await prisma.scene.count({ where: { branchEntityId: sequenceId, project: { userId } } });
-  return count > 0;
-}
-
-async function advanceSequence(userId: string, sequenceId: string, generation: AiCreatorSequenceGeneration) {
-  const scenes = await sequenceFrameScenes(userId, sequenceId);
-  await Promise.all(scenes.map((scene) => advanceFromScene(userId, scene, generation)));
+async function advanceSequenceIfNeeded(
+  userId: string,
+  sequenceId: string,
+  scenes: SequenceScene[],
+  generation: AiCreatorSequenceGeneration
+) {
+  const advanceable = scenes.filter((scene) => scene.status === "READY" && scene.endFrameAssetId);
+  if (!advanceable.length) return false;
+  const results = await Promise.all(advanceable.map((scene) => advanceFromScene(userId, scene, generation)));
+  return results.some(Boolean);
 }
 
 async function advanceFromScene(
   userId: string,
-  scene: SequenceFrameScene,
+  scene: SequenceScene,
   generation: AiCreatorSequenceGeneration
 ) {
-  if (scene.status !== "READY" || !scene.endFrameAssetId) return;
-  await startNextAiCreatorScene(userId, scene.id, scene.endFrameAssetId, generation);
-}
-
-async function sequenceFrameScenes(userId: string, sequenceId: string) {
-  return prisma.scene.findMany({
-    where: { branchEntityId: sequenceId, project: { userId } },
-    orderBy: { orderIndex: "asc" },
-    select: { endFrameAssetId: true, id: true, status: true }
-  });
+  if (!scene.endFrameAssetId) return false;
+  const started = await startNextAiCreatorScene(userId, scene.id, scene.endFrameAssetId, generation);
+  return Boolean(started);
 }
 
 function sequenceStatus(sequenceId: string, scenes: SequenceScene[], total = scenes.length) {
@@ -254,7 +248,6 @@ function failedSceneStatus(scenes: SequenceScene[]) {
 }
 
 type SequenceScene = Awaited<ReturnType<typeof sequenceScenes>>[number];
-type SequenceFrameScene = Awaited<ReturnType<typeof sequenceFrameScenes>>[number];
 type SequenceSceneStatus = ReturnType<typeof sequenceSceneStatus>;
 type RetryScene = NonNullable<Awaited<ReturnType<typeof failedSequenceScene>>>;
 type LinkedVideoScene = Pick<RetryScene, "durationSeconds" | "modelId" | "project" | "userPrompt">;

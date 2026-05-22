@@ -1,4 +1,5 @@
-import type { AssetOrigin, AssetType, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import type { AssetOrigin, AssetType } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
 import { moveRemoteAssetToR2 } from "./asset-storage-service";
 import { r2Storage } from "./r2-storage";
@@ -20,6 +21,23 @@ export async function resolveAssetReadUrl(asset: AssetReadUrlRecord) {
   if (asset.origin === "EXTERNAL_URL") return asset.externalUrl ?? null;
   if (asset.origin !== "R2" || !asset.r2Key) return null;
   return cachedSignedUrl(asset);
+}
+
+export async function resolveAssetReadUrls(assets: readonly AssetReadUrlRecord[]) {
+  const prepared = await Promise.all(assets.map(prepareResolveAsset));
+  const fresh = prepared.flatMap((entry) => entry.fresh ? [entry.fresh] : []);
+  if (fresh.length) await batchSaveSignedUrlCache(fresh);
+  return prepared.map((entry) => entry.url);
+}
+
+async function prepareResolveAsset(asset: AssetReadUrlRecord): Promise<PreparedAsset> {
+  if (asset.cdnUrl) return { url: asset.cdnUrl };
+  if (asset.origin === "EXTERNAL_URL") return { url: asset.externalUrl ?? null };
+  if (asset.origin !== "R2" || !asset.r2Key) return { url: null };
+  const cached = validSignedUrl(asset.signedUrlCache);
+  if (cached) return { url: cached };
+  const url = await r2Storage.createGetUrl(asset.r2Key);
+  return { url, fresh: { id: asset.id, url, expiresAt: signedUrlExpiresAt() } };
 }
 
 async function storedAsset(asset: AssetReadRecord) {
@@ -70,6 +88,20 @@ function saveSignedUrlCache(assetId: string, url: string) {
   });
 }
 
+async function batchSaveSignedUrlCache(entries: FreshCacheEntry[]) {
+  if (entries.length === 1) {
+    const entry = entries[0];
+    await saveSignedUrlCache(entry.id, entry.url);
+    return;
+  }
+  const values = entries.map((entry) => Prisma.sql`(${entry.id}, ${JSON.stringify({ expiresAt: entry.expiresAt.toISOString(), url: entry.url })}::jsonb)`);
+  await prisma.$executeRaw`
+    UPDATE "Asset" SET "signedUrlCache" = data.cache
+    FROM (VALUES ${Prisma.join(values)}) AS data(id, cache)
+    WHERE "Asset".id = data.id
+  `;
+}
+
 function signedUrlExpiresAt() {
   return new Date(Date.now() + 1000 * 60 * 14);
 }
@@ -101,3 +133,6 @@ type AssetReadUrlRecord = {
   r2Key?: string | null;
   signedUrlCache?: Prisma.JsonValue | null;
 };
+
+type FreshCacheEntry = { id: string; url: string; expiresAt: Date };
+type PreparedAsset = { url: string | null; fresh?: FreshCacheEntry };

@@ -18,14 +18,15 @@ export async function getEditorProject(
   const project = await findEditorProject(userId, projectId);
   if (!project) return null;
   const assets = await loadEditorAssets(project.id, project.scenes);
-  const timelineItems = project.timelineItems.map((item) => toTimelineItem(item, assets.byId));
+  const scenesById = new Map(project.scenes.map((scene) => [scene.id, scene]));
+  const timelineItems = project.timelineItems.map((item) => toTimelineItem(item, scenesById, assets.byId));
   const videoModels = await listModels("image-to-video", toVideoModel);
   const imageModels = await listModels("text-to-image", toImageModel);
   return editorProject(project, assets, timelineItems, imageModels, videoModels);
 }
 
 function findEditorProject(userId: string, projectId: string) {
-  return prisma.project.findFirst({ where: { id: projectId, userId }, include: { scenes: { orderBy: { orderIndex: "asc" } }, timelineItems: { include: { scene: true }, orderBy: { orderIndex: "asc" } } } });
+  return prisma.project.findFirst({ where: { id: projectId, userId }, include: { scenes: { orderBy: { orderIndex: "asc" } }, timelineItems: { orderBy: { orderIndex: "asc" } } } });
 }
 
 function editorProject(
@@ -78,15 +79,18 @@ function toEditorAsset(asset: ResolvedAssetRecord) {
 }
 
 function toTimelineItem(
-  item: Awaited<ReturnType<typeof getTimelineItemType>>,
+  item: TimelineItemRecord,
+  scenes: Map<string, Awaited<ReturnType<typeof getSceneType>>>,
   assets: Map<string, ResolvedAssetRecord>
 ) {
+  const scene = scenes.get(item.sceneId);
+  if (!scene) throw new Error("Timeline item scene missing");
   return {
     id: item.id,
     sceneId: item.sceneId,
     orderIndex: item.orderIndex,
-    durationSeconds: item.durationSeconds ?? item.scene.durationSeconds,
-    scene: toEditorScene(item.scene, assets)
+    durationSeconds: item.durationSeconds ?? scene.durationSeconds,
+    scene: toEditorScene(scene, assets)
   } satisfies EditorTimelineItem;
 }
 
@@ -140,8 +144,9 @@ async function getAssetType() {
 }
 
 async function getTimelineItemType() {
-  return prisma.timelineItem.findFirstOrThrow({ include: { scene: true } });
+  return prisma.timelineItem.findFirstOrThrow();
 }
 
 type ModelMapper<T> = (model: SupportedModelDefinition, stats?: ModelStats) => T;
 type ResolvedAssetRecord = Awaited<ReturnType<typeof getAssetType>> & { resolvedUrl?: string | null };
+type TimelineItemRecord = Awaited<ReturnType<typeof getTimelineItemType>>;

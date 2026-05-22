@@ -10,12 +10,32 @@ const globalOutbox = globalThis as unknown as {
 };
 
 export async function publishPendingOutboxEvents() {
-  const events = await prisma.outboxEvent.findMany({
-    where: { publishedAt: null },
-    orderBy: { createdAt: "asc" },
-    take: OUTBOX_BATCH_SIZE
-  });
-  await Promise.all(events.map(publishOutboxEvent));
+  const claimed = await claimPendingEvents();
+  if (!claimed.length) return;
+  const result = dispatchClaimedEvents(claimed);
+  if (result.unhandledIds.length) await releaseUnhandled(result.unhandledIds);
+  if (result.failed.length) await markDispatchFailed(result.failed);
+}
+
+function dispatchClaimedEvents(events: OutboxEventRecord[]) {
+  const unhandledIds: string[] = [];
+  const failed: Array<{ id: string; error: string }> = [];
+  for (const event of events) {
+    const result = safeDispatch(event);
+    if (result.kind === "no_listener") unhandledIds.push(event.id);
+    else if (result.kind === "error") failed.push({ id: event.id, error: result.message });
+  }
+  return { unhandledIds, failed };
+}
+
+type DispatchResult = { kind: "ok" } | { kind: "no_listener" } | { kind: "error"; message: string };
+
+function safeDispatch(event: OutboxEventRecord): DispatchResult {
+  try {
+    return dispatchEvent(event) ? { kind: "ok" } : { kind: "no_listener" };
+  } catch (error) {
+    return { kind: "error", message: error instanceof Error ? error.message : "Outbox publish failed" };
+  }
 }
 
 export function ensureOutboxDispatcherStarted() {
@@ -23,36 +43,40 @@ export function ensureOutboxDispatcherStarted() {
   globalOutbox.outboxDispatcher = setInterval(() => void publishPendingOutboxEvents(), OUTBOX_INTERVAL_MS);
 }
 
-async function publishOutboxEvent(event: OutboxEventRecord) {
-  try {
-    if (!publishEvent(event)) return;
-    await markPublished(event.id);
-  } catch (error) {
-    await markFailed(event.id, error);
-  }
+async function claimPendingEvents() {
+  return prisma.$queryRaw<OutboxEventRecord[]>`
+    WITH claimed AS (
+      SELECT id FROM "OutboxEvent"
+      WHERE "publishedAt" IS NULL
+      ORDER BY "createdAt" ASC
+      LIMIT ${OUTBOX_BATCH_SIZE}
+      FOR UPDATE SKIP LOCKED
+    )
+    UPDATE "OutboxEvent" SET "publishedAt" = NOW(), "lastError" = NULL
+    WHERE id IN (SELECT id FROM claimed)
+    RETURNING id, "aggregateId", "aggregateType", type, payload
+  `;
 }
 
-function publishEvent(event: OutboxEventRecord) {
+function dispatchEvent(event: OutboxEventRecord) {
   if (event.aggregateType !== "project") return true;
   return publishProjectEvent(event.aggregateId, { type: event.type, payload: event.payload });
 }
 
-function markPublished(eventId: string) {
-  return prisma.outboxEvent.updateMany({
-    where: { id: eventId, publishedAt: null },
-    data: { publishedAt: new Date(), lastError: null }
+async function releaseUnhandled(ids: string[]) {
+  await prisma.outboxEvent.updateMany({
+    where: { id: { in: ids } },
+    data: { publishedAt: null }
   });
 }
 
-function markFailed(eventId: string, error: unknown) {
-  return prisma.outboxEvent.update({
-    where: { id: eventId },
-    data: { attempts: { increment: 1 }, lastError: errorMessage(error) }
-  });
-}
-
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Outbox publish failed";
+async function markDispatchFailed(failed: Array<{ id: string; error: string }>) {
+  await Promise.all(failed.map((entry) =>
+    prisma.outboxEvent.update({
+      where: { id: entry.id },
+      data: { publishedAt: null, attempts: { increment: 1 }, lastError: entry.error }
+    })
+  ));
 }
 
 type OutboxEventRecord = {
