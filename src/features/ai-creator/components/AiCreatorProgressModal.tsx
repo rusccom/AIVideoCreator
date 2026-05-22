@@ -4,6 +4,7 @@ import { Pencil, RotateCcw, X } from "lucide-react";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { useEffect, useState } from "react";
 import { subscribeProjectEvents } from "@/shared/client/project-events";
+import { useAiCreatorProgressLiveness } from "../use-ai-creator-progress-liveness";
 import { useAiCreatorProgressRecovery, type AiCreatorProgressRecovery } from "../use-ai-creator-progress-recovery";
 import { AiCreatorProgressPulse } from "./AiCreatorProgressPulse";
 import { AiCreatorPromptEditModal } from "./AiCreatorPromptEditModal";
@@ -42,13 +43,14 @@ type ProgressViewState = {
 
 export function AiCreatorProgressModal(props: AiCreatorProgressModalProps) {
   const progressStatus = useProgressStatus(props);
-  const recovery = useAiCreatorProgressRecovery(props, progressStatus);
   const state = progressStatus.state;
   const progress = state.progress;
+  const recovery = useAiCreatorProgressRecovery(props, progressStatus);
+  const liveness = useAiCreatorProgressLiveness(isLiveProgress(progress), progressKey(props));
   return (
     <div aria-modal="true" className="project-modal-backdrop" role="dialog">
       <div className="project-modal ai-creator-progress-modal">
-        {progressLayout(props, state, progress, recovery)}
+        {progressLayout(props, state, progress, recovery, liveness)}
         {editModal(props, progress, recovery)}
       </div>
     </div>
@@ -59,22 +61,24 @@ function progressLayout(
   props: AiCreatorProgressModalProps,
   state: ProgressViewState,
   progress: ProgressState,
-  recovery: AiCreatorProgressRecovery
+  recovery: AiCreatorProgressRecovery,
+  liveness: ProgressLiveness
 ) {
-  return <div className="ai-creator-progress-layout"><AiCreatorProgressPulse pulse={state.pulse} readyCount={progress.readyCount} status={progress.status} total={progress.total} />{progressContent(props, state, progress, recovery)}</div>;
+  return <div className="ai-creator-progress-layout"><AiCreatorProgressPulse pulse={state.pulse + liveness.tick} readyCount={progress.readyCount} status={progress.status} total={progress.total} />{progressContent(props, state, progress, recovery, liveness)}</div>;
 }
 
 function progressContent(
   props: AiCreatorProgressModalProps,
   state: ProgressViewState,
   progress: ProgressState,
-  recovery: AiCreatorProgressRecovery
+  recovery: AiCreatorProgressRecovery,
+  liveness: ProgressLiveness
 ) {
-  return <div className="ai-creator-progress-content">{progressHeading(progress)}<div aria-label="Clip generation progress" {...progressBarProps(state)}><span /></div>{progressActions(props, progress, recovery)}{recovery.action.error ? <div className="form-error ai-creator-progress-error">{recovery.action.error}</div> : null}</div>;
+  return <div className="ai-creator-progress-content">{progressHeading(progress, liveness)}<div aria-label="Clip generation progress" {...progressBarProps(state, liveness)}><span /></div>{progressHint(progress)}{progressActions(props, progress, recovery)}{recovery.action.error ? <div className="form-error ai-creator-progress-error">{recovery.action.error}</div> : null}</div>;
 }
 
-function progressHeading(progress: ProgressState) {
-  return <div><h2>{progressTitle(progress)}</h2><p>{progressText(progress)}</p></div>;
+function progressHeading(progress: ProgressState, liveness: ProgressLiveness) {
+  return <div><h2>{progressTitle(progress)}</h2><p>{progressText(progress, liveness)}</p></div>;
 }
 
 function useProgressStatus(props: AiCreatorProgressModalProps) {
@@ -153,6 +157,10 @@ function isStoppedProgress(progress: ProgressState | null) {
   return Boolean(progress && isStoppedStatus(progress.status));
 }
 
+function isLiveProgress(progress: ProgressState) {
+  return progress.status !== "READY" && !isStoppedStatus(progress.status);
+}
+
 function progressEventTypes() {
   return ["scene.ready", "scene.failed", "images.ready", "images.failed"];
 }
@@ -199,11 +207,11 @@ function progressTarget(props: AiCreatorProgressModalProps) {
   return { jobId: props.jobId, projectId: props.projectId, sequenceId: props.sequenceId, total: props.total };
 }
 
-function progressText(progress: ProgressState) {
+function progressText(progress: ProgressState, liveness: ProgressLiveness) {
   if (progress.status === "READY") return readyText(progress.total);
   if (isStoppedStatus(progress.status)) return stoppedText(progress);
-  if (progress.total > 1) return `Generating clips ${nextClipNumber(progress)} of ${progress.total}.`;
-  return "Please wait while the clip is being created.";
+  if (progress.total > 1) return `Generating clips ${nextClipNumber(progress)} of ${progress.total}. ${liveness.elapsedLabel}`;
+  return `Please wait while the clip is being created. ${liveness.elapsedLabel}`;
 }
 
 function progressTitle(progress: ProgressState) {
@@ -211,16 +219,23 @@ function progressTitle(progress: ProgressState) {
   return progress.total > 1 ? "Generating clips" : "Generating clip";
 }
 
-function progressBarProps(state: ProgressViewState) {
+function progressHint(progress: ProgressState) {
+  if (!isLiveProgress(progress)) return null;
+  return <p className="ai-creator-progress-note">One scene usually takes about 2-4 minutes to generate.</p>;
+}
+
+function progressBarProps(state: ProgressViewState, liveness: ProgressLiveness) {
   const progress = state.progress;
   return {
     "aria-valuemax": progress.total,
     "aria-valuemin": 0,
     "aria-valuenow": progress.readyCount,
+    "aria-valuetext": progressText(progress, liveness),
     className: "generation-progress generation-progress-modal",
+    "data-live": isLiveProgress(progress),
     "data-mode": progress.total > 1 ? "determinate" : "indeterminate",
     role: "progressbar",
-    style: progressStyle(progress, state.pulse)
+    style: progressStyle(progress, state.pulse + liveness.tick)
   };
 }
 
@@ -252,6 +267,10 @@ function progressShift(pulse: number) {
   return (pulse % 7) * 55 - 120;
 }
 
+function progressKey(props: AiCreatorProgressModalProps) {
+  return `${props.jobId}:${props.sequenceId ?? "job"}`;
+}
+
 function nextClipNumber(progress: ProgressState) {
   return Math.min(progress.total, progress.readyCount + 1);
 }
@@ -268,6 +287,8 @@ function stoppedText(progress: ProgressState) {
 function retryDisabled(props: AiCreatorProgressModalProps, progress: ProgressState, recovery: AiCreatorProgressRecovery) {
   return !props.sequenceId || !progress.failedScene || recovery.action.status === "retrying";
 }
+
+type ProgressLiveness = ReturnType<typeof useAiCreatorProgressLiveness>;
 
 function retryText(status: AiCreatorProgressRecovery["action"]["status"]) {
   return status === "retrying" ? "Запуск..." : "Попробовать ещё раз";
