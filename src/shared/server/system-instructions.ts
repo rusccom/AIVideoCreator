@@ -10,6 +10,17 @@ export const systemInstructions = {
       "Write imagePrompt in English as a cinematic first-frame prompt."
     ].join(" ")
   },
+  aiCreatorStoryboard: {
+    purpose: "Plan a storyboard grid from a video idea and a consistent main character.",
+    instruction: [
+      "Plan a short cinematic video as an ordered storyboard.",
+      "Return exactly the requested number of panels in story order.",
+      "Each panel needs a short bold scene title, one vivid action line, and one camera direction.",
+      "Keep the SAME main character appearance, clothing, and mood in every panel.",
+      "Write all panel text in English, concrete and cinematic, with no markdown and no panel numbers.",
+      "Build a continuous narrative with a clear beginning, middle, and end."
+    ].join(" ")
+  },
   aiCreatorPromptRepair: {
     purpose: "Rewrite a rejected AI Creator video prompt so the video model can process it.",
     instruction: [

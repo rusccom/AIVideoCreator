@@ -9,6 +9,8 @@ import { repairAiCreatorPrompt as repairPrompt } from "@/features/ai-creator/ser
 export { aiCreatorPromptSchema } from "@/features/ai-creator/server/ai-creator-prompt-schema";
 import { draftAiCreatorScenes as draftScenes } from "@/features/ai-creator/server/scene-draft-service";
 export { aiCreatorSceneDraftSchema } from "@/features/ai-creator/server/scene-draft-schema";
+import { draftStoryboard as draftStoryboardPlan } from "@/features/ai-creator/server/storyboard-draft-service";
+export { storyboardDraftSchema } from "@/features/ai-creator/server/storyboard-draft-schema";
 import { startAiCreatorVideo as startVideo } from "@/features/ai-creator/server/ai-creator-video-service";
 export { aiCreatorVideoSchema } from "@/features/ai-creator/server/ai-creator-video-schema";
 import { createSceneChainForUser, generateVideo, getCreditBalance } from "@/application/generation/server";
@@ -16,6 +18,7 @@ import { getModel, preflightVideoGeneration, selectStartImage } from "@/applicat
 import { runReasoning } from "@/application/reasoning/server";
 import type { AiCreatorPromptInput } from "@/features/ai-creator/server/ai-creator-prompt-schema";
 import type { AiCreatorSceneDraftInput } from "@/features/ai-creator/server/scene-draft-schema";
+import type { StoryboardDraftInput } from "@/features/ai-creator/server/storyboard-draft-schema";
 import type { AiCreatorVideoInput } from "@/features/ai-creator/server/ai-creator-video-schema";
 
 const generation = {
@@ -47,6 +50,10 @@ export function repairAiCreatorPrompt(userId: string, sequenceId: string, input:
 
 export function draftAiCreatorScenes(userId: string, projectId: string, input: AiCreatorSceneDraftInput) {
   return draftScenes(userId, projectId, input, runReasoning);
+}
+
+export function draftStoryboard(userId: string, projectId: string, input: StoryboardDraftInput) {
+  return draftStoryboardPlan(userId, projectId, input, runReasoning);
 }
 
 export function startAiCreatorVideo(userId: string, projectId: string, input: AiCreatorVideoInput) {

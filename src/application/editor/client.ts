@@ -1,7 +1,7 @@
 "use client";
 
 import { createElement } from "react";
-import { AiCreatorButton, AiCreatorProgressModal, startClipGeneration } from "@/application/ai-creator/client";
+import { AiCreatorButton, AiCreatorProgressModal, draftStoryboard, startClipGeneration } from "@/application/ai-creator/client";
 import { PhotoLibraryModal } from "@/application/photo-library/client";
 import { ProjectEditor as FeatureProjectEditor } from "@/features/editor/components/ProjectEditor";
 import type { EditorProject } from "@/features/editor/types";
@@ -10,6 +10,7 @@ const integrations = {
   AiCreatorButton,
   AiCreatorProgressModal,
   PhotoLibraryModal,
+  draftStoryboard,
   startClipGeneration
 };
 

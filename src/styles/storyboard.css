@@ -1,0 +1,96 @@
+.scene-mode-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scene-mode-switch {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(8, 9, 13, 0.6);
+}
+
+.scene-mode-button {
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scene-mode-button.is-active {
+  color: var(--text);
+  background: rgba(56, 213, 255, 0.16);
+}
+
+.storyboard-panel {
+  display: grid;
+  gap: 4px;
+}
+
+.storyboard-panel label {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 12px;
+  color: var(--soft);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.storyboard-panel input,
+.storyboard-panel select,
+.storyboard-panel textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 12px;
+  color: var(--text);
+  background: rgba(8, 9, 13, 0.7);
+}
+
+.storyboard-panel textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.storyboard-character {
+  min-height: 64px;
+}
+
+.storyboard-hint {
+  margin: 0 0 12px;
+  color: var(--soft);
+  font-size: 0.78rem;
+}
+
+.storyboard-plan {
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.storyboard-grid-preview {
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(8, 9, 13, 0.7);
+}
+
+.storyboard-grid-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+span.storyboard-grid-image {
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  color: var(--soft);
+  font-size: 0.82rem;
+}

@@ -2,3 +2,5 @@ export { AiCreatorButton } from "@/features/ai-creator/components/AiCreatorButto
 export { AiCreatorProgressModal } from "@/features/ai-creator/components/AiCreatorProgressModal";
 export { estimateCreatorVideoCredits, generateCreatorVideo, startClipGeneration } from "@/features/ai-creator/ai-creator-video-generation";
 export type { StartedCreatorVideo, StartClipGenerationInput } from "@/features/ai-creator/ai-creator-video-generation";
+export { draftStoryboard } from "@/features/ai-creator/ai-creator-storyboard";
+export type { StoryboardDraft, StoryboardDraftRequest, StoryboardPanelDraft } from "@/features/ai-creator/ai-creator-storyboard";

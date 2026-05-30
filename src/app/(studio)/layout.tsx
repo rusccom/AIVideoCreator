@@ -17,6 +17,7 @@ import "@/styles/studio-wizard.css";
 import "@/styles/project-modal.css";
 import "@/styles/ai-creator.css";
 import "@/styles/ai-creator-responsive.css";
+import "@/styles/storyboard.css";
 import "@/styles/billing.css";
 import { getCurrentUser } from "@/application/auth/server";
 import { StudioShell } from "@/application/studio/client";

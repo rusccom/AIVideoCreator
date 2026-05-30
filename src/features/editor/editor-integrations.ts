@@ -25,6 +25,20 @@ export type SceneProgressTarget = {
   total: number;
 };
 
+export type StoryboardDraftRequest = {
+  aspectRatio?: string;
+  character: string;
+  durationSeconds: number;
+  idea: string;
+  panelCount: number;
+};
+
+export type StoryboardDraft = {
+  gridPrompt: string;
+  panels: { action: string; camera: string; title: string }[];
+  shotPrompt: string;
+};
+
 type AiCreatorButtonProps = {
   imageModels: EditorImageModel[];
   projectAspectRatio: string;
@@ -52,5 +66,6 @@ export type EditorIntegrations = {
   AiCreatorButton: ComponentType<AiCreatorButtonProps>;
   AiCreatorProgressModal: ComponentType<AiCreatorProgressProps>;
   PhotoLibraryModal: ComponentType<PhotoLibraryModalProps>;
+  draftStoryboard: (projectId: string, request: StoryboardDraftRequest) => Promise<StoryboardDraft>;
   startClipGeneration: (input: StartClipGenerationInput) => Promise<StartedCreatorVideo>;
 };
