@@ -2,7 +2,11 @@ import type Stripe from "stripe";
 import type { TopUpPackageKey } from "../data/top-up-packages";
 import { findTopUpPackage } from "../data/top-up-packages";
 import { getBillingConfig } from "./billing-config-service";
-import { attachCheckoutSession, createPendingPayment } from "./billing-payment-service";
+import {
+  attachCheckoutSession,
+  createPendingPayment,
+  deletePendingPayment
+} from "./billing-payment-service";
 import { getStripe } from "./stripe-client";
 
 type CheckoutUser = {
@@ -19,11 +23,17 @@ export async function createTopUpCheckoutSession(
   if (!item) throw new Error("Unknown top-up package");
   const config = await getBillingConfig();
   const payment = await createPendingPayment(user.id, item, config.creditsPerUsd);
-  const session = await getStripe().checkout.sessions.create(
-    checkoutParams(user, payment)
-  );
-  await attachCheckoutSession(payment.id, session.id);
-  return session;
+  try {
+    const session = await getStripe().checkout.sessions.create(
+      checkoutParams(user, payment),
+      { idempotencyKey: `checkout:${payment.id}` }
+    );
+    await attachCheckoutSession(payment.id, session.id);
+    return session;
+  } catch (err) {
+    await deletePendingPayment(payment.id);
+    throw err;
+  }
 }
 
 function checkoutParams(
@@ -76,5 +86,7 @@ function formatAmount(amountCents: number) {
 }
 
 function appUrl() {
-  return process.env.APP_URL ?? "http://localhost:3000";
+  const url = process.env.APP_URL;
+  if (!url) throw new Error("APP_URL is required for checkout success/cancel URLs");
+  return url;
 }

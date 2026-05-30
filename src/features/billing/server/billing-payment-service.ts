@@ -1,6 +1,4 @@
-import { PaymentStatus, Prisma, type Payment } from "@prisma/client";
-import type Stripe from "stripe";
-import { incrementUserCredits } from "@/shared/server/counters";
+import { PaymentStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
 import { topUpPackages, type TopUpPackage } from "../data/top-up-packages";
 import { calculateCredits, getBillingConfig } from "./billing-config-service";
@@ -45,39 +43,17 @@ export function attachCheckoutSession(paymentId: string, sessionId: string) {
   });
 }
 
-export async function completeCheckoutSession(
-  session: Stripe.Checkout.Session,
-  eventId: string
-) {
-  const paymentId = session.metadata?.paymentId;
-  if (!paymentId || session.payment_status !== "paid") return { ignored: true };
-  return prisma.$transaction((tx) => completePayment(tx, paymentId, session, eventId));
-}
-
-export function markSessionCanceled(session: Stripe.Checkout.Session) {
-  return markSessionStatus(session, PaymentStatus.CANCELED);
-}
-
-export function markSessionFailed(session: Stripe.Checkout.Session) {
-  return markSessionStatus(session, PaymentStatus.FAILED);
-}
-
-async function completePayment(
-  tx: Prisma.TransactionClient,
-  paymentId: string,
-  session: Stripe.Checkout.Session,
-  eventId: string
-) {
-  const payment = await tx.payment.findUnique({ where: { id: paymentId } });
-  if (!payment || payment.status === PaymentStatus.PAID) return { ignored: true };
-  await tx.payment.update({ where: { id: paymentId }, data: paidData(session) });
-  await tx.creditLedger.create({ data: ledgerData(payment, eventId) });
-  await incrementUserCredits(tx, payment.userId, payment.credits);
-  return { paid: true };
+export async function deletePendingPayment(paymentId: string) {
+  await prisma.payment.deleteMany({
+    where: { id: paymentId, status: PaymentStatus.PENDING }
+  });
 }
 
 async function getCreditBalance(userId: string) {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { creditBalance: true } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { creditBalance: true }
+  });
   return user?.creditBalance ?? 0;
 }
 
@@ -109,47 +85,6 @@ function paymentCreateData(
     currency: item.currency,
     credits: calculateCredits(item.amountCents, creditsPerUsd)
   };
-}
-
-function paidData(session: Stripe.Checkout.Session) {
-  return {
-    status: PaymentStatus.PAID,
-    paidAt: new Date(),
-    stripeCheckoutSessionId: session.id,
-    stripePaymentIntentId: paymentIntentId(session)
-  };
-}
-
-function ledgerData(payment: Payment, eventId: string) {
-  return {
-    userId: payment.userId,
-    amount: payment.credits,
-    type: "purchase",
-    reason: paymentReason(payment),
-    stripeEventId: eventId
-  };
-}
-
-function paymentReason(payment: { amountCents: number; currency: string }) {
-  return `${formatMoney(payment.amountCents, payment.currency)} credit top-up`;
-}
-
-function markSessionStatus(session: Stripe.Checkout.Session, status: PaymentStatus) {
-  const paymentId = session.metadata?.paymentId;
-  if (!paymentId) return { ignored: true };
-  return prisma.payment.updateMany({
-    where: { id: paymentId, status: PaymentStatus.PENDING },
-    data: { status }
-  });
-}
-
-function paymentIntentId(session: Stripe.Checkout.Session) {
-  const intent = session.payment_intent;
-  return typeof intent === "string" ? intent : intent?.id ?? null;
-}
-
-function formatMoney(amountCents: number, currency: string) {
-  return `${currency.toUpperCase()} ${(amountCents / 100).toFixed(2)}`;
 }
 
 function historySelect() {

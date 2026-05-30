@@ -22,6 +22,8 @@ model Payment {
   currency                String        @default("usd")
   credits                 Int
   status                  PaymentStatus @default(PENDING)
+  refundedCents           Int           @default(0)
+  refundedCredits         Int           @default(0)
   stripeCheckoutSessionId String?       @unique
   stripePaymentIntentId   String?
   createdAt               DateTime      @default(now())

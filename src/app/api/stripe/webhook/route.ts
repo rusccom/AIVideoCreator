@@ -15,14 +15,20 @@ export async function POST(request: Request) {
   if (!event) {
     return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 });
   }
-  const result = await handleStripeEvent(event);
-  return NextResponse.json({ received: true, result });
+  try {
+    const result = await handleStripeEvent(event);
+    return NextResponse.json({ received: true, result });
+  } catch (err) {
+    console.error("[stripe-webhook] processing failed", { eventId: event.id, type: event.type }, err);
+    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
+  }
 }
 
 function constructStripeEvent(body: string, signature: string, secret: string) {
   try {
     return getStripe().webhooks.constructEvent(body, signature, secret);
-  } catch {
+  } catch (err) {
+    console.error("[stripe-webhook] signature verification failed", err);
     return null;
   }
 }
