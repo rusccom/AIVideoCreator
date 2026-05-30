@@ -8,7 +8,7 @@ export function MidCtaSection() {
         <div className="cta-band">
           <div>
             <h2>Your next video can start with one sentence</h2>
-            <p>Describe your idea, choose the goal, and let AI Video Director build the first version of your video.</p>
+            <p>Describe your idea, choose the goal, and let MySceneAI build the first scene-led version of your video.</p>
             <span>Try: "Create a 60-second product ad for a ready maternity hospital bag."</span>
           </div>
           <Link className="button button-primary" href="/register">Start creating now<ArrowRight size={17} /></Link>

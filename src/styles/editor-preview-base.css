@@ -34,8 +34,8 @@
 }
 
 .preview-playback-overlay button.active {
-  border-color: rgba(34, 211, 238, 0.52);
-  background: rgba(34, 211, 238, 0.16);
+  border-color: rgba(56, 213, 255, 0.52);
+  background: rgba(56, 213, 255, 0.16);
 }
 
 .preview-playback-overlay button:disabled {

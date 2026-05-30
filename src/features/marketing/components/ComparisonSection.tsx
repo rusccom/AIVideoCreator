@@ -1,11 +1,12 @@
 import { comparisonRows } from "../data/marketing-content";
+import { brand } from "@/shared/brand";
 
 export function ComparisonSection() {
   return (
     <section className="section" id="comparison">
       <div className="container">
         <span className="eyebrow">Comparison</span>
-        <h2 className="section-title">Short AI clip vs. AI Video Director</h2>
+        <h2 className="section-title">Short AI clip vs. {brand.name}</h2>
         <div className="comparison-table">
           {comparisonHeader()}
           {comparisonRows.map((row) => (
@@ -21,5 +22,5 @@ export function ComparisonSection() {
 }
 
 function comparisonHeader() {
-  return <div className="comparison-row comparison-head"><span>Ordinary AI video generator</span><strong>AI Video Director</strong></div>;
+  return <div className="comparison-row comparison-head"><span>Ordinary AI video generator</span><strong>MySceneAI</strong></div>;
 }

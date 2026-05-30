@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { brand } from "@/shared/brand";
 
 type AuthShellProps = {
   title: string;
@@ -11,7 +12,7 @@ export function AuthShell({ title, text, children }: AuthShellProps) {
     <main className="auth-card">
       <Link className="brand-mark" href="/">
         <span className="brand-symbol" />
-        <span>AI Sequential Video Studio</span>
+        <span>{brand.name}</span>
       </Link>
       <h1>{title}</h1>
       <p>{text}</p>

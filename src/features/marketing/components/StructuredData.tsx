@@ -1,8 +1,9 @@
 import { faqs } from "../data/marketing-content";
 import { marketingPlans } from "../data/pricing-plans";
+import { brand } from "@/shared/brand";
 
-const baseUrl = "https://aivideocreator.app";
-const siteName = "AI Video Director";
+const baseUrl = brand.url;
+const siteName = brand.name;
 
 const organization = {
   "@type": "Organization",
@@ -13,7 +14,7 @@ const organization = {
   contactPoint: {
     "@type": "ContactPoint",
     contactType: "customer support",
-    email: "contact@aivideocreator.app"
+    email: brand.email
   }
 };
 
@@ -32,8 +33,7 @@ const softwareApplication = {
   name: siteName,
   applicationCategory: "MultimediaApplication",
   operatingSystem: "Web",
-  description:
-    "Turn a single prompt into a long connected AI video with scene planning, visual continuity and no visible transitions.",
+  description: brand.description,
   offers: marketingPlans.map((plan) => ({
     "@type": "Offer",
     name: plan.name,

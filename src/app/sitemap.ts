@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
+import { brand } from "@/shared/brand";
 
-const baseUrl = "https://aivideocreator.app";
+const baseUrl = brand.url;
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

@@ -1,17 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import "@/styles/base.css";
+import { brand } from "@/shared/brand";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://aivideocreator.app"),
+  metadataBase: new URL(brand.url),
   title: {
-    default: "AI Video Director",
-    template: "%s | AI Video Director"
+    default: brand.name,
+    template: `%s | ${brand.name}`
   },
-  description: "Create long AI videos from one idea with connected scenes and no visible transitions.",
-  applicationName: "AI Video Director",
-  authors: [{ name: "AI Video Director" }],
-  creator: "AI Video Director",
-  publisher: "AI Video Director",
+  description: brand.description,
+  applicationName: brand.name,
+  authors: [{ name: brand.name }],
+  creator: brand.name,
+  publisher: brand.name,
   formatDetection: {
     email: false,
     address: false,

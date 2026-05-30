@@ -87,8 +87,8 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: rgba(34, 211, 238, 0.85);
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25);
+  background: rgba(56, 213, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(56, 213, 255, 0.25);
   pointer-events: none;
 }
 
@@ -100,7 +100,7 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: rgba(34, 211, 238, 0.9);
+  background: rgba(56, 213, 255, 0.9);
 }
 
 .timeline-clip.stale {
@@ -111,7 +111,7 @@
   height: 34px;
   border-radius: 8px 8px 0 0;
   background:
-    linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(245, 158, 11, 0.08)),
+    linear-gradient(135deg, rgba(56, 213, 255, 0.1), rgba(245, 158, 11, 0.08)),
     linear-gradient(145deg, #162033, #111827 45%, #33244c);
 }
 

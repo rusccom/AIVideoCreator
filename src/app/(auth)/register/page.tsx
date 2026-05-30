@@ -3,7 +3,7 @@ import { RegisterForm } from "@/application/auth/client";
 
 export default function RegisterPage() {
   return (
-    <AuthShell title="Create account" text="Start building linked AI video timelines.">
+    <AuthShell title="Create account" text="Start building connected AI scene timelines.">
       <RegisterForm />
     </AuthShell>
   );

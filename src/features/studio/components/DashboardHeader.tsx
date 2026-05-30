@@ -9,7 +9,7 @@ export function DashboardHeader({ createProjectButton }: DashboardHeaderProps) {
     <div className="studio-page-header">
       <div>
         <h1>Projects</h1>
-        <p>Manage linked AI video timelines, current jobs, credits, and exports.</p>
+        <p>Manage connected scene timelines, current jobs, credits, and exports.</p>
       </div>
       {createProjectButton}
     </div>

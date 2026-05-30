@@ -72,8 +72,8 @@
 }
 
 .ai-creator-media-tile.selected {
-  border-color: rgba(34, 211, 238, 0.82);
-  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.16);
+  border-color: rgba(56, 213, 255, 0.82);
+  box-shadow: 0 0 0 2px rgba(56, 213, 255, 0.16);
 }
 
 .ai-creator-media-tile img {
@@ -133,8 +133,8 @@
 }
 
 .ai-creator-scene-card.selected {
-  border-color: rgba(34, 211, 238, 0.64);
-  background: rgba(34, 211, 238, 0.07);
+  border-color: rgba(56, 213, 255, 0.64);
+  background: rgba(56, 213, 255, 0.07);
 }
 
 .ai-creator-scene-card button {

@@ -17,8 +17,8 @@
 }
 
 .photo-card.selected {
-  border-color: rgba(34, 211, 238, 0.88);
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.28);
+  border-color: rgba(56, 213, 255, 0.88);
+  box-shadow: 0 0 0 1px rgba(56, 213, 255, 0.28);
 }
 
 .photo-card.selected::after {
@@ -29,7 +29,7 @@
   height: 10px;
   border: 2px solid #081018;
   border-radius: 999px;
-  background: #22d3ee;
+  background: #38d5ff;
   content: "";
 }
 

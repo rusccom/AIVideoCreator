@@ -4,8 +4,8 @@
   place-items: center;
   padding: 32px 16px;
   background:
-    radial-gradient(circle at 20% 8%, rgba(34, 211, 238, 0.14), transparent 28%),
-    radial-gradient(circle at 85% 15%, rgba(139, 92, 246, 0.16), transparent 26%),
+    radial-gradient(circle at 20% 8%, rgba(56, 213, 255, 0.14), transparent 28%),
+    radial-gradient(circle at 85% 15%, rgba(255, 107, 74, 0.16), transparent 26%),
     #08090d;
 }
 
@@ -67,7 +67,7 @@
 .field input:focus,
 .field textarea:focus,
 .field select:focus {
-  border-color: rgba(34, 211, 238, 0.62);
+  border-color: rgba(56, 213, 255, 0.62);
 }
 
 .form-error {

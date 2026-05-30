@@ -9,9 +9,9 @@
   --text: #f8fafc;
   --muted: #9ca3af;
   --soft: #cbd5e1;
-  --violet: #8b5cf6;
-  --cyan: #22d3ee;
-  --blue: #3b82f6;
+  --violet: #d7ff45;
+  --cyan: #38d5ff;
+  --blue: #ff6b4a;
   --green: #22c55e;
   --amber: #f59e0b;
   --red: #ef4444;
@@ -112,14 +112,32 @@ video {
 }
 
 .brand-symbol {
+  position: relative;
+  overflow: hidden;
   flex: 0 0 auto;
   width: 34px;
   height: 34px;
   border-radius: 8px;
   background:
-    linear-gradient(135deg, rgba(34, 211, 238, 0.9), rgba(139, 92, 246, 0.86)),
+    linear-gradient(135deg, rgba(215, 255, 69, 0.96), rgba(56, 213, 255, 0.9) 58%, rgba(255, 107, 74, 0.9)),
     #0e171f;
-  box-shadow: 0 12px 34px rgba(34, 211, 238, 0.18);
+  box-shadow: 0 12px 34px rgba(56, 213, 255, 0.2);
+}
+
+.brand-symbol::before,
+.brand-symbol::after {
+  position: absolute;
+  content: "";
+  border: 1px solid rgba(5, 8, 13, 0.6);
+  border-radius: 4px;
+}
+
+.brand-symbol::before {
+  inset: 8px 6px 10px 9px;
+}
+
+.brand-symbol::after {
+  inset: 11px 10px 7px 5px;
 }
 
 .brand-mark span:last-child {
@@ -148,8 +166,9 @@ video {
 }
 
 .button-primary {
-  background: linear-gradient(135deg, var(--violet), var(--blue));
-  box-shadow: 0 14px 34px rgba(59, 130, 246, 0.22);
+  color: #061014;
+  background: linear-gradient(135deg, var(--violet), var(--cyan) 58%, var(--blue));
+  box-shadow: 0 14px 34px rgba(56, 213, 255, 0.2);
 }
 
 .button-secondary {

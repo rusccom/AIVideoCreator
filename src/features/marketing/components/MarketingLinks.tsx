@@ -8,7 +8,7 @@ export function MarketingLinks() {
       <a href="#comparison">Comparison</a>
       <a href="#pricing">Pricing</a>
       <Link href="/login">Login</Link>
-      <Link className="button button-primary" href="/register">Start creating</Link>
+      <Link className="button button-primary" href="/register">Start a scene project</Link>
     </nav>
   );
 }

@@ -1,31 +1,31 @@
 .marketing-shell {
-  --accent: #ff8a3c;
-  --accent-2: #ffb86b;
-  --accent-deep: #ff5e3a;
-  --cool: #14b8a6;
-  --cool-2: #5eead4;
+  --accent: #d7ff45;
+  --accent-2: #a7ff7a;
+  --accent-deep: #ff6b4a;
+  --cool: #38d5ff;
+  --cool-2: #8ee9ff;
   --violet: var(--accent);
   --cyan: var(--cool);
   --blue: var(--accent-deep);
-  --bg: #070d12;
-  --panel: #0e171f;
-  --panel-strong: #14202b;
-  --line: rgba(148, 184, 190, 0.16);
-  --line-strong: rgba(148, 184, 190, 0.34);
-  --text: #f4ede4;
-  --soft: #c8d4d8;
-  --muted: #8a9ca3;
+  --bg: #05080d;
+  --panel: #0b1218;
+  --panel-strong: #111d24;
+  --line: rgba(142, 233, 255, 0.16);
+  --line-strong: rgba(142, 233, 255, 0.34);
+  --text: #f6f8ed;
+  --soft: #c7d6dc;
+  --muted: #8ca3aa;
   min-height: 100vh;
   color: var(--text);
   background:
-    linear-gradient(135deg, rgba(255, 138, 60, 0.10), transparent 34%),
-    linear-gradient(225deg, rgba(20, 184, 166, 0.10), transparent 38%),
-    linear-gradient(180deg, #060c10 0%, #0a141a 48%, #060c10 100%);
+    linear-gradient(135deg, rgba(215, 255, 69, 0.10), transparent 34%),
+    linear-gradient(225deg, rgba(56, 213, 255, 0.10), transparent 38%),
+    linear-gradient(180deg, #05080d 0%, #0a1318 48%, #05080d 100%);
 }
 
 .marketing-shell .button-primary {
-  color: #1a0a02;
-  box-shadow: 0 14px 34px rgba(255, 138, 60, 0.28);
+  color: #061014;
+  box-shadow: 0 14px 34px rgba(56, 213, 255, 0.24);
 }
 
 .marketing-shell .section-title {
@@ -36,8 +36,8 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  border-bottom: 1px solid rgba(148, 184, 190, 0.12);
-  background: rgba(7, 13, 18, 0.78);
+  border-bottom: 1px solid rgba(142, 233, 255, 0.12);
+  background: rgba(5, 8, 13, 0.78);
   backdrop-filter: blur(18px);
 }
 
@@ -56,13 +56,31 @@
 }
 
 .brand-symbol {
+  position: relative;
+  overflow: hidden;
   width: 34px;
   height: 34px;
   border-radius: 8px;
   background:
-    linear-gradient(135deg, rgba(255, 138, 60, 0.96), rgba(20, 184, 166, 0.84)),
+    linear-gradient(135deg, rgba(215, 255, 69, 0.96), rgba(56, 213, 255, 0.9) 58%, rgba(255, 107, 74, 0.9)),
     #0e171f;
-  box-shadow: 0 12px 34px rgba(255, 138, 60, 0.22);
+  box-shadow: 0 12px 34px rgba(56, 213, 255, 0.24);
+}
+
+.brand-symbol::before,
+.brand-symbol::after {
+  position: absolute;
+  content: "";
+  border: 1px solid rgba(5, 8, 13, 0.6);
+  border-radius: 4px;
+}
+
+.brand-symbol::before {
+  inset: 8px 6px 10px 9px;
+}
+
+.brand-symbol::after {
+  inset: 11px 10px 7px 5px;
 }
 
 .marketing-links {
@@ -129,8 +147,8 @@
   border-radius: 8px;
   border: 1px solid rgba(148, 184, 190, 0.22);
   background:
-    linear-gradient(135deg, rgba(14, 23, 31, 0.98), rgba(7, 13, 18, 0.98)),
-    #060c10;
+    linear-gradient(135deg, rgba(11, 18, 24, 0.98), rgba(5, 8, 13, 0.98)),
+    #05080d;
   box-shadow: 0 34px 120px rgba(0, 0, 0, 0.5);
 }
 
@@ -209,11 +227,11 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid rgba(255, 138, 60, 0.28);
+  border: 1px solid rgba(215, 255, 69, 0.28);
   border-radius: 999px;
   padding: 9px 11px;
   color: var(--soft);
-  background: rgba(255, 138, 60, 0.08);
+  background: rgba(215, 255, 69, 0.08);
 }
 
 .feature-grid {

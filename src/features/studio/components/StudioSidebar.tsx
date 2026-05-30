@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CreditCard, FolderKanban, LayoutDashboard, Settings } from "lucide-react";
+import { brand } from "@/shared/brand";
 
 const items = [
   { href: "/app", label: "Dashboard", icon: LayoutDashboard },
@@ -13,7 +14,7 @@ export function StudioSidebar() {
     <aside className="studio-sidebar">
       <Link className="brand-mark" href="/app">
         <span className="brand-symbol" />
-        <span>AI Studio</span>
+        <span>{brand.name}</span>
       </Link>
       <nav aria-label="Studio navigation">
         {items.map((item) => (

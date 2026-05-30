@@ -3,11 +3,11 @@ import "@/styles/marketing.css";
 import "@/styles/marketing-sections.css";
 import "@/styles/marketing-responsive.css";
 import { MarketingNav } from "@/application/marketing/client";
+import { brand } from "@/shared/brand";
 
-const siteName = "AI Video Director";
-const title = "AI Video Director - Long AI Videos From One Idea";
-const description =
-  "Create long AI videos from one idea for ads, product stories, AI news episodes and social content without visible transitions.";
+const siteName = brand.name;
+const title = brand.title;
+const description = brand.description;
 
 export const metadata: Metadata = {
   title,

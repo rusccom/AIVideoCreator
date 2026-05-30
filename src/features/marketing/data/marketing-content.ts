@@ -9,21 +9,22 @@ export type ComparisonRow = {
 };
 
 export const heroTags = [
+  "Scene-first planning",
   "Product ads",
   "AI news channels",
   "Social videos",
-  "No visible transitions",
-  "Story-driven clips",
+  "Character continuity",
+  "Connected timelines",
   "Brand content",
-  "Character videos"
+  "Export-ready videos"
 ];
 
 export const directorOutputs = [
-  "Scene plan",
-  "Visual style",
-  "Camera movement",
-  "Connected video flow",
-  "Final export"
+  "Scene map",
+  "Style lock",
+  "Camera notes",
+  "Continuity frames",
+  "Export timeline"
 ];
 
 export const creationTypes: MarketingCard[] = [
@@ -41,7 +42,7 @@ export const creationTypes: MarketingCard[] = [
   },
   {
     title: "Brand storytelling",
-    text: "Turn a simple idea into a sequence of cinematic scenes for your brand or project."
+    text: "Turn a simple idea into a scene system with consistent mood, product focus and message."
   },
   {
     title: "Digital characters",
@@ -75,11 +76,11 @@ export const processSteps: MarketingCard[] = [
   },
   {
     title: "Choose the direction",
-    text: "Select the format, mood, style and goal - or let the AI Director decide."
+    text: "Select the format, mood, style and goal - or let the Scene Director shape the first version."
   },
   {
     title: "Get a scene plan",
-    text: "The system breaks your idea into connected scenes with camera direction, motion and visual flow."
+    text: "MySceneAI breaks your idea into connected scenes with camera direction, motion and visual flow."
   },
   {
     title: "Generate and continue",
@@ -90,7 +91,7 @@ export const processSteps: MarketingCard[] = [
 export const directorFeatures: MarketingCard[] = [
   {
     title: "Smart video planning",
-    text: "The system helps turn your raw idea into a clear creative brief."
+    text: "MySceneAI helps turn your raw idea into a clear creative brief."
   },
   {
     title: "Scene-by-scene creation",
@@ -238,7 +239,7 @@ export const faqs: MarketingCard[] = [
   },
   {
     title: "Do I need to understand video models or prompts?",
-    text: "No. Start with a simple idea. The AI Director helps structure it into scenes and visual direction."
+    text: "No. Start with a simple idea. The Scene Director helps structure it into scenes and visual direction."
   },
   {
     title: "Can I upload my own image or product photo?",

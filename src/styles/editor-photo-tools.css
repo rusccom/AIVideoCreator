@@ -41,7 +41,7 @@
   place-items: center;
   object-fit: cover;
   background:
-    linear-gradient(135deg, rgba(34, 211, 238, 0.12), rgba(139, 92, 246, 0.12)),
+    linear-gradient(135deg, rgba(56, 213, 255, 0.12), rgba(255, 107, 74, 0.12)),
     linear-gradient(145deg, #172033, #111827 48%, #2e2347);
 }
 
@@ -62,7 +62,7 @@
 
 .status-generating {
   color: #bae6fd;
-  border-color: rgba(34, 211, 238, 0.36);
+  border-color: rgba(56, 213, 255, 0.36);
 }
 
 .status-stale {

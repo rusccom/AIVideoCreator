@@ -31,7 +31,7 @@
 }
 
 .option-card.active {
-  border-color: rgba(139, 92, 246, 0.64);
+  border-color: rgba(255, 107, 74, 0.64);
   color: var(--text);
 }
 

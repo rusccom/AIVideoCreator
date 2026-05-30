@@ -15,11 +15,13 @@ import { ProjectSection } from "@/application/marketing/client";
 import { ProcessSection } from "@/application/marketing/client";
 import { StructuredData } from "@/application/marketing/client";
 import { UseCasesSection } from "@/application/marketing/client";
+import { brand } from "@/shared/brand";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
   keywords: [
-    "AI Video Director",
+    brand.name,
+    "scene-first AI video studio",
     "long AI video generator",
     "AI product video",
     "AI news video",

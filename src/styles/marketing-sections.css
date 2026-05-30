@@ -31,7 +31,7 @@
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background: rgba(255, 138, 60, 0.14);
+  background: rgba(215, 255, 69, 0.14);
   color: var(--accent);
   font-weight: 900;
 }
@@ -61,7 +61,7 @@
 .use-case-frame {
   min-height: 74px;
   border-radius: 6px;
-  background: linear-gradient(135deg, #0f1f24, #14323a 52%, #5b3219);
+  background: linear-gradient(135deg, #111d24, #103640 52%, #4c2d25);
 }
 
 .section-note {
@@ -76,11 +76,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  border: 1px solid rgba(255, 138, 60, 0.28);
+  border: 1px solid rgba(215, 255, 69, 0.28);
   border-radius: 8px;
   padding: 28px;
   background:
-    linear-gradient(135deg, rgba(255, 138, 60, 0.12), rgba(20, 184, 166, 0.08)),
+    linear-gradient(135deg, rgba(215, 255, 69, 0.12), rgba(56, 213, 255, 0.08)),
     rgba(255, 255, 255, 0.035);
 }
 
@@ -147,8 +147,8 @@
 }
 
 .pricing-card.featured {
-  border-color: rgba(255, 138, 60, 0.48);
-  background: linear-gradient(180deg, rgba(255, 138, 60, 0.10), rgba(255, 255, 255, 0.04));
+  border-color: rgba(215, 255, 69, 0.48);
+  background: linear-gradient(180deg, rgba(215, 255, 69, 0.10), rgba(255, 255, 255, 0.04));
 }
 
 .price {

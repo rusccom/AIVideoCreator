@@ -47,7 +47,7 @@
 }
 
 .studio-nav-item.active {
-  background: rgba(34, 211, 238, 0.1);
+  background: rgba(56, 213, 255, 0.1);
   color: var(--text);
 }
 
@@ -90,11 +90,11 @@
   align-items: center;
   justify-content: center;
   min-height: 36px;
-  border: 1px solid rgba(34, 211, 238, 0.3);
+  border: 1px solid rgba(56, 213, 255, 0.3);
   border-radius: 999px;
   padding: 0 16px;
   color: #d9f7ff;
-  background: rgba(34, 211, 238, 0.08);
+  background: rgba(56, 213, 255, 0.08);
   font-size: 0.92rem;
   font-weight: 800;
   white-space: nowrap;
@@ -103,8 +103,8 @@
 
 .studio-credit-badge:hover,
 .studio-credit-badge:focus-visible {
-  border-color: rgba(34, 211, 238, 0.58);
-  background: rgba(34, 211, 238, 0.14);
+  border-color: rgba(56, 213, 255, 0.58);
+  background: rgba(56, 213, 255, 0.14);
   color: #ffffff;
 }
 
@@ -120,8 +120,8 @@
 }
 
 .editor-exit-button:hover {
-  border-color: rgba(34, 211, 238, 0.56);
-  background: rgba(34, 211, 238, 0.1);
+  border-color: rgba(56, 213, 255, 0.56);
+  background: rgba(56, 213, 255, 0.1);
 }
 
 .studio-content {
@@ -174,7 +174,7 @@
 .project-cover {
   height: 150px;
   background:
-    linear-gradient(110deg, rgba(34, 211, 238, 0.12), rgba(139, 92, 246, 0.14)),
+    linear-gradient(110deg, rgba(56, 213, 255, 0.12), rgba(255, 107, 74, 0.14)),
     linear-gradient(145deg, #172033, #111827 48%, #2e2347);
 }
 

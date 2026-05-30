@@ -12,7 +12,7 @@ export function StudioTopbar({ credits, editorMode = false }: StudioTopbarProps)
       <div className="studio-topbar-left">
         {editorMode ? <EditorExitButton /> : null}
         <div>
-          <strong>Creator workspace</strong>
+          <strong>MySceneAI workspace</strong>
           <Link className="studio-credit-badge" href="/app/billing">{credits} credits</Link>
         </div>
       </div>
