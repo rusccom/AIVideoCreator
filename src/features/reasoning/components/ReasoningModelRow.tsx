@@ -11,17 +11,12 @@ type ReasoningModelRowProps = {
 
 export function ReasoningModelRow({ action, model }: ReasoningModelRowProps) {
   return (
-    <form action={action} className="settings-panel model-form">
-      {reasoningTitle(model)}
+    <form action={action} className="model-form">
       {reasoningFields(model)}
       <ReasoningModelStats model={model} />
       <button className="button button-secondary" type="submit">Save reasoning model</button>
     </form>
   );
-}
-
-function reasoningTitle(model: EditableReasoningModel) {
-  return <div className="model-row-title"><h2>{model.displayName}</h2><span className="badge">{model.provider}</span><span className="badge">{model.selected ? "global" : "standby"}</span></div>;
 }
 
 function reasoningFields(model: EditableReasoningModel) {

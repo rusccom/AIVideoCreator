@@ -1,6 +1,5 @@
 import type { EditableAiModel } from "@/shared/model-form";
 import { AiModelFormFields } from "./AiModelFormFields";
-import { AiModelHeader } from "@/shared/model-form";
 
 type AiModelRowProps = {
   action: (formData: FormData) => void | Promise<void>;
@@ -10,8 +9,7 @@ type AiModelRowProps = {
 
 export function AiModelRow({ action, creditsPerUsd, model }: AiModelRowProps) {
   return (
-    <form action={action} className="settings-panel model-form ai-model-card">
-      <AiModelHeader model={model} />
+    <form action={action} className="model-form ai-model-card">
       <AiModelFormFields creditsPerUsd={creditsPerUsd} model={model} />
       <div className="ai-model-actions">
         <button className="button button-secondary" type="submit">

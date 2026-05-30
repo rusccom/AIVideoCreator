@@ -1,1 +1,1 @@
-export { ReasoningModelList } from "@/features/reasoning/components/ReasoningModelList";
+export { ReasoningModelListModal } from "@/features/reasoning/components/ReasoningModelListModal";

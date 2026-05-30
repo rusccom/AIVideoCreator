@@ -1,6 +1,6 @@
 import { listAiModels } from "@/application/admin/server";
 import { updateAiModelAction } from "@/application/admin/model-actions";
-import { AiModelList } from "@/application/owner/client";
+import { AiModelListModal } from "@/application/owner/client";
 import { OwnerPageHeader } from "@/application/owner/client";
 import { getServiceSettings } from "@/application/settings/server";
 
@@ -16,7 +16,12 @@ export default async function OwnerVideoModelsPage() {
         description="Configure FAL video models, duration limits, credit prices, and margins."
       />
       <div className="side-stack">
-        <AiModelList action={updateAiModelAction} creditsPerUsd={settings.creditsPerUsd} models={videoModels} />
+        <AiModelListModal
+          action={updateAiModelAction}
+          creditsPerUsd={settings.creditsPerUsd}
+          emptyLabel="No video models."
+          models={videoModels}
+        />
       </div>
     </main>
   );

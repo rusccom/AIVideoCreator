@@ -127,6 +127,53 @@
   font-weight: 600;
 }
 
+.owner-entity-list {
+  display: grid;
+  gap: 8px;
+}
+
+.owner-entity-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(8, 9, 13, 0.4);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.owner-entity-row:hover {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.owner-entity-name {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.owner-entity-name strong {
+  font-size: 0.98rem;
+}
+
+.owner-entity-name small {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.owner-entity-open {
+  margin-left: auto;
+  color: var(--soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .ops-subhead {
   margin: 18px 0 4px;
   color: var(--soft);

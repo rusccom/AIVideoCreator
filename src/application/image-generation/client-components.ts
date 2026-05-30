@@ -1,1 +1,1 @@
-export { ImageModelList } from "@/features/image-generation/components/ImageModelList";
+export { ImageModelListModal } from "@/features/image-generation/components/ImageModelListModal";

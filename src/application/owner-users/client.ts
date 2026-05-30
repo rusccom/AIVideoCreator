@@ -1,1 +1,1 @@
-export { OwnerUsersSummary } from "@/features/owner-users/components/OwnerUsersSummary";
+export { OwnerUsersManager } from "@/features/owner-users/components/OwnerUsersManager";

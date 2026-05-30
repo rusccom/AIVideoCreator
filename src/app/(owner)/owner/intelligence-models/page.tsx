@@ -1,5 +1,5 @@
 import { OwnerPageHeader } from "@/application/owner/client";
-import { ReasoningModelList } from "@/application/reasoning/client";
+import { ReasoningModelListModal } from "@/application/reasoning/client";
 import { updateReasoningModelAction } from "@/application/reasoning/model-actions";
 import { listReasoningModels } from "@/application/reasoning/server";
 
@@ -11,9 +11,11 @@ export default async function OwnerIntelligenceModelsPage() {
     <main className="studio-content">
       <OwnerPageHeader
         title="Intelligence models"
-        description="Choose the global reasoning model and track token usage."
+        description="Open a model to set the global reasoning model and track token usage."
       />
-      <ReasoningModelList action={updateReasoningModelAction} models={models} />
+      <div className="side-stack">
+        <ReasoningModelListModal action={updateReasoningModelAction} models={models} />
+      </div>
     </main>
   );
 }

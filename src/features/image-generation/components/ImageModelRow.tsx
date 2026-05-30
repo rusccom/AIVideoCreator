@@ -1,6 +1,5 @@
 import type { EditableAiModel } from "@/shared/model-form";
 import { AiModelDetailFields } from "@/shared/model-form";
-import { AiModelHeader } from "@/shared/model-form";
 import { ModelCheckbox } from "@/shared/model-form";
 import { ModelFieldSection } from "@/shared/model-form";
 import { ModelTextInput } from "@/shared/model-form";
@@ -15,8 +14,7 @@ type ImageModelRowProps = {
 
 export function ImageModelRow({ action, model }: ImageModelRowProps) {
   return (
-    <form action={action} className="settings-panel model-form ai-model-card">
-      <AiModelHeader model={model} />
+    <form action={action} className="model-form ai-model-card">
       {model.id ? <input name="id" type="hidden" value={model.id} /> : null}
       <input name="key" type="hidden" value={model.key} />
       {imageModelSections(model)}
