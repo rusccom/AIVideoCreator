@@ -2,6 +2,7 @@ import type { ModelDefinition, ResolutionPriceMap, ResolvedGenerateVideoInput } 
 
 export type SupportedModelDefinition = Omit<ModelDefinition, "pricePerSecondByResolution"> & {
   defaultPricePerSecondByResolution: ResolutionPriceMap;
+  providerCostPerSecondUsdByResolution?: ResolutionPriceMap;
   inputAdapter: string;
   imageDefaults?: ImageModelDefaults;
   referenceProviderModelId?: string;

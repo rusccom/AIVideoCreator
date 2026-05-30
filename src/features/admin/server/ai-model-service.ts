@@ -37,7 +37,7 @@ function editableModel(
   model: (typeof supportedModels)[number],
   stats?: ModelStats
 ): EditableAiModel {
-  return { ...model, active: modelActive(model, stats), aiCreatorImageCount: modelImageCount(model, stats), id: model.id, key: model.id, lastUsedAt: stats?.lastUsedAt ?? null, pricePerSecondByResolution: modelPriceMap(model, stats), usageGeneratedImages: stats?.usageGeneratedImages ?? 0, usageRequestCount: stats?.usageRequestCount ?? 0 } satisfies EditableAiModel;
+  return { ...model, active: modelActive(model, stats), aiCreatorImageCount: modelImageCount(model, stats), id: model.id, key: model.id, lastUsedAt: stats?.lastUsedAt ?? null, pricePerSecondByResolution: modelPriceMap(model, stats), providerCostPerSecondUsdByResolution: model.providerCostPerSecondUsdByResolution, usageGeneratedImages: stats?.usageGeneratedImages ?? 0, usageRequestCount: stats?.usageRequestCount ?? 0 } satisfies EditableAiModel;
 }
 
 function asJson(value: unknown) {

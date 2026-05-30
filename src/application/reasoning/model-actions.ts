@@ -13,5 +13,5 @@ export async function updateReasoningModelAction(formData: FormData) {
 
 function refreshReasoningPanels() {
   revalidatePath("/owner/models");
-  revalidatePath("/admin");
+  revalidatePath("/owner/intelligence-models");
 }

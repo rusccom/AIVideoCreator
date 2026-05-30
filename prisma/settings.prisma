@@ -1,0 +1,7 @@
+model ServiceSettings {
+  id             String   @id @default("global")
+  creditsPerUsd  Int      @default(100)
+  welcomeCredits Int      @default(100)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

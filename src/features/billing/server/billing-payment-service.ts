@@ -1,10 +1,17 @@
 import { PaymentStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/shared/server/prisma";
-import { topUpPackages, type TopUpPackage } from "../data/top-up-packages";
-import { calculateCredits, getBillingConfig } from "./billing-config-service";
+import { getBillingConfig } from "./billing-config-service";
+import {
+  listActiveTopUpPackages,
+  packageCredits,
+  type TopUpPackageWriteInput
+} from "./top-up-package-service";
 
-export type BillingTopUpOption = TopUpPackage & {
+export type BillingTopUpOption = {
+  key: string;
+  label: string;
   credits: number;
+  popular: boolean;
 };
 
 export type PaymentHistoryItem = {
@@ -17,18 +24,23 @@ export type PaymentHistoryItem = {
   paidAt: Date | null;
 };
 
+type PendingPackage = Pick<TopUpPackageWriteInput, "key" | "amountCents" | "bonusCredits"> & {
+  currency: string;
+};
+
 export async function getBillingOverview(userId: string) {
-  const [settings, balance, payments] = await Promise.all([
+  const [config, balance, payments, packages] = await Promise.all([
     getBillingConfig(),
     getCreditBalance(userId),
-    listPaymentHistory(userId)
+    listPaymentHistory(userId),
+    listActiveTopUpPackages()
   ]);
-  return { balance, payments, options: topUpOptions(settings.creditsPerUsd) };
+  return { balance, payments, options: topUpOptions(packages, config.creditsPerUsd) };
 }
 
-export async function createPendingPayment(
+export function createPendingPayment(
   userId: string,
-  item: TopUpPackage,
+  item: PendingPackage,
   creditsPerUsd: number
 ) {
   return prisma.payment.create({
@@ -66,16 +78,18 @@ function listPaymentHistory(userId: string) {
   });
 }
 
-function topUpOptions(creditsPerUsd: number) {
-  return topUpPackages.map((item) => ({
-    ...item,
-    credits: calculateCredits(item.amountCents, creditsPerUsd)
+function topUpOptions(packages: TopUpRecord[], creditsPerUsd: number): BillingTopUpOption[] {
+  return packages.map((item) => ({
+    key: item.key,
+    label: item.label,
+    popular: item.popular,
+    credits: packageCredits(item, creditsPerUsd)
   }));
 }
 
 function paymentCreateData(
   userId: string,
-  item: TopUpPackage,
+  item: PendingPackage,
   creditsPerUsd: number
 ) {
   return {
@@ -83,7 +97,7 @@ function paymentCreateData(
     packageKey: item.key,
     amountCents: item.amountCents,
     currency: item.currency,
-    credits: calculateCredits(item.amountCents, creditsPerUsd)
+    credits: packageCredits(item, creditsPerUsd)
   };
 }
 
@@ -98,3 +112,5 @@ function historySelect() {
     paidAt: true
   } satisfies Prisma.PaymentSelect;
 }
+
+type TopUpRecord = Awaited<ReturnType<typeof listActiveTopUpPackages>>[number];

@@ -14,6 +14,7 @@ export type EditableAiModel = {
   supportsEndFrame: boolean;
   supportsSeed: boolean;
   pricePerSecondByResolution: Record<string, number>;
+  providerCostPerSecondUsdByResolution?: Record<string, number>;
   minDurationSeconds: number;
   maxDurationSeconds: number;
   defaultDurationSeconds: number;

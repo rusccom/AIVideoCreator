@@ -9,6 +9,7 @@ model User {
   storageBytesUsed BigInt          @default(0)
   projectCount     Int             @default(0)
   lastActiveAt     DateTime?
+  disabledAt       DateTime?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   projects         Project[]

@@ -13,7 +13,7 @@ export function TopUpCard({ option }: TopUpCardProps) {
   const [error, setError] = useState("");
   return (
     <article className="billing-top-up-card">
-      <span>{option.label}</span>
+      <span>{option.label}{option.popular ? <em className="billing-top-up-badge">Popular</em> : null}</span>
       <strong>{option.credits.toLocaleString()} credits</strong>
       <button className="button button-secondary" disabled={busy} onClick={handleCheckout(option.key, setBusy, setError)}><CreditCard size={16} />{busy ? "Opening" : "Pay"}</button>
       {error ? <small>{error}</small> : null}

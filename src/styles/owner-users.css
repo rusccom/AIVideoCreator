@@ -104,6 +104,36 @@
   text-align: right;
 }
 
+.owner-user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.owner-user-adjust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.owner-user-adjust input {
+  width: 110px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(8, 9, 13, 0.5);
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.owner-user-actions .button {
+  padding: 7px 12px;
+  font-size: 0.8rem;
+}
+
 @media (max-width: 680px) {
   .owner-users-total {
     align-items: flex-start;

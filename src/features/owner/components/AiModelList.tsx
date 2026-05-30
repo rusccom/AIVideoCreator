@@ -3,14 +3,15 @@ import { AiModelRow } from "./AiModelRow";
 
 type AiModelListProps = {
   action: (formData: FormData) => void | Promise<void>;
+  creditsPerUsd: number;
   models: EditableAiModel[];
 };
 
-export function AiModelList({ action, models }: AiModelListProps) {
+export function AiModelList({ action, creditsPerUsd, models }: AiModelListProps) {
   return (
     <div className="model-list">
       {models.map((model) => (
-        <AiModelRow action={action} key={model.id} model={model} />
+        <AiModelRow action={action} creditsPerUsd={creditsPerUsd} key={model.id} model={model} />
       ))}
     </div>
   );

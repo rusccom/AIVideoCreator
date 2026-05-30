@@ -12,6 +12,7 @@ export const klingV3StandardImageToVideoDefinition = {
   defaultAspectRatio: "auto",
   defaultResolution: "standard",
   defaultPricePerSecondByResolution: { standard: 8 },
+  providerCostPerSecondUsdByResolution: { standard: 0.045 },
   minDurationSeconds: 3,
   maxDurationSeconds: 15,
   defaultDurationSeconds: 5,

@@ -12,6 +12,7 @@ export const klingV34kImageToVideoDefinition = {
   defaultAspectRatio: "auto",
   defaultResolution: "4k",
   defaultPricePerSecondByResolution: { "4k": 20 },
+  providerCostPerSecondUsdByResolution: { "4k": 0.12 },
   minDurationSeconds: 3,
   maxDurationSeconds: 15,
   defaultDurationSeconds: 5,

@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { BrainCircuit, CreditCard, Images, LayoutDashboard, Users, Video } from "lucide-react";
+import { Activity, BrainCircuit, CreditCard, Images, LayoutDashboard, Users, Video } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 const items = [
-  { href: "/owner/models", label: "Overview", icon: LayoutDashboard },
+  { href: "/owner/models", label: "Dashboard", icon: LayoutDashboard },
   { href: "/owner/video-models", label: "Video models", icon: Video },
   { href: "/owner/image-models", label: "Image models", icon: Images },
   { href: "/owner/intelligence-models", label: "Intelligence", icon: BrainCircuit },
   { href: "/owner/billing", label: "Billing", icon: CreditCard },
+  { href: "/owner/operations", label: "Operations", icon: Activity },
   { href: "/owner/users", label: "Users", icon: Users }
 ];
 

@@ -6,10 +6,11 @@ import { AiModelHiddenFields } from "./AiModelHiddenFields";
 import { AiModelPricingFields } from "./AiModelPricingFields";
 
 type AiModelFormFieldsProps = {
+  creditsPerUsd: number;
   model: EditableAiModel;
 };
 
-export function AiModelFormFields({ model }: AiModelFormFieldsProps) {
+export function AiModelFormFields({ creditsPerUsd, model }: AiModelFormFieldsProps) {
   return (
     <>
       <AiModelHiddenFields model={model} />
@@ -17,7 +18,7 @@ export function AiModelFormFields({ model }: AiModelFormFieldsProps) {
         <AiModelDetailFields model={model} />
         <AiModelCapabilityFields model={model} />
         <AiModelDurationFields model={model} />
-        <AiModelPricingFields model={model} />
+        <AiModelPricingFields creditsPerUsd={creditsPerUsd} model={model} />
       </div>
     </>
   );

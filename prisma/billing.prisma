@@ -34,3 +34,19 @@ model Payment {
   @@index([status])
   @@index([stripePaymentIntentId])
 }
+
+model TopUpPackage {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  label        String
+  amountCents  Int
+  bonusCredits Int      @default(0)
+  currency     String   @default("usd")
+  popular      Boolean  @default(false)
+  active       Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([active, sortOrder])
+}

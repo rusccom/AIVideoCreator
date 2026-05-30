@@ -12,6 +12,7 @@ export const seedance2ImageToVideoDefinition = {
   defaultAspectRatio: "auto",
   defaultResolution: "720p",
   defaultPricePerSecondByResolution: { "480p": 5, "720p": 8, "1080p": 12 },
+  providerCostPerSecondUsdByResolution: { "480p": 0.025, "720p": 0.04, "1080p": 0.07 },
   minDurationSeconds: 4,
   maxDurationSeconds: 15,
   defaultDurationSeconds: 6,

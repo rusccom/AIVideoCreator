@@ -12,6 +12,7 @@ export const grokImagineVideoDefinition = {
   defaultAspectRatio: "auto",
   defaultResolution: "720p",
   defaultPricePerSecondByResolution: { "480p": 5, "720p": 7 },
+  providerCostPerSecondUsdByResolution: { "480p": 0.03, "720p": 0.04 },
   minDurationSeconds: 2,
   maxDurationSeconds: 15,
   defaultDurationSeconds: 6,

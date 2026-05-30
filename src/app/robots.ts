@@ -6,5 +6,5 @@ export default function robots(): MetadataRoute.Robots {
 }
 
 function disallowedRoutes() {
-  return ["/admin/", "/api/", "/app/", "/login", "/owner/", "/privacy", "/register", "/terms"];
+  return ["/api/", "/app/", "/login", "/owner/", "/privacy", "/register", "/terms"];
 }

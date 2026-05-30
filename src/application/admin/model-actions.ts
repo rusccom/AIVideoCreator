@@ -13,5 +13,5 @@ export async function updateAiModelAction(formData: FormData) {
 
 function refreshOwnerModels() {
   revalidatePath("/owner/models");
-  revalidatePath("/admin");
+  revalidatePath("/owner/video-models");
 }
