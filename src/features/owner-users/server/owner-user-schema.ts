@@ -12,6 +12,11 @@ export function parseAdjustCreditsForm(formData: FormData): AdjustCreditsInput {
   return adjustCreditsSchema.parse({
     userId: String(formData.get("userId") ?? ""),
     amount: Number(formData.get("amount")),
-    reason: String(formData.get("reason") ?? "")
+    reason: reasonValue(formData.get("reason"))
   });
+}
+
+function reasonValue(value: FormDataEntryValue | null) {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : "Owner adjustment";
 }

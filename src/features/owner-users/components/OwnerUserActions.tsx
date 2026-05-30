@@ -25,8 +25,8 @@ function adjustForm(action: OwnerUserActionSet["adjustCredits"], userId: string)
   return (
     <form action={action} className="owner-user-adjust">
       <input name="userId" type="hidden" value={userId} />
-      <input aria-label="Credit amount" name="amount" placeholder="+/- credits" type="number" />
-      <input aria-label="Reason" maxLength={120} name="reason" placeholder="Reason" type="text" />
+      <input aria-label="Credit amount" name="amount" placeholder="+/- credits" required step={1} type="number" />
+      <input aria-label="Reason" maxLength={120} name="reason" placeholder="Reason (optional)" type="text" />
       <button className="button button-secondary" type="submit">Apply</button>
     </form>
   );
